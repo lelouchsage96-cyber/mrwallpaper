@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Mr Wallpapers — X banner</title>
+  <style>
+    @font-face {
+      font-family: "Fraunces";
+      src: url("fonts/fraunces-latin.woff2") format("woff2");
+      font-weight: 500 700;
+      font-style: normal;
+      font-display: block;
+    }
+    @font-face {
+      font-family: "Outfit";
+      src: url("fonts/outfit-latin.woff2") format("woff2");
+      font-weight: 300 700;
+      font-style: normal;
+      font-display: block;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body {
+      width: 1200px;
+      height: 264px;
+      overflow: hidden;
+      background: #0A0A0B;
+      color: #F4F1EA;
+      -webkit-font-smoothing: antialiased;
+    }
+    .stage {
+      position: relative;
+      width: 1200px;
+      height: 264px;
+      background: #0A0A0B;
+      overflow: hidden;
+    }
+    .ambience {
+      position: absolute;
+      inset: 0;
+      background:
+        radial-gradient(ellipse 42% 120% at 12% 40%, rgba(200, 204, 212, 0.12), transparent 62%),
+        radial-gradient(ellipse 50% 140% at 88% 55%, rgba(164, 112, 78, 0.16), transparent 70%),
+        #0A0A0B;
+    }
+    .lockup {
+      position: absolute;
+      left: 48px;
+      top: 42px;
+      width: 520px;
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      z-index: 5;
+    }
+    .row {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+    .mark { width: 52px; height: 52px; flex-shrink: 0; }
+    .title {
+      font-family: "Fraunces", Georgia, serif;
+      font-weight: 600;
+      font-size: 42px;
+      line-height: 1;
+      letter-spacing: -0.03em;
+      color: #F4F1EA;
+    }
+    .tagline {
+      margin-top: 14px;
+      margin-left: 68px;
+      font-family: "Outfit", system-ui, sans-serif;
+      font-weight: 400;
+      font-size: 14px;
+      letter-spacing: 0.22em;
+      color: #C8CCD4;
+      opacity: 0.85;
+    }
+    .phones {
+      position: absolute;
+      right: 36px;
+      top: 18px;
+      width: 560px;
+      height: 228px;
+    }
+    .phone {
+      position: absolute;
+      width: 118px;
+      height: 210px;
+      border-radius: 18px;
+      overflow: hidden;
+      background: #121214;
+      box-shadow:
+        0 16px 36px rgba(0, 0, 0, 0.5),
+        0 0 0 1px rgba(200, 204, 212, 0.18);
+    }
+    .phone img {
+      display: block;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+    .phone .bezel {
+      position: absolute;
+      top: 7px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 34px;
+      height: 4px;
+      border-radius: 999px;
+      background: rgba(10, 10, 11, 0.55);
+    }
+    .phone.a { left: 40px; top: 22px; transform: rotate(-8deg); }
+    .phone.b { left: 168px; top: 4px; transform: rotate(-1deg); z-index: 2; }
+    .phone.c { left: 296px; top: 18px; transform: rotate(7deg); }
+    .grain {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      opacity: 0.14;
+      mix-blend-mode: overlay;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='180' height='180' filter='url(%23n)' opacity='.55'/%3E%3C/svg%3E");
+      z-index: 6;
+    }
+  </style>
+</head>
+<body>
+  <div class="stage">
+    <div class="ambience"></div>
+    <div class="lockup">
+      <div class="row">
+        <svg class="mark" viewBox="0 0 32 32" aria-hidden="true">
+          <rect width="32" height="32" rx="8" fill="#0A0A0B"/>
+          <rect x="1.5" y="1.5" width="29" height="29" rx="6.5" fill="none" stroke="#C8CCD4" stroke-width="1.25" opacity="0.55"/>
+          <g fill="none" stroke="#F4F1EA" stroke-width="2.3" stroke-linejoin="round" stroke-linecap="butt">
+            <polyline points="4.6,25 4.6,7 9.5,21.5 14.4,7 14.4,25"/>
+            <polyline points="17.6,7 19.8,25 22.6,13.2 25.4,25 27.6,7"/>
+          </g>
+        </svg>
+        <div class="title">Mr Wallpapers</div>
+      </div>
+      <div class="tagline">Your Screen. Your Style.</div>
+    </div>
+    <div class="phones">
+      <div class="phone a">
+        <img src="../../public/wallpapers/ridge-line.jpg" alt="" />
+        <span class="bezel"></span>
+      </div>
+      <div class="phone b">
+        <img src="../../public/wallpapers/paper-moon.jpg" alt="" />
+        <span class="bezel"></span>
+      </div>
+      <div class="phone c">
+        <img src="../../public/wallpapers/true-black.jpg" alt="" />
+        <span class="bezel"></span>
+      </div>
+    </div>
+    <div class="grain"></div>
+  </div>
+</body>
+</html>

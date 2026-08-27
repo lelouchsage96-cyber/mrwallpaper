@@ -1,0 +1,36 @@
+{
+  "url": "http://127.0.0.1:8080/app",
+  "viewports": {
+    "desktop": {
+      "width": 1280,
+      "height": 800,
+      "status": 200,
+      "title": "Mr Wallpapers",
+      "hasCanvas": false,
+      "bodyTextLen": 457,
+      "bodyTextHash": "4b0635d9caea9bc29fe91b1103cc8f5f0f16bed1c9668bab3e293d48869c553e",
+      "bodyTextPrefix": "YOUR SCREEN. YOUR STYLE. Mr Wallpapers ON YOUR SCREEN Choose you",
+      "horizontalOverflow": false,
+      "consoleErrors": [],
+      "pageErrors": [],
+      "screenshot": "/workspace/screenshots/broken-app.png"
+    },
+    "mobile": {
+      "width": 390,
+      "height": 844,
+      "status": 200,
+      "title": "Mr Wallpapers",
+      "hasCanvas": false,
+      "bodyTextLen": 457,
+      "bodyTextHash": "4b0635d9caea9bc29fe91b1103cc8f5f0f16bed1c9668bab3e293d48869c553e",
+      "bodyTextPrefix": "YOUR SCREEN. YOUR STYLE. Mr Wallpapers ON YOUR SCREEN Choose you",
+      "horizontalOverflow": false,
+      "consoleErrors": [],
+      "pageErrors": [],
+      "screenshot": "/workspace/screenshots/broken-app-mobile.png"
+    }
+  },
+  "brandWarnings": [],
+  "authWarnings": [],
+  "verdictFile": "/workspace/screenshots/broken-app.json"
+}

@@ -1,0 +1,1 @@
+var e=`mrwallpapers.onboarding.v1`,t=`mrwallpapers.theme`,n=`mrwallpapers.taste.v1`;export{n,t as r,e as t};

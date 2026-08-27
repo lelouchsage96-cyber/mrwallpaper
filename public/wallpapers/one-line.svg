@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="1080" height="1920" viewBox="0 0 1080 1920" preserveAspectRatio="xMidYMid slice">
+  <defs></defs>
+  <rect width="1080" height="1920" fill="#111114"/>
+  
+  <rect x="100" y="954" width="880" height="12" rx="6" fill="#e8e4dc"/>
+</svg>

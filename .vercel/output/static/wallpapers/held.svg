@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="1080" height="1920" viewBox="0 0 1080 1920" preserveAspectRatio="xMidYMid slice">
+  <defs><filter id="g-held" x="0" y="0" width="100%" height="100%">
+    <feTurbulence type="fractalNoise" baseFrequency="0.85" numOctaves="4" stitchTiles="stitch"/>
+    <feColorMatrix type="saturate" values="0"/>
+    <feComponentTransfer><feFuncA type="linear" slope="0.07"/></feComponentTransfer>
+    <feBlend in="SourceGraphic" mode="overlay"/>
+  </filter><radialGradient id="r-held" cx="50%" cy="42%" r="55%">
+          <stop offset="0%" stop-color="#e2b8b4" stop-opacity="0.95"/>
+          <stop offset="55%" stop-color="#8a4a52" stop-opacity="0.25"/>
+          <stop offset="100%" stop-color="#1c1216" stop-opacity="0"/>
+        </radialGradient></defs>
+  <rect width="1080" height="1920" fill="#1c1216"/>
+  <g filter="url(#g-held)"><circle cx="540" cy="780" r="520" fill="url(#r-held)"/><circle cx="540" cy="760" r="160" fill="#e2b8b4" opacity="0.92"/></g>
+</svg>

@@ -1,0 +1,44 @@
+[
+  {
+    "id": "wide-ridge",
+    "w": 2048,
+    "h": 1536,
+    "bytes": 60833,
+    "thumb": 1846
+  },
+  {
+    "id": "harbour-span",
+    "w": 2048,
+    "h": 1536,
+    "bytes": 148927,
+    "thumb": 3986
+  },
+  {
+    "id": "pale-field",
+    "w": 2048,
+    "h": 1536,
+    "bytes": 131781,
+    "thumb": 1590
+  },
+  {
+    "id": "ink-horizon",
+    "w": 2048,
+    "h": 1536,
+    "bytes": 21129,
+    "thumb": 832
+  },
+  {
+    "id": "folio-orbit",
+    "w": 1536,
+    "h": 2048,
+    "bytes": 48855,
+    "thumb": 1492
+  },
+  {
+    "id": "folio-still",
+    "w": 1536,
+    "h": 2048,
+    "bytes": 23765,
+    "thumb": 968
+  }
+]

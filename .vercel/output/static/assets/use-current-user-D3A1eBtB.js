@@ -1,0 +1,1 @@
+import{i as e,t}from"./react-SIfiwpqq.js";import{t as n}from"./client-SLtnkS75.js";var r=e(t(),1);function i(){let{data:e,isPending:t}=n.useSession(),i=e?.user;return{user:(0,r.useMemo)(()=>i?{id:i.id,displayName:i.name??null,primaryEmail:i.email??null,profileImageUrl:i.image??null,isDevFallback:!1}:null,[i?.id,i?.name,i?.email,i?.image]),isPending:t}}export{i as t};

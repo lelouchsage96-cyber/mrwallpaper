@@ -1,0 +1,38 @@
+{
+  "url": "http://127.0.0.1:8081/",
+  "viewports": {
+    "desktop": {
+      "width": 1280,
+      "height": 800,
+      "status": 200,
+      "title": "Mr Wallpapers – HD & 4K Wallpapers for Phone & Tablet",
+      "hasCanvas": false,
+      "bodyTextLen": 643,
+      "bodyTextHash": "20e4557b743caf2552b1d69cd7d9a74730079803bca8a20ded474782299c3d70",
+      "bodyTextPrefix": "Mr Wallpapers Home HD & 4K wallpapers for phone and tablet Disco",
+      "horizontalOverflow": false,
+      "consoleErrors": [],
+      "pageErrors": [],
+      "screenshot": "/workspace/screenshots/app-builder-built.png"
+    },
+    "mobile": {
+      "width": 390,
+      "height": 844,
+      "status": 200,
+      "title": "Mr Wallpapers – HD & 4K Wallpapers for Phone & Tablet",
+      "hasCanvas": false,
+      "bodyTextLen": 643,
+      "bodyTextHash": "20e4557b743caf2552b1d69cd7d9a74730079803bca8a20ded474782299c3d70",
+      "bodyTextPrefix": "Mr Wallpapers Home HD & 4K wallpapers for phone and tablet Disco",
+      "horizontalOverflow": false,
+      "consoleErrors": [],
+      "pageErrors": [],
+      "screenshot": "/workspace/screenshots/app-builder-built-mobile.png"
+    }
+  },
+  "brandWarnings": [],
+  "authWarnings": [],
+  "verdictFile": "/workspace/screenshots/app-builder-built.json",
+  "divergesFromBaseline": false,
+  "baselineReasons": []
+}

@@ -1,0 +1,710 @@
+@import "tailwindcss";
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+@theme {
+  --color-bg: #0a0a0b;
+  --color-surface: #121214;
+  --color-elevated: #1a1a1e;
+  --color-fg: #f4f1ea;
+  --color-muted: #8a8680;
+  --color-subtle: #6a6660;
+  --color-accent: #c8ccd4;
+  --color-accent-fg: #0a0a0b;
+  --color-border: color-mix(in oklab, var(--color-fg) 12%, transparent);
+  --color-ring: #c8ccd4;
+  --color-danger: #c45c4a;
+  --color-success: #8fad93;
+  --color-warn: #c4a07a;
+  --color-on-photo: #f4f1ea;
+  --color-on-photo-muted: rgb(244 241 234 / 0.72);
+  --color-bezel: #1a1a1d;
+  --color-bezel-edge: #3e3e44;
+
+  --font-sans: "Outfit", ui-sans-serif, system-ui, sans-serif;
+  --font-display: "Instrument Serif", ui-serif, Georgia, serif;
+
+  --radius-xs: 4px;
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-xl: 24px;
+  --radius-phone: 3.4rem;
+  --radius-phone-screen: 2.68rem;
+
+  --shadow-border: 0 0 0 1px rgba(255, 255, 255, 0.08);
+}
+
+:root,
+.dark {
+  --background: var(--color-bg);
+  --foreground: var(--color-fg);
+  color-scheme: dark;
+}
+
+html.light {
+  --color-bg: #f4f1ea;
+  --color-surface: #ece7dc;
+  --color-elevated: #ffffff;
+  --color-fg: #16140f;
+  --color-muted: #6a6660;
+  --color-subtle: #8a8680;
+  --color-accent: #3a3d44;
+  --color-accent-fg: #f4f1ea;
+  --color-border: color-mix(in oklab, var(--color-fg) 12%, transparent);
+  --color-ring: #3a3d44;
+  --color-success: #3f6b4a;
+  --color-warn: #8a5a32;
+  --shadow-border:
+    0px 0px 0px 1px rgba(0, 0, 0, 0.06),
+    0px 1px 2px -1px rgba(0, 0, 0, 0.06),
+    0px 2px 4px 0px rgba(0, 0, 0, 0.04);
+  color-scheme: light;
+}
+
+@layer base {
+  html {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  html,
+  body,
+  #app {
+    min-height: 100%;
+    background: var(--color-bg);
+    color: var(--color-fg);
+  }
+
+  body {
+    font-family: var(--font-sans);
+    line-height: 1.5;
+  }
+
+  h1,
+  h2,
+  h3 {
+    font-family: var(--font-display);
+    font-weight: 500;
+    letter-spacing: -0.03em;
+    line-height: 1.15;
+    text-wrap: balance;
+  }
+
+  p {
+    text-wrap: pretty;
+  }
+
+  button:not(:disabled),
+  [role="button"]:not(:disabled) {
+    cursor: pointer;
+  }
+
+  img.wallpaper-img {
+    outline: 1px solid color-mix(in oklab, var(--color-fg) 16%, transparent);
+    outline-offset: -1px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+@keyframes mw-fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes mw-fade {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes mw-sheet-in {
+  from {
+    opacity: 0;
+    transform: translateY(18px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes mw-img-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.mw-enter,
+.mw-page {
+  animation: mw-fade 160ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.mw-stagger > * {
+  animation: mw-fade 220ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+.mw-stagger > *:nth-child(1) { animation-delay: 0ms; }
+.mw-stagger > *:nth-child(2) { animation-delay: 24ms; }
+.mw-stagger > *:nth-child(3) { animation-delay: 48ms; }
+.mw-stagger > *:nth-child(4) { animation-delay: 72ms; }
+.mw-stagger > *:nth-child(5) { animation-delay: 96ms; }
+.mw-stagger > *:nth-child(6) { animation-delay: 120ms; }
+
+img.wallpaper-img {
+  background-color: var(--color-elevated);
+}
+
+.mw-backdrop {
+  animation: mw-fade 180ms ease both;
+}
+
+.mw-sheet {
+  animation: mw-sheet-in 280ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+/* Physical iPhone frame — hardware chrome stays dark in both themes. */
+.mw-phone {
+  position: relative;
+  width: min(100%, 19.25rem);
+  margin-inline: auto;
+  padding: 0.72rem;
+  border-radius: var(--radius-phone);
+  background:
+    linear-gradient(150deg, #6a6a72 0%, #2a2a30 12%, #121214 42%, #0b0b0d 70%, #3a3a42 100%);
+  box-shadow:
+    0 0 0 1px color-mix(in oklab, white 14%, transparent),
+    inset 0 1px 0 color-mix(in oklab, white 32%, transparent),
+    inset 0 -1px 1px color-mix(in oklab, black 50%, transparent),
+    0 24px 48px color-mix(in oklab, black 38%, transparent);
+}
+
+.mw-phone-screen {
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
+  aspect-ratio: 393 / 852;
+  border-radius: var(--radius-phone-screen);
+  background: #000;
+}
+
+.mw-phone-screen > img,
+.mw-phone-screen > video,
+.mw-tablet-screen > img,
+.mw-tablet-screen > video {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.mw-phone-island {
+  position: absolute;
+  top: 0.55rem;
+  left: 50%;
+  z-index: 6;
+  width: 5.7rem;
+  height: 1.68rem;
+  translate: -50% 0;
+  border-radius: 999px;
+  background: #000;
+  box-shadow: inset 0 0 0 1px color-mix(in oklab, white 10%, transparent);
+}
+
+.mw-phone-island::before,
+.mw-phone-island::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  border-radius: 999px;
+  translate: 0 -50%;
+}
+
+.mw-phone-island::before {
+  right: 0.42rem;
+  width: 0.58rem;
+  height: 0.58rem;
+  background: radial-gradient(circle at 35% 35%, #3d4d66, #0b1018 68%);
+  box-shadow: inset 0 0 0 1px color-mix(in oklab, white 16%, transparent);
+}
+
+.mw-phone-island::after {
+  right: 1.18rem;
+  width: 0.32rem;
+  height: 0.32rem;
+  background: #141414;
+}
+
+.mw-phone-silent,
+.mw-phone-vol-up,
+.mw-phone-vol-down,
+.mw-phone-power {
+  position: absolute;
+  z-index: 2;
+  background: #2c2c32;
+  box-shadow:
+    inset 0 1px 0 color-mix(in oklab, white 22%, transparent),
+    inset 0 -1px 0 color-mix(in oklab, black 40%, transparent);
+}
+
+.mw-phone-silent {
+  top: 6.2rem;
+  left: -0.14rem;
+  width: 0.2rem;
+  height: 1.15rem;
+  border-radius: 2px 0 0 2px;
+}
+
+.mw-phone-vol-up {
+  top: 8.4rem;
+  left: -0.16rem;
+  width: 0.22rem;
+  height: 1.7rem;
+  border-radius: 2px 0 0 2px;
+}
+
+.mw-phone-vol-down {
+  top: 10.4rem;
+  left: -0.16rem;
+  width: 0.22rem;
+  height: 1.7rem;
+  border-radius: 2px 0 0 2px;
+}
+
+.mw-phone-power {
+  top: 9.1rem;
+  right: -0.16rem;
+  width: 0.22rem;
+  height: 3.1rem;
+  border-radius: 0 2px 2px 0;
+}
+
+.mw-phone-home-bar {
+  width: 7.4rem;
+  height: 0.28rem;
+  border-radius: 999px;
+  background: color-mix(in oklab, var(--color-on-photo) 86%, transparent);
+}
+
+.mw-home-shade {
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(180deg, rgb(0 0 0 / 0.2), transparent 14%),
+    linear-gradient(0deg, rgb(0 0 0 / 0.16), transparent 16%);
+}
+
+.mw-home-status {
+  display: grid;
+  grid-template-columns: 1fr 8rem 1fr;
+  align-items: center;
+  flex-shrink: 0;
+  height: 2.4rem;
+  padding: 0.5rem 1.1rem 0;
+  color: var(--color-on-photo);
+}
+
+.mw-home-widgets {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  flex-shrink: 0;
+  gap: 0.7rem;
+  padding: 0 1.1rem;
+}
+
+.mw-home-apps {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  justify-items: center;
+  flex-shrink: 0;
+  gap: 0.85rem 0.55rem;
+  padding: 0 1.05rem;
+}
+
+.mw-widget {
+  display: flex;
+  aspect-ratio: 1;
+  flex-direction: column;
+  overflow: hidden;
+  border-radius: 1.35rem;
+  padding: 0.7rem 0.75rem 0.65rem;
+  color: var(--color-on-photo);
+  background: color-mix(in oklab, var(--color-on-photo) 12%, transparent);
+  backdrop-filter: blur(22px) saturate(1.7);
+  -webkit-backdrop-filter: blur(22px) saturate(1.7);
+  box-shadow:
+    inset 0 1px 0 color-mix(in oklab, white 40%, transparent),
+    inset 0 -1px 0 color-mix(in oklab, white 8%, transparent),
+    inset 0 0 0 1px color-mix(in oklab, white 16%, transparent);
+}
+
+.mw-widget-kicker {
+  font-size: 0.62rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #ff453a;
+}
+
+.mw-widget-day {
+  margin-top: 0.1rem;
+  font-size: 2.55rem;
+  font-weight: 300;
+  line-height: 0.9;
+  letter-spacing: -0.04em;
+  font-variant-numeric: tabular-nums;
+}
+
+.mw-widget-sub {
+  margin-top: auto;
+  font-size: 0.7rem;
+  color: color-mix(in oklab, var(--color-on-photo) 72%, transparent);
+}
+
+.mw-widget-clock {
+  align-items: center;
+  justify-content: center;
+  padding: 0.7rem;
+}
+
+.mw-home-app {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.mw-app-label {
+  margin-top: 0.28rem;
+  width: 100%;
+  overflow: hidden;
+  font-size: 0.625rem;
+  font-weight: 500;
+  line-height: 1.1;
+  text-align: center;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--color-on-photo);
+  text-shadow: 0 1px 3px rgb(0 0 0 / 0.55);
+}
+
+.mw-app-icon {
+  position: relative;
+  display: grid;
+  width: 3.05rem;
+  max-width: 100%;
+  aspect-ratio: 1;
+  flex-shrink: 0;
+  place-items: center;
+  overflow: hidden;
+  isolation: isolate;
+  border-radius: 22%;
+  color: var(--color-on-photo);
+  background: color-mix(in oklab, var(--color-on-photo) 14%, transparent);
+  backdrop-filter: blur(18px) saturate(1.8);
+  -webkit-backdrop-filter: blur(18px) saturate(1.8);
+  box-shadow:
+    inset 0 1px 0 color-mix(in oklab, white 48%, transparent),
+    inset 0 -1px 0 color-mix(in oklab, white 10%, transparent),
+    inset 0 0 0 1px color-mix(in oklab, white 18%, transparent),
+    0 1px 2px rgb(0 0 0 / 0.16);
+}
+
+.mw-app-icon::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: linear-gradient(
+    135deg,
+    rgb(255 255 255 / 0.38) 0%,
+    rgb(255 255 255 / 0.06) 32%,
+    transparent 52%,
+    rgb(255 255 255 / 0.14) 100%
+  );
+  pointer-events: none;
+}
+
+.mw-app-icon > * {
+  position: relative;
+  z-index: 1;
+}
+
+.mw-app-green,
+.mw-app-blue,
+.mw-app-sky,
+.mw-app-coral,
+.mw-app-orange,
+.mw-app-gray,
+.mw-app-navy,
+.mw-app-paper {
+  background: color-mix(in oklab, var(--color-on-photo) 14%, transparent);
+  color: var(--color-on-photo);
+}
+
+.mw-app-cal {
+  color: var(--color-on-photo);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 0.05rem;
+  padding-top: 0.1rem;
+}
+
+.mw-cal-month {
+  font-size: 0.5rem;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  line-height: 1;
+  color: #ff453a;
+}
+
+.mw-cal-day {
+  font-size: 1.15rem;
+  font-weight: 500;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+
+.mw-app-photos {
+  background: color-mix(in oklab, var(--color-on-photo) 14%, transparent);
+}
+
+.mw-app-notes {
+  background: color-mix(in oklab, var(--color-on-photo) 14%, transparent);
+  color: var(--color-on-photo);
+}
+
+.mw-clock-face {
+  position: relative;
+  overflow: hidden;
+  width: 78%;
+  aspect-ratio: 1;
+  border-radius: 999px;
+  background: color-mix(in oklab, var(--color-on-photo) 8%, transparent);
+  box-shadow: inset 0 0 0 1.5px color-mix(in oklab, var(--color-on-photo) 55%, transparent);
+}
+
+.mw-clock-tick {
+  position: absolute;
+  left: 50%;
+  top: 0;
+  width: 1.5px;
+  height: 100%;
+  margin-left: -0.75px;
+}
+
+.mw-clock-tick::before {
+  content: "";
+  position: absolute;
+  top: 9%;
+  left: 0;
+  width: 100%;
+  height: 11%;
+  border-radius: 1px;
+  background: color-mix(in oklab, var(--color-on-photo) 70%, transparent);
+}
+
+.mw-clock-hour,
+.mw-clock-minute {
+  position: absolute;
+  left: 50%;
+  bottom: 50%;
+  border-radius: 1px;
+  background: var(--color-on-photo);
+  transform-origin: center bottom;
+}
+
+.mw-clock-hour {
+  width: 2px;
+  height: 26%;
+  margin-left: -1px;
+}
+
+.mw-clock-minute {
+  width: 1.5px;
+  height: 38%;
+  margin-left: -0.75px;
+}
+
+.mw-clock-dot {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 4px;
+  height: 4px;
+  border-radius: 999px;
+  background: var(--color-on-photo);
+  translate: -50% -50%;
+}
+
+.mw-widget-clock .mw-clock-face {
+  width: 78%;
+}
+
+.mw-safari-disc {
+  position: relative;
+  width: 72%;
+  aspect-ratio: 1;
+  border-radius: 999px;
+  background: radial-gradient(circle at 50% 50%, #f4f1ea, #c8ccd4 62%, #8a919c);
+  box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.35);
+}
+
+.mw-safari-needle {
+  position: absolute;
+  left: 50%;
+  top: 12%;
+  width: 0;
+  height: 0;
+  border-left: 4px solid transparent;
+  border-right: 4px solid transparent;
+  border-bottom: 18px solid #ff453a;
+  translate: -50% 0;
+  transform-origin: 50% 85%;
+  rotate: -28deg;
+}
+
+.mw-safari-needle-s {
+  position: absolute;
+  left: 50%;
+  bottom: 12%;
+  width: 0;
+  height: 0;
+  border-left: 4px solid transparent;
+  border-right: 4px solid transparent;
+  border-top: 18px solid #3a3d44;
+  translate: -50% 0;
+  rotate: -28deg;
+}
+
+.mw-dock {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  justify-items: center;
+  gap: 0.75rem;
+  margin: 0 0.65rem 0.3rem;
+  padding: 0.55rem 0.6rem;
+  border-radius: 1.7rem;
+  background: color-mix(in oklab, var(--color-on-photo) 12%, transparent);
+  backdrop-filter: blur(28px) saturate(1.6);
+  -webkit-backdrop-filter: blur(28px) saturate(1.6);
+  box-shadow:
+    inset 0 1px 0 color-mix(in oklab, white 28%, transparent),
+    inset 0 0 0 1px color-mix(in oklab, white 14%, transparent);
+}
+
+.mw-dock .mw-app-icon {
+  max-width: none;
+}
+
+.mw-status-glyph {
+  display: block;
+  background: var(--color-on-photo);
+}
+
+
+.mw-status-wifi {
+  width: 0.72rem;
+  height: 0.55rem;
+  background: transparent;
+  border-radius: 0 0 0.7rem 0.7rem;
+  box-shadow:
+    inset 0 -0.18rem 0 -0.08rem var(--color-on-photo),
+    inset 0 -0.36rem 0 -0.2rem var(--color-on-photo);
+}
+
+.mw-status-battery {
+  width: 1.35rem;
+  height: 0.7rem;
+  border: 1px solid color-mix(in oklab, var(--color-on-photo) 80%, transparent);
+  border-radius: 3px;
+  position: relative;
+}
+
+.mw-status-battery::before {
+  content: "";
+  position: absolute;
+  inset: 2px 8px 2px 2px;
+  border-radius: 1px;
+  background: var(--color-on-photo);
+}
+
+.mw-status-battery::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  right: -3px;
+  width: 2px;
+  height: 6px;
+  translate: 0 -50%;
+  border-radius: 0 1px 1px 0;
+  background: color-mix(in oklab, var(--color-on-photo) 80%, transparent);
+}
+
+/* Physical iPad frame — thinner bezel, no island. */
+.mw-tablet {
+  position: relative;
+  width: min(100%, 28rem);
+  margin-inline: auto;
+  padding: 0.55rem;
+  border-radius: 1.55rem;
+  background:
+    linear-gradient(150deg, #6a6a72 0%, #2a2a30 12%, #121214 42%, #0b0b0d 70%, #3a3a42 100%);
+  box-shadow:
+    0 0 0 1px color-mix(in oklab, white 14%, transparent),
+    inset 0 1px 0 color-mix(in oklab, white 32%, transparent),
+    inset 0 -1px 1px color-mix(in oklab, black 50%, transparent),
+    0 24px 48px color-mix(in oklab, black 38%, transparent);
+}
+
+.mw-tablet.is-portrait {
+  width: min(100%, 20.5rem);
+}
+
+.mw-tablet-screen {
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
+  aspect-ratio: 4 / 3;
+  border-radius: 1.05rem;
+  background: #000;
+}
+
+.mw-tablet.is-portrait .mw-tablet-screen {
+  aspect-ratio: 3 / 4;
+}
+
+.mw-tablet-cam {
+  position: absolute;
+  top: 0.42rem;
+  left: 50%;
+  z-index: 6;
+  width: 0.48rem;
+  height: 0.48rem;
+  translate: -50% 0;
+  border-radius: 999px;
+  background: radial-gradient(circle at 35% 35%, #3d4d66, #0b1018 68%);
+  box-shadow: inset 0 0 0 1px color-mix(in oklab, white 16%, transparent);
+}
+
+.mw-tablet-home-bar {
+  width: 6.2rem;
+  height: 0.24rem;
+  border-radius: 999px;
+  background: color-mix(in oklab, var(--color-on-photo) 86%, transparent);
+}
