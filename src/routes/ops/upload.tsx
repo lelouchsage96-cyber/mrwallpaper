@@ -1,5 +1,5 @@
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { Upload } from "lucide-react";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { Cloud, Upload } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -146,10 +146,19 @@ function OpsUploadPage() {
 
   return (
     <div className="mx-auto max-w-3xl space-y-6">
-      <div>
-        <p className="text-xs font-medium tracking-widest text-subtle uppercase">Admin</p>
-        <h1 className="mt-1 font-display text-4xl text-fg">Add wallpaper</h1>
-        <p className="mt-2 text-sm text-muted">Upload once. The original goes to R2 and the wallpaper is published as free.</p>
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+        <div>
+          <p className="text-xs font-medium tracking-widest text-subtle uppercase">Admin</p>
+          <h1 className="mt-1 font-display text-4xl text-fg">Add wallpaper</h1>
+          <p className="mt-2 text-sm text-muted">Upload once. The original goes to R2 and the wallpaper is published as free.</p>
+        </div>
+        <Link
+          to="/ops/import-r2"
+          className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-elevated px-4 text-sm text-fg hover:opacity-90"
+        >
+          <Cloud className="size-4" />
+          Import existing from R2
+        </Link>
       </div>
 
       <input
