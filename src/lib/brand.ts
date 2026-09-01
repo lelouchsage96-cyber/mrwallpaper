@@ -18,6 +18,7 @@ export const brand = {
   social: {
     instagram: "https://instagram.com/mrwallpapers",
     x: "https://x.com/mrwallpapers",
+    pinterest: "https://www.pinterest.com/mrwallpaper_/",
   },
   deepLinkScheme: "mrwallpapers",
   shareBaseUrl: "https://mrwallpaper.org",
