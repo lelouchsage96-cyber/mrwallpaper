@@ -136,7 +136,7 @@ function DetailsPage() {
       <div className="px-4 pt-3">
         <div className="flex items-center justify-between">
           <a
-            href="/"
+            href="/app"
             aria-label="Back"
             className="grid size-11 place-items-center rounded-full bg-elevated text-fg"
           >
@@ -153,7 +153,7 @@ function DetailsPage() {
         <div className="mt-3">
           <Breadcrumbs
             items={[
-              { name: "Home", href: "/" },
+              { name: "Home", href: "/app" },
               { name: wallpaper.categoryName, href: categoryPath(wallpaper.categorySlug) },
               { name: wallpaper.title },
             ]}
