@@ -44,7 +44,10 @@ function Login() {
     setBusy(true);
     try {
       if (mode === "reset") {
-        setInfo(t.auth.resetSent);
+        const redirectTo = `${window.location.origin}/reset-password`;
+        const { error: err } = await authClient.requestPasswordReset({ email, redirectTo });
+        if (err) throw new Error(err.message ?? "Reset request failed");
+        setInfo("If an account exists for that email, a password reset link has been sent.");
         return;
       }
       if (mode === "signup") {
@@ -61,7 +64,7 @@ function Login() {
       router.history.push(next ?? "/app");
     } catch (err) {
       console.error("[auth] email", err);
-      setError(mode === "signin" ? t.auth.invalid : t.auth.error);
+      setError(mode === "signin" ? t.auth.invalid : mode === "reset" ? "Could not send the reset email. Please try again." : t.auth.error);
     } finally {
       setBusy(false);
     }
@@ -162,23 +165,19 @@ function Login() {
         {error ? <p className="text-sm text-danger">{error}</p> : null}
         {info ? <p className="text-sm text-muted">{info}</p> : null}
         <Button type="submit" className="w-full" disabled={busy}>
-          {mode === "reset"
-            ? t.auth.resetSend
-            : mode === "signup"
-              ? t.auth.signUp
-              : t.auth.signIn}
+          {busy ? "Working…" : mode === "reset" ? t.auth.resetSend : mode === "signup" ? t.auth.signUp : t.auth.signIn}
         </Button>
       </form>
 
       <div className="mt-6 space-y-2 text-center text-sm text-muted">
         {mode === "signin" ? (
           <>
-            <button type="button" className="min-h-11 text-fg" onClick={() => setMode("reset")}>
+            <button type="button" className="min-h-11 text-fg" onClick={() => { setMode("reset"); setError(null); setInfo(null); }}>
               {t.auth.forgot}
             </button>
             <p>
               {t.auth.noAccount}{" "}
-              <button type="button" className="text-fg underline-offset-4 hover:underline" onClick={() => setMode("signup")}>
+              <button type="button" className="text-fg underline-offset-4 hover:underline" onClick={() => { setMode("signup"); setError(null); setInfo(null); }}>
                 {t.auth.signUp}
               </button>
             </p>
@@ -186,7 +185,7 @@ function Login() {
         ) : (
           <p>
             {t.auth.hasAccount}{" "}
-            <button type="button" className="text-fg underline-offset-4 hover:underline" onClick={() => setMode("signin")}>
+            <button type="button" className="text-fg underline-offset-4 hover:underline" onClick={() => { setMode("signin"); setError(null); setInfo(null); }}>
               {t.auth.signIn}
             </button>
           </p>
