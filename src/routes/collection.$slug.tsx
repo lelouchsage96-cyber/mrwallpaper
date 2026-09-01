@@ -51,13 +51,13 @@ function CollectionPage() {
   if (!collection) return null;
   return (
     <main className="mx-auto max-w-5xl px-4 pb-16 pt-4">
-      <a href="/" className="mb-4 flex min-h-11 items-center gap-1 text-sm text-muted">
+      <a href="/app" className="mb-4 flex min-h-11 items-center gap-1 text-sm text-muted">
         <ChevronLeft className="size-4" />
         {t.nav.home}
       </a>
       <Breadcrumbs
         items={[
-          { name: "Home", href: "/" },
+          { name: "Home", href: "/app" },
           { name: "Wallpapers", href: "/wallpapers" },
           { name: collection.name },
         ]}
