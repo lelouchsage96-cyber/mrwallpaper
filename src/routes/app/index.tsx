@@ -76,6 +76,28 @@ function HomePage() {
     if (slot == null) return list.slice(0, 8);
     return shuffleTrendingByViews(list, slot, 8);
   }, [data?.trending, slot]);
+
+  const categoryThumbs = useMemo(() => {
+    const thumbs = new Map<string, string>();
+    if (!data) return thumbs;
+    const pool = [
+      ...data.recommended,
+      ...data.trending,
+      ...data.fresh,
+      ...(data.tablet ?? []),
+      ...data.editors,
+      ...data.recent,
+      ...data.premium,
+    ];
+    if (data.wotd) pool.unshift(data.wotd);
+    for (const wallpaper of pool) {
+      if (!thumbs.has(wallpaper.categoryId) && wallpaper.thumbnailUrl) {
+        thumbs.set(wallpaper.categoryId, wallpaper.thumbnailUrl);
+      }
+    }
+    return thumbs;
+  }, [data]);
+
   const wotdHero = data?.wotd ? resolveHero(data.wotd.id, data.wotd.thumbnailUrl) : null;
 
   function onFavorite(id: string, next: boolean) {
@@ -205,26 +227,31 @@ function HomePage() {
           <section>
             <SectionHeader title={t.home.categories} />
             <div className="flex gap-3 overflow-x-auto pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-              {data.categories.map((c) => (
-                <Link
-                  key={c.id}
-                  to="/category/$slug"
-                  params={{ slug: c.slug }}
-                  className="relative h-28 w-36 shrink-0 overflow-hidden rounded-[16px] bg-elevated"
-                >
-                  {c.coverUrl ? (
-                    <LazyImage
-                      src={c.coverUrl}
-                      alt=""
-                      fallback={plateFallback(c.coverUrl)}
-                      className="size-full object-cover"
-                    />
-                  ) : null}
-                  <span className="absolute inset-x-0 bottom-0 bg-bg/55 px-2.5 py-2 text-sm font-medium text-fg backdrop-blur-sm">
-                    {c.name}
-                  </span>
-                </Link>
-              ))}
+              {data.categories.map((c) => {
+                const preview = c.coverUrl || categoryThumbs.get(c.id) || null;
+                return (
+                  <Link
+                    key={c.id}
+                    to="/category/$slug"
+                    params={{ slug: c.slug }}
+                    className="relative h-28 w-36 shrink-0 overflow-hidden rounded-[16px] bg-elevated"
+                  >
+                    {preview ? (
+                      <LazyImage
+                        src={preview}
+                        alt={`${c.name} wallpaper preview`}
+                        fallback={plateFallback(preview)}
+                        className="size-full object-cover"
+                      />
+                    ) : (
+                      <div className="size-full bg-elevated" aria-hidden />
+                    )}
+                    <span className="absolute inset-x-0 bottom-0 bg-bg/55 px-2.5 py-2 text-sm font-medium text-fg backdrop-blur-sm">
+                      {c.name}
+                    </span>
+                  </Link>
+                );
+              })}
             </div>
           </section>
 
