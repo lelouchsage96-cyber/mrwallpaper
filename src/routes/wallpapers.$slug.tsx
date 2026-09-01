@@ -83,7 +83,7 @@ function HubPage() {
     <main className="mx-auto max-w-5xl px-4 pb-20 pt-6">
       <Breadcrumbs
         items={[
-          { name: "Home", href: "/" },
+          { name: "Home", href: "/app" },
           { name: "Wallpapers", href: "/wallpapers" },
           { name },
         ]}
