@@ -57,7 +57,7 @@ export function SiteFooter() {
             <XIcon />
           </a>
           <a
-            href="https://www.tiktok.com/@mrwallpaper__"
+            href={brand.social.tiktok}
             target="_blank"
             rel="noreferrer"
             aria-label="TikTok"
