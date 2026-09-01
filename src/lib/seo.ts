@@ -246,8 +246,6 @@ export function organizationJsonLd() {
     name: brand.name,
     url: SITE_URL,
     logo: absUrl("/icon-512.png"),
-    sameAs: [brand.social.instagram, brand.social.x].filter(Boolean),
-    email: brand.supportEmail,
   };
 }
 
