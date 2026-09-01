@@ -101,7 +101,7 @@ function CreatorPageView() {
         <>
           <Breadcrumbs
             items={[
-              { name: "Home", href: "/" },
+              { name: "Home", href: "/app" },
               { name: "Creators", href: "/creators" },
               { name: creator.displayName },
             ]}
