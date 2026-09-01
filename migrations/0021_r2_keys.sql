@@ -1,0 +1,2 @@
+-- SECURITY: never seed R2 access credentials from SQL migrations.
+-- Set R2_ACCESS_KEY_ID and R2_SECRET_ACCESS_KEY in the deployment environment.
