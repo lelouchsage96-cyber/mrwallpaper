@@ -23,7 +23,7 @@ export const Route = createFileRoute("/sitemap.xml")({
     handlers: {
       GET: async () => {
         const data = await getSitemapData();
-        const staticPages = ["/", "/wallpapers", "/creators", "/legal/privacy", "/legal/terms", "/legal/copyright", "/legal/guidelines"];
+        const staticPages = ["/", "/wallpapers", "/legal/privacy", "/legal/terms", "/legal/copyright", "/legal/guidelines"];
         const devicePages = Object.keys(DEVICE_HUBS).map((slug) => categoryPath(slug));
         const parts = [
           `<?xml version="1.0" encoding="UTF-8"?>`,
@@ -32,7 +32,6 @@ export const Route = createFileRoute("/sitemap.xml")({
           ...devicePages.map((p) => urlNode(p, "<changefreq>daily</changefreq><priority>0.7</priority>")),
           ...data.categories.map((c) => urlNode(categoryPath(c.slug), "<changefreq>daily</changefreq><priority>0.7</priority>")),
           ...data.collections.map((c) => urlNode(`/collection/${c.slug}`, "<changefreq>weekly</changefreq>")),
-          ...data.creators.map((c) => urlNode(`/creator/${c.slug}`, "<changefreq>weekly</changefreq>")),
           ...(data.pairs ?? []).map((p) => urlNode(`/pair/${p.slug}`, "<changefreq>weekly</changefreq>")),
           ...data.wallpapers.map((w) =>
             urlNode(
