@@ -1,4 +1,5 @@
--- Phase 3: taste, notifications, lock+home pairs.
+-- Phase 3: taste, notifications, lock+home pairs schema.
+-- Demo pair records were removed.
 
 alter table profiles
   add column if not exists notifications_on boolean not null default true;
@@ -35,16 +36,6 @@ create table if not exists wallpaper_pairs (
   is_visible boolean not null default true,
   sort_order integer not null default 0
 );
-
-insert into wallpaper_pairs
-  (id, slug, name, description, lock_wallpaper_id, home_wallpaper_id, is_visible, sort_order)
-values
-  ('pair-quiet', 'quiet-pair', 'Quiet pair', 'A ring for lock. A line for home.', 'quiet-orbit', 'one-line', true, 1),
-  ('pair-dune', 'lock-pair', 'Lock pair', 'Composed for a tall screen.', 'soft-lock', 'lock-dune', true, 2),
-  ('pair-dusk', 'dusk-pair', 'Dusk pair', 'Ridge at lock. Water at home.', 'ridge-line', 'still-water', true, 3),
-  ('pair-paper', 'paper-pair', 'Paper pair', 'Moon, then grain.', 'paper-moon', 'film-dust', true, 4),
-  ('pair-black', 'black-pair', 'True black pair', 'OLED lock. Hairline home.', 'true-black', 'thin-cross', true, 5)
-on conflict (id) do nothing;
 
 update app_settings
    set value = value || '{"notifications_enabled": true}'::jsonb,
