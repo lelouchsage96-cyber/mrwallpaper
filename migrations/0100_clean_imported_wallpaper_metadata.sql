@@ -25,7 +25,7 @@ delete from wallpaper_tags
 where wallpaper_id in ('r27e9b2570a05', 'r4197ad189fe4');
 
 insert into wallpaper_tags (wallpaper_id, tag_id)
-select wallpaper_id, tag_id
+select wanted.wallpaper_id, tags.id
 from (values
   ('r27e9b2570a05', 'motivational'),
   ('r27e9b2570a05', 'lock-screen'),
@@ -37,5 +37,4 @@ from (values
   ('r4197ad189fe4', 'hd-wallpaper')
 ) as wanted(wallpaper_id, tag_slug)
 join tags on tags.slug = wanted.tag_slug
-cross join lateral (select tags.id as tag_id) resolved
 on conflict do nothing;
