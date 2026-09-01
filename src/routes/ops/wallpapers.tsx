@@ -97,6 +97,13 @@ function CatalogRow({
           </Link>
         </div>
         <div className="flex flex-wrap items-center gap-2 lg:max-w-xl lg:justify-end">
+          <Link
+            to="/ops/wallpapers/$id/edit"
+            params={{ id: w.id }}
+            className="inline-flex h-11 items-center justify-center rounded-full bg-surface px-4 text-sm font-medium text-fg shadow-[var(--shadow-border)] transition-opacity hover:opacity-80"
+          >
+            Edit
+          </Link>
           <button
             type="button"
             className={cn(
