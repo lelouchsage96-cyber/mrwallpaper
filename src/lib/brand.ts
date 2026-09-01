@@ -8,7 +8,7 @@ export const brand = {
   tagline: "Your Screen. Your Style.",
   positioning: "High-quality wallpapers for your phone and tablet.",
   supportEmail: "support@mrwallpapers.app",
-  website: "https://mrwallpapers.app",
+  website: "https://mrwallpaper.org",
   legal: {
     privacy: "/legal/privacy",
     terms: "/legal/terms",
@@ -20,7 +20,7 @@ export const brand = {
     x: "https://x.com/mrwallpapers",
   },
   deepLinkScheme: "mrwallpapers",
-  shareBaseUrl: "https://mrwallpapers.app",
+  shareBaseUrl: "https://mrwallpaper.org",
 } as const;
 
 export type Brand = typeof brand;
