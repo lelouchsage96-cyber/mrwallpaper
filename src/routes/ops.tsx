@@ -5,6 +5,7 @@ import {
   LayoutDashboard,
   Palette,
   SlidersHorizontal,
+  Upload,
   Users,
 } from "lucide-react";
 import { useEffect, useState, type ReactNode } from "react";
@@ -14,7 +15,8 @@ import { Button } from "@/components/ui/button";
 import { useCurrentUserState } from "@/lib/auth/use-current-user";
 import { t } from "@/lib/i18n/en";
 import { noindexHead } from "@/lib/seo";
-import { claimOpsAccess, getOpsSession } from "@/lib/server/ops";
+import { getOpsSession } from "@/lib/server/ops";
+import { secureClaimOpsAccess } from "@/lib/server/ops-claim";
 import type { OpsSession } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
@@ -24,7 +26,14 @@ export const Route = createFileRoute("/ops")({
 });
 
 type NavItem = {
-  to: "/ops" | "/ops/wallpapers" | "/ops/reports" | "/ops/creators" | "/ops/users" | "/ops/settings";
+  to:
+    | "/ops"
+    | "/ops/wallpapers"
+    | "/ops/upload"
+    | "/ops/reports"
+    | "/ops/creators"
+    | "/ops/users"
+    | "/ops/settings";
   label: string;
   exact?: boolean;
   icon: ReactNode;
@@ -53,6 +62,9 @@ function OpsShell() {
   const nav: NavItem[] = [
     { to: "/ops", label: t.ops.overview, exact: true, icon: <LayoutDashboard className="size-4" /> },
     { to: "/ops/wallpapers", label: t.ops.wallpapers, icon: <Image className="size-4" /> },
+    ...(session?.canAdmin
+      ? [{ to: "/ops/upload" as const, label: "Add wallpaper", icon: <Upload className="size-4" /> }]
+      : []),
     { to: "/ops/reports", label: t.ops.reports, icon: <Flag className="size-4" /> },
     { to: "/ops/creators", label: t.ops.creators, icon: <Palette className="size-4" /> },
     ...(session?.canAdmin
@@ -193,7 +205,7 @@ function OpsShell() {
                 onClick={async () => {
                   setClaiming(true);
                   try {
-                    setSession(await claimOpsAccess());
+                    setSession(await secureClaimOpsAccess());
                   } catch {
                     setError(true);
                   } finally {
