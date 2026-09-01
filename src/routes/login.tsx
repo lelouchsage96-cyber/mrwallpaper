@@ -7,7 +7,10 @@ import {
   GROK_PROVIDERS,
   authClient,
   authEnabled,
+  brokerAuthEnabled,
+  googleAuthEnabled,
   signIn,
+  signInGoogle,
 } from "@/lib/auth/client";
 import { brand } from "@/lib/brand";
 import { t } from "@/lib/i18n/en";
@@ -41,7 +44,6 @@ function Login() {
     setBusy(true);
     try {
       if (mode === "reset") {
-        // Email delivery is not wired in this preview. Confirm without claiming a send.
         setInfo(t.auth.resetSent);
         return;
       }
@@ -57,12 +59,27 @@ function Login() {
         if (err) throw new Error(err.message);
       }
       router.history.push(next ?? "/app");
-    } catch {
+    } catch (err) {
+      console.error("[auth] email", err);
       setError(mode === "signin" ? t.auth.invalid : t.auth.error);
     } finally {
       setBusy(false);
     }
   }
+
+  async function onGoogle() {
+    setError(null);
+    setBusy(true);
+    try {
+      await signInGoogle({ callbackURL: next ?? "/app", errorCallbackURL: "/login" });
+    } catch (err) {
+      console.error("[auth] google", err);
+      setError("Google sign-in is not available yet. You can use email and password.");
+      setBusy(false);
+    }
+  }
+
+  const showSocial = googleAuthEnabled || brokerAuthEnabled;
 
   return (
     <main className="mx-auto flex min-h-dvh max-w-md flex-col justify-center px-6 py-10">
@@ -74,33 +91,44 @@ function Login() {
         {mode === "reset" ? t.auth.resetHint : t.auth.subtitle}
       </p>
 
-      {authEnabled ? (
+      {authEnabled && showSocial ? (
         <div className="mt-8 space-y-3">
-          {GROK_PROVIDERS.map((p) => (
-            <Button
-              key={p.providerId}
-              variant="secondary"
-              className="w-full"
-              onClick={() =>
-                void signIn(p.providerId, {
-                  callbackURL: next ?? "/app",
-                  errorCallbackURL: "/login",
-                })
-              }
-            >
-              {t.auth.continueWith} {p.label}
+          {googleAuthEnabled ? (
+            <Button variant="secondary" className="w-full" disabled={busy} onClick={() => void onGoogle()}>
+              {t.auth.continueWith} Google
             </Button>
-          ))}
+          ) : null}
+          {brokerAuthEnabled
+            ? GROK_PROVIDERS.map((p) => (
+                <Button
+                  key={p.providerId}
+                  variant="secondary"
+                  className="w-full"
+                  disabled={busy}
+                  onClick={() =>
+                    void signIn(p.providerId, {
+                      callbackURL: next ?? "/app",
+                      errorCallbackURL: "/login",
+                    }).catch((err) => {
+                      console.error("[auth] broker", err);
+                      setError("This sign-in method is not available.");
+                    })
+                  }
+                >
+                  {t.auth.continueWith} {p.label}
+                </Button>
+              ))
+            : null}
         </div>
-      ) : (
-        <p className="mt-6 text-sm text-muted">Sign-in is disabled.</p>
-      )}
+      ) : null}
 
-      <p className="my-6 text-center text-xs uppercase tracking-[0.18em] text-subtle">
-        {t.auth.orEmail}
-      </p>
+      {showSocial ? (
+        <p className="my-6 text-center text-xs uppercase tracking-[0.18em] text-subtle">
+          {t.auth.orEmail}
+        </p>
+      ) : null}
 
-      <form className="space-y-3" onSubmit={(e) => void onEmail(e)}>
+      <form className="mt-6 space-y-3" onSubmit={(e) => void onEmail(e)}>
         {mode === "signup" ? (
           <Input
             name="name"
