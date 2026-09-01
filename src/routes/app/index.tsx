@@ -2,7 +2,6 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { Bell, Search } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { ErrorState } from "@/components/empty-state";
-import { CreatorCard } from "@/components/creator-card";
 import { PairCard } from "@/components/pair-card";
 import { SectionHeader } from "@/components/section-header";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -270,52 +269,6 @@ function HomePage() {
                     <PairCard key={pair.id} pair={pair} />
                   ))}
                 </div>
-              </section>
-            </LazyMount>
-          ) : null}
-
-          {data.creators.length > 0 ? (
-            <LazyMount minHeight={320} eager>
-              <section>
-                <SectionHeader title={t.home.creators} to="/app/creators" />
-                <Link
-                  to="/creator/$slug"
-                  params={{ slug: data.creators[0].slug }}
-                  className="relative mb-3 block overflow-hidden rounded-[20px] bg-elevated"
-                >
-                  <div className="aspect-[4/5] sm:aspect-[16/10]">
-                    <LazyImage
-                      src={data.creators[0].coverUrl}
-                      alt={`${data.creators[0].displayName} wallpapers`}
-                      width={1080}
-                      height={1920}
-                      fallback={
-                        plateFallback(data.creators[0].coverUrl) ?? data.creators[0].coverUrl
-                      }
-                      className="wallpaper-img size-full object-cover"
-                    />
-                  </div>
-                  <span className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-bg/90 to-transparent px-4 pb-3 pt-12">
-                    <span className="block text-xs tracking-[0.16em] text-fg/70 uppercase">
-                      {t.creators.newFrom}
-                    </span>
-                    <span className="mt-1 block font-display text-2xl text-fg">
-                      {data.creators[0].displayName}
-                    </span>
-                    <span className="mt-0.5 block text-xs text-fg/75">
-                      {t.creators.pieces.replace("{n}", String(data.creators[0].pieceCount))}
-                    </span>
-                  </span>
-                </Link>
-                {data.creators.length > 1 ? (
-                  <div className="flex gap-3 overflow-x-auto pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-                    {data.creators.slice(1).map((c) => (
-                      <div key={c.slug} className="w-40 shrink-0 sm:w-52">
-                        <CreatorCard creator={c} />
-                      </div>
-                    ))}
-                  </div>
-                ) : null}
               </section>
             </LazyMount>
           ) : null}
