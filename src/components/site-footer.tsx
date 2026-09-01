@@ -74,13 +74,15 @@ export function SiteFooter() {
           >
             <Instagram className="size-5" />
           </a>
-          <span
+          <a
+            href={brand.social.pinterest}
+            target="_blank"
+            rel="noreferrer"
             aria-label="Pinterest"
-            title="Pinterest profile link can be added once configured"
-            className="grid size-10 place-items-center rounded-full text-subtle"
+            className={socialClass}
           >
             <PinterestIcon />
-          </span>
+          </a>
         </div>
       </div>
     </footer>
