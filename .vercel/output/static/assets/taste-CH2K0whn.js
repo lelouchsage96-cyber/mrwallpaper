@@ -1,1 +1,0 @@
-import{n as e}from"./storage-keys-Dsa4Vt9Q.js";function t(){if(typeof window>`u`)return[];try{let t=localStorage.getItem(e);if(!t)return[];let n=JSON.parse(t);return Array.isArray(n)?n.filter(e=>typeof e==`string`):[]}catch{return[]}}function n(t){localStorage.setItem(e,JSON.stringify(t))}export{n,t};

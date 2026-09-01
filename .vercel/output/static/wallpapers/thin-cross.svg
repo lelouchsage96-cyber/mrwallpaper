@@ -1,8 +1,0 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<svg xmlns="http://www.w3.org/2000/svg" width="1080" height="1920" viewBox="0 0 1080 1920" preserveAspectRatio="xMidYMid slice">
-  <defs></defs>
-  <rect width="1080" height="1920" fill="#000000"/>
-  
-  <line x1="540" y1="200" x2="540" y2="1720" stroke="#d8dce4" stroke-width="8" stroke-linecap="round"/>
-      <line x1="140" y1="960" x2="940" y2="960" stroke="#d8dce4" stroke-width="8" stroke-linecap="round"/>
-</svg>

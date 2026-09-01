@@ -1,8 +1,0 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<svg xmlns="http://www.w3.org/2000/svg" width="1536" height="2048" viewBox="0 0 1536 2048" preserveAspectRatio="xMidYMid slice">
-  <defs></defs>
-  <rect width="1536" height="2048" fill="#0c0c0e"/>
-  
-  <circle cx="768" cy="942" r="340" fill="none" stroke="#eee8de" stroke-width="18"/>
-      <circle cx="768" cy="942" r="14" fill="#eee8de"/>
-</svg>

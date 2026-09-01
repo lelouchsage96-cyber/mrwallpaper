@@ -1,2 +1,0 @@
-const __vite__mapDeps=(i,m=__vite__mapDeps,d=(m.f||(m.f=["assets/client-SLtnkS75.js","assets/react-SIfiwpqq.js"])))=>i.map(i=>d[i]);
-import{n as e}from"./middleware-C3jTgkSH.js";import{t}from"./preload-helper-rn2OFe7V.js";var n=e({type:`function`}).client(async({next:e})=>{let{getBearerToken:n}=await t(async()=>{let{getBearerToken:e}=await import(`./client-SLtnkS75.js`).then(e=>e.n);return{getBearerToken:e}},__vite__mapDeps([0,1]));return e({sendContext:{bearerToken:n()??void 0}})});export{n as t};
