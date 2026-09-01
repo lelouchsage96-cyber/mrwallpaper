@@ -1,9 +1,9 @@
 import { createFileRoute, Link, Outlet, useNavigate, useRouterState } from "@tanstack/react-router";
 import {
+  CloudDownload,
   Flag,
   Image,
   LayoutDashboard,
-  Palette,
   SlidersHorizontal,
   Upload,
   Users,
@@ -30,8 +30,8 @@ type NavItem = {
     | "/ops"
     | "/ops/wallpapers"
     | "/ops/upload"
+    | "/ops/import-r2"
     | "/ops/reports"
-    | "/ops/creators"
     | "/ops/users"
     | "/ops/settings";
   label: string;
@@ -63,10 +63,16 @@ function OpsShell() {
     { to: "/ops", label: t.ops.overview, exact: true, icon: <LayoutDashboard className="size-4" /> },
     { to: "/ops/wallpapers", label: t.ops.wallpapers, icon: <Image className="size-4" /> },
     ...(session?.canAdmin
-      ? [{ to: "/ops/upload" as const, label: "Add wallpaper", icon: <Upload className="size-4" /> }]
+      ? [
+          { to: "/ops/upload" as const, label: "Add wallpaper", icon: <Upload className="size-4" /> },
+          {
+            to: "/ops/import-r2" as const,
+            label: "Import from R2",
+            icon: <CloudDownload className="size-4" />,
+          },
+        ]
       : []),
     { to: "/ops/reports", label: t.ops.reports, icon: <Flag className="size-4" /> },
-    { to: "/ops/creators", label: t.ops.creators, icon: <Palette className="size-4" /> },
     ...(session?.canAdmin
       ? [
           { to: "/ops/users" as const, label: t.ops.users, icon: <Users className="size-4" /> },
@@ -93,7 +99,7 @@ function OpsShell() {
             <span className="block truncate font-display text-xl leading-none text-fg">
               {t.ops.title}
             </span>
-            <span className="mt-1 block text-xs text-muted">{t.ops.studio}</span>
+            <span className="mt-1 block text-xs text-muted">Wallpaper Admin</span>
           </span>
         </Link>
         {session?.canModerate ? (
@@ -143,7 +149,7 @@ function OpsShell() {
           <div className="flex items-center justify-between gap-3 px-4 py-3">
             <div className="flex min-w-0 items-center gap-2.5">
               <MwMark className="size-8 shrink-0" />
-              <p className="truncate font-display text-xl text-fg">{t.ops.brand}</p>
+              <p className="truncate font-display text-xl text-fg">Mr Wallpapers Admin</p>
             </div>
             <Link to="/app" className="shrink-0 text-sm text-muted hover:text-fg">
               {t.ops.backToApp}
@@ -195,7 +201,7 @@ function OpsShell() {
             <div className="mx-auto max-w-md rounded-xl bg-elevated p-6 sm:p-8">
               <MwMark className="size-12" />
               <p className="mt-5 text-xs font-medium tracking-widest text-subtle uppercase">
-                {t.ops.studio}
+                Wallpaper Admin
               </p>
               <h1 className="mt-2 font-display text-4xl text-fg">{t.ops.claimTitle}</h1>
               <p className="mt-3 text-sm leading-relaxed text-muted">{t.ops.claimBody}</p>
