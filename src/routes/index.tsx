@@ -1,4 +1,5 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute } from "@tanstack/react-router";
+import { SiteFooter } from "@/components/site-footer";
 import { WallpaperGrid } from "@/components/wallpaper-grid";
 import { MwMark } from "@/components/mw-mark";
 import { brand } from "@/lib/brand";
@@ -115,17 +116,7 @@ function HomePage() {
         </section>
       ) : null}
 
-      <footer className="mt-16 flex flex-wrap gap-4 text-sm text-muted">
-        <a href={brand.legal.privacy} className="hover:text-fg">
-          {t.profile.privacy}
-        </a>
-        <a href={brand.legal.terms} className="hover:text-fg">
-          {t.profile.terms}
-        </a>
-        <a href={brand.legal.copyright} className="hover:text-fg">
-          {t.profile.copyright}
-        </a>
-      </footer>
+      <SiteFooter />
     </main>
   );
 }
