@@ -6,7 +6,6 @@ import {
 } from "@tanstack/react-router";
 import { AuthProvider } from "@/lib/auth/provider";
 import { NotFoundPage } from "@/components/not-found-page";
-import { PreviewHostBridge } from "@/components/preview-host-bridge";
 import { ThemeProvider } from "@/components/theme-provider";
 import { BOOT_SCRIPT } from "@/lib/boot-script";
 import { AppErrorComponent } from "@/lib/error-component";
@@ -24,6 +23,10 @@ export const Route = createRootRoute({
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1, viewport-fit=cover" },
       { name: "theme-color", content: "#0a0a0b" },
+      { name: "application-name", content: "Mr Wallpapers" },
+      { name: "apple-mobile-web-app-title", content: "Mr Wallpapers" },
+      { name: "apple-mobile-web-app-capable", content: "yes" },
+      { name: "apple-mobile-web-app-status-bar-style", content: "black-translucent" },
     ] as Array<Record<string, string>>;
     if (seo.gscVerification) {
       meta.push({ name: "google-site-verification", content: seo.gscVerification });
@@ -44,8 +47,7 @@ export const Route = createRootRoute({
       links: [
         { rel: "icon", type: "image/svg+xml", href: "/favicon.svg" },
         { rel: "stylesheet", href: appCss },
-        { rel: "manifest", href: "/__grok/manifest.webmanifest" },
-        { rel: "apple-touch-icon", href: "/__grok/icon-180.png" },
+        { rel: "manifest", href: "/manifest.webmanifest" },
         { rel: "sitemap", type: "application/xml", href: "/sitemap.xml" },
         { rel: "preconnect", href: "https://fonts.googleapis.com" },
         { rel: "preconnect", href: "https://fonts.gstatic.com", crossOrigin: "anonymous" },
@@ -67,7 +69,6 @@ function RootDocument() {
         <HeadContent />
       </head>
       <body className="min-h-dvh bg-bg text-fg">
-        <PreviewHostBridge />
         <AuthProvider>
           <ThemeProvider>
             <Outlet />
