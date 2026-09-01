@@ -18,6 +18,7 @@ import {
   PREVIEW_CLIENT_ID,
   PREVIEW_CLIENT_SECRET,
 } from "./preview";
+import { sendPasswordResetEmail } from "@/lib/server/auth-email";
 
 void ensureDbReady();
 
@@ -35,30 +36,18 @@ const env = (key: string): string | undefined => {
 };
 
 const databaseUrl = env("DATABASE_URL");
-
-// A deployed app with a real database must never fall into the shared dev-user
-// path just because an old build flag says auth is off. The flag still works for
-// local/preview environments without DATABASE_URL.
 const authDisabled = env("VITE_AUTH_ENABLED") === "false" && !databaseUrl;
 
 const grokIssuer = env("GROK_AUTH_ISSUER") ?? GROK_ISSUER_DEFAULT;
 const grokClientId = env("GROK_AUTH_CLIENT_ID") ?? PREVIEW_CLIENT_ID;
 const grokClientSecret = env("GROK_AUTH_CLIENT_SECRET") ?? PREVIEW_CLIENT_SECRET;
-const grokOAuthConfigured =
-  !authDisabled && Boolean(grokClientId && grokClientSecret);
+const grokOAuthConfigured = !authDisabled && Boolean(grokClientId && grokClientSecret);
 
-// Native Google OAuth for the standalone production site. This avoids relying
-// on the old Grok auth broker. Set GOOGLE_CLIENT_ID / GOOGLE_CLIENT_SECRET in
-// Vercel and VITE_GOOGLE_AUTH_ENABLED=true for the button in the client.
 const googleClientId = env("GOOGLE_CLIENT_ID");
 const googleClientSecret = env("GOOGLE_CLIENT_SECRET");
-const googleConfigured =
-  !authDisabled && Boolean(googleClientId && googleClientSecret);
+const googleConfigured = !authDisabled && Boolean(googleClientId && googleClientSecret);
 
-/** True when any real sign-in method is active. */
-export const authConfigured =
-  !authDisabled &&
-  (emailAndPasswordEnabled || googleConfigured || grokOAuthConfigured);
+export const authConfigured = !authDisabled && (emailAndPasswordEnabled || googleConfigured || grokOAuthConfigured);
 
 const explicitBaseURL = env("BETTER_AUTH_URL");
 const previewAllowedHosts: string[] = [...PREVIEW_ALLOWED_HOSTS];
@@ -78,8 +67,6 @@ const baseURL = explicitBaseURL ?? {
   fallback: "http://localhost:8080",
 };
 
-// Trust both the canonical apex and the www host. The production site currently
-// redirects the apex to www, while BETTER_AUTH_URL may be configured to either.
 const trustedOrigins: string[] = explicitBaseURL
   ? Array.from(new Set([explicitBaseURL, ...PRODUCTION_ORIGINS, ...LOCAL_DEV_ORIGINS]))
   : [
@@ -136,7 +123,22 @@ export const auth = betterAuth({
 
   session: { cookieCache: { enabled: true, maxAge: 300 } },
 
-  ...(emailAndPasswordEnabled ? { emailAndPassword: { enabled: true } } : {}),
+  ...(emailAndPasswordEnabled
+    ? {
+        emailAndPassword: {
+          enabled: true,
+          resetPasswordTokenExpiresIn: 3600,
+          revokeSessionsOnPasswordReset: true,
+          sendResetPassword: async ({ user, url }: { user: { email: string; name?: string | null }; url: string }) => {
+            try {
+              await sendPasswordResetEmail({ to: user.email, name: user.name, resetUrl: url });
+            } catch (err) {
+              console.error("[auth] reset email", err);
+            }
+          },
+        },
+      }
+    : {}),
 
   ...(googleConfigured
     ? {
