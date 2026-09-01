@@ -55,6 +55,7 @@ export function resolveHero(id: string, thumbUrl?: string | null, slug?: string 
     const name = prettyName(id, slug);
     return `/media/${name}-preview.jpg`;
   }
+  if (thumbUrl?.startsWith("https://") || thumbUrl?.startsWith("http://")) return thumbUrl;
   return wallpaperFile(id);
 }
 
