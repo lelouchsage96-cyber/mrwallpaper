@@ -1,6 +1,7 @@
 import { createFileRoute, Outlet } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { BottomNav } from "@/components/bottom-nav";
+import { SiteFooter } from "@/components/site-footer";
 import { useCurrentUserState } from "@/lib/auth/use-current-user";
 import { brand } from "@/lib/brand";
 import { noindexHead } from "@/lib/seo";
@@ -40,6 +41,9 @@ function AppShell() {
     <div className="min-h-dvh bg-bg">
       <div className="mx-auto max-w-5xl pb-24">
         <Outlet />
+        <div className="px-4">
+          <SiteFooter />
+        </div>
       </div>
       <BottomNav />
     </div>
