@@ -63,7 +63,7 @@ function WallpapersIndex() {
   }
   return (
     <main className="mx-auto max-w-5xl px-4 pb-20 pt-6">
-      <Breadcrumbs items={[{ name: "Home", href: "/" }, { name: "Wallpapers" }]} />
+      <Breadcrumbs items={[{ name: "Home", href: "/app" }, { name: "Wallpapers" }]} />
       <h1 className="mt-6 font-display text-4xl text-fg">
         {q ? `${q} wallpapers` : "Wallpaper collections"}
       </h1>
