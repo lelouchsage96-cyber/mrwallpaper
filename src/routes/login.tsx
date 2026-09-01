@@ -44,6 +44,7 @@ function Login() {
     setBusy(true);
     try {
       if (mode === "reset") {
+        // Better Auth sends the secure token to this same-origin completion page.
         const redirectTo = `${window.location.origin}/reset-password`;
         const { error: err } = await authClient.requestPasswordReset({ email, redirectTo });
         if (err) throw new Error(err.message ?? "Reset request failed");
