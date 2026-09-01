@@ -16,8 +16,9 @@ export const brand = {
     guidelines: "/legal/guidelines",
   },
   social: {
-    instagram: "https://instagram.com/mrwallpapers",
-    x: "https://x.com/mrwallpapers",
+    instagram: "https://www.instagram.com/mr_wallpaper_0/",
+    x: "https://x.com/Mrwallpaper_0",
+    tiktok: "https://www.tiktok.com/@mr.wallpaper__",
     pinterest: "https://www.pinterest.com/mrwallpaper_/",
   },
   deepLinkScheme: "mrwallpapers",
