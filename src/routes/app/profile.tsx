@@ -8,8 +8,7 @@ import { MwMark } from "@/components/mw-mark";
 import { useTheme, type Theme } from "@/components/theme-provider";
 import { t } from "@/lib/i18n/en";
 import { brand } from "@/lib/brand";
-import { deleteAccountData, getAppConfig, getPremiumStatus, listDownloads, listNotifications, updateNotificationPref } from "@/lib/server/api";
-import { getStudioDashboard } from "@/lib/server/studio";
+import { deleteAccountData, getPremiumStatus, listDownloads, listNotifications, updateNotificationPref } from "@/lib/server/api";
 import { getOpsSession } from "@/lib/server/ops";
 import type { DownloadHistoryItem } from "@/lib/types";
 import { cn } from "@/lib/utils";
@@ -25,8 +24,6 @@ function ProfilePage() {
   const [downloads, setDownloads] = useState<DownloadHistoryItem[]>([]);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [notifyOn, setNotifyOn] = useState(true);
-  const [studioOn, setStudioOn] = useState(false);
-  const [studioStatus, setStudioStatus] = useState<string>("none");
   const [isPremium, setIsPremium] = useState(false);
 
   const userId = user?.id ?? null;
@@ -44,17 +41,6 @@ function ProfilePage() {
       .catch(() => undefined);
     void listNotifications()
       .then((r) => setNotifyOn(r.notificationsOn))
-      .catch(() => undefined);
-    void getAppConfig()
-      .then((c) => {
-        const on = c.featureFlags.creator_marketplace_enabled;
-        setStudioOn(on);
-        if (on) {
-          void getStudioDashboard()
-            .then((d) => setStudioStatus(d.status))
-            .catch(() => undefined);
-        }
-      })
       .catch(() => undefined);
   }, [userId, isPending]);
 
@@ -129,24 +115,6 @@ function ProfilePage() {
             </span>
             <ChevronRight className="size-4 shrink-0 text-subtle" />
           </Link>
-          {studioOn ? (
-            <Link
-              to="/studio"
-              className="flex items-center justify-between rounded-xl bg-elevated px-4 py-4"
-            >
-              <span>
-                <span className="block text-sm font-medium text-fg">{t.profile.studio}</span>
-                <span className="text-xs text-muted">
-                  {studioStatus === "pending"
-                    ? t.profile.studioPending
-                    : studioStatus === "approved"
-                      ? t.studio.dashboard
-                      : t.profile.studioHint}
-                </span>
-              </span>
-              <ChevronRight className="size-4 shrink-0 text-subtle" />
-            </Link>
-          ) : null}
           <button
             type="button"
             onClick={async () => {
