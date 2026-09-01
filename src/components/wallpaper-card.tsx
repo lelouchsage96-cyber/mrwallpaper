@@ -24,18 +24,21 @@ export function WallpaperCard({
     deviceType: wallpaper.deviceType,
     altText: wallpaper.altText,
   });
+  const previewRatio = landscape
+    ? "aspect-[16/10]"
+    : wallpaper.deviceType === "tablet"
+      ? "aspect-[3/4]"
+      : "aspect-[9/16]";
+
   return (
     <article
       className={cn(
-        "group relative overflow-hidden rounded-[16px] bg-elevated",
+        "group relative self-start overflow-hidden rounded-[16px] bg-elevated",
         landscape && "col-span-2",
       )}
     >
       <a href={href} className="block">
-        <div
-          className="overflow-hidden"
-          style={{ aspectRatio: `${wallpaper.width} / ${wallpaper.height}` }}
-        >
+        <div className={cn("overflow-hidden", previewRatio)}>
           <LazyImage
             src={wallpaper.thumbnailUrl}
             alt={alt}
@@ -78,8 +81,14 @@ export function WallpaperCardSkeleton({
   landscape?: boolean;
 }) {
   return (
-    <div className={cn("overflow-hidden rounded-[16px] bg-elevated", landscape && "col-span-2", className)}>
-      <div className={cn("animate-pulse bg-surface", landscape ? "aspect-[4/3]" : "aspect-[9/16]")} />
+    <div
+      className={cn(
+        "self-start overflow-hidden rounded-[16px] bg-elevated",
+        landscape && "col-span-2",
+        className,
+      )}
+    >
+      <div className={cn("animate-pulse bg-surface", landscape ? "aspect-[16/10]" : "aspect-[9/16]")} />
     </div>
   );
 }
