@@ -15,8 +15,19 @@ import { readLocalTaste } from "@/lib/taste";
 import { shuffleTrendingByViews, trendingSlot } from "@/lib/trending";
 import type { HomePayload, WallpaperCard as Card } from "@/lib/types";
 import { resolveHero, plateFallback } from "@/lib/media";
+import { pageHead } from "@/lib/seo";
+
+const APP_HOME_TITLE = "Free HD & 4K Wallpapers for Phone & Tablet | Mr Wallpapers";
+const APP_HOME_DESCRIPTION =
+  "Download free HD and 4K wallpapers for iPhone, Android, iPad and tablets. Explore aesthetic, motivational, Bible verse, anime, dark and more wallpapers.";
 
 export const Route = createFileRoute("/app/")({
+  head: () =>
+    pageHead({
+      title: APP_HOME_TITLE,
+      description: APP_HOME_DESCRIPTION,
+      path: "/app",
+    }),
   loader: () => getHomeFeed({ data: {} }),
   staleTime: 15_000,
   component: HomePage,
