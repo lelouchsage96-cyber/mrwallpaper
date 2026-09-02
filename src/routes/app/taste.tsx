@@ -6,6 +6,7 @@ import { LazyImage } from "@/components/lazy";
 import { Button } from "@/components/ui/button";
 import { useCurrentUserState } from "@/lib/auth/use-current-user";
 import { t } from "@/lib/i18n/en";
+import { categoryPreview, categoryPreviewFallback } from "@/lib/media";
 import { getExploreMeta, getTaste, saveTaste } from "@/lib/server/api";
 import { readLocalTaste, writeLocalTaste } from "@/lib/taste";
 import type { Category } from "@/lib/types";
@@ -107,6 +108,7 @@ function TastePage() {
         <ul className="mt-6 grid grid-cols-2 gap-2.5 sm:grid-cols-3">
           {categories.map((c) => {
             const on = picked.includes(c.id);
+            const preview = c.coverUrl || categoryPreview(c.slug);
             return (
               <li key={c.id}>
                 <button
@@ -119,9 +121,12 @@ function TastePage() {
                   )}
                 >
                   <span className="relative block aspect-[4/5] bg-elevated">
-                    {c.coverUrl ? (
-                      <LazyImage src={c.coverUrl} alt="" className="size-full object-cover" />
-                    ) : null}
+                    <LazyImage
+                      src={preview}
+                      fallback={categoryPreviewFallback(c.slug)}
+                      alt={`${c.name} wallpaper preview`}
+                      className="size-full object-cover"
+                    />
                     <span className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-bg/85 to-transparent px-3 py-2.5">
                       <span className="text-sm font-medium text-fg">{c.name}</span>
                     </span>

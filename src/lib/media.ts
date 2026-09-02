@@ -7,6 +7,38 @@ export function wallpaperFile(id: string) {
   return `/wallpapers/${id}.jpg`;
 }
 
+const CATEGORY_PREVIEW_IDS: Record<string, string> = {
+  minimal: "quiet-orbit",
+  aesthetic: "paper-moon",
+  nature: "ridge-line",
+  cars: "afterglow-run",
+  anime: "after-rain-sky",
+  space: "silent-satellite",
+  dark: "low-light",
+  abstract: "overlap-two",
+  motivational: "begin-again",
+  "bible-verse": "be-still",
+  "bible-verses": "be-still",
+  love: "two-points",
+  city: "late-grid",
+  animals: "crane-hour",
+  vintage: "sepia-room",
+  amoled: "true-black",
+  iphone: "soft-lock",
+  android: "quiet-orbit",
+  ipad: "wide-ridge",
+};
+
+/** Bundled category art used only when the catalog has no usable cover. */
+export function categoryPreview(slug: string) {
+  return cardThumb(CATEGORY_PREVIEW_IDS[slug] ?? "quiet-orbit");
+}
+
+/** Full-size counterpart used if a bundled thumbnail itself cannot paint. */
+export function categoryPreviewFallback(slug: string) {
+  return wallpaperFile(CATEGORY_PREVIEW_IDS[slug] ?? "quiet-orbit");
+}
+
 export function mediaUrl(id: string) {
   return `/api/media/${id}`;
 }

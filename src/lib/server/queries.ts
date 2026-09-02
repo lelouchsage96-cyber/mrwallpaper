@@ -275,7 +275,16 @@ export async function fetchCategories(): Promise<Category[]> {
   });
   const full = await tryRows<CatRow>("categories", () =>
     sql.query<CatRow>(
-      `select id, slug, name, description, cover_url, sort_order, is_featured,
+      `select id, slug, name, description,
+              coalesce(cover_url, (
+                select a.path
+                from wallpapers w
+                join wallpaper_assets a on a.wallpaper_id = w.id and a.kind = 'thumbnail'
+                where w.category_id = categories.id and w.status = 'approved' and ${STILL_ONLY}
+                order by w.download_count desc, w.published_at desc nulls last
+                limit 1
+              )) as cover_url,
+              sort_order, is_featured,
               intro, seo_title, seo_description, canonical_path, robots
        from categories where is_visible = true order by sort_order asc, name asc`,
     ),
@@ -284,7 +293,16 @@ export async function fetchCategories(): Promise<Category[]> {
   return (
     await tryRows<CatRow>("categories.basic", () =>
       sql.query<CatRow>(
-        `select id, slug, name, description, cover_url, sort_order, is_featured
+        `select id, slug, name, description,
+                coalesce(cover_url, (
+                  select a.path
+                  from wallpapers w
+                  join wallpaper_assets a on a.wallpaper_id = w.id and a.kind = 'thumbnail'
+                  where w.category_id = categories.id and w.status = 'approved' and ${STILL_ONLY}
+                  order by w.download_count desc, w.published_at desc nulls last
+                  limit 1
+                )) as cover_url,
+                sort_order, is_featured
          from categories where is_visible = true order by sort_order asc, name asc`,
       ),
     )

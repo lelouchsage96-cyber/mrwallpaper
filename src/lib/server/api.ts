@@ -304,9 +304,10 @@ export const getAppConfig = createServerFn({ method: "GET" })
 export const getExploreMeta = createServerFn({ method: "GET" }).handler(async (): Promise<ExploreMeta> => {
   try {
     const categories = await fetchCategories();
-    const sql = await getSql();
-    const popularRows = await sql.query<{ name: string }>(
-      `select name from tags order by name asc limit 8`,
+    const popularRows = await settle(
+      "explore.tags",
+      getSql().then((sql) => sql.query<{ name: string }>(`select name from tags order by name asc limit 8`)),
+      [],
     );
     return { categories, popular: popularRows.map((r) => r.name) };
   } catch (err) {

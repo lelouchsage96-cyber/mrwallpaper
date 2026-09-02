@@ -15,7 +15,7 @@ import { useCurrentUserState } from "@/lib/auth/use-current-user";
 import { readLocalTaste } from "@/lib/taste";
 import { shuffleTrendingByViews, trendingSlot } from "@/lib/trending";
 import type { HomePayload, WallpaperCard as Card } from "@/lib/types";
-import { resolveHero, plateFallback } from "@/lib/media";
+import { categoryPreview, categoryPreviewFallback, plateFallback, resolveHero } from "@/lib/media";
 import { pageHead } from "@/lib/seo";
 
 const APP_HOME_TITLE = "Free HD & 4K Wallpapers for Phone & Tablet | Mr Wallpapers";
@@ -248,7 +248,7 @@ function HomePage() {
             <SectionHeader title={t.home.categories} />
             <div className="flex gap-3 overflow-x-auto pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
               {data.categories.map((c) => {
-                const preview = c.coverUrl || categoryThumbs.get(c.id) || null;
+                const preview = c.coverUrl || categoryThumbs.get(c.id) || categoryPreview(c.slug);
                 return (
                   <Link
                     key={c.id}
@@ -256,16 +256,12 @@ function HomePage() {
                     params={{ slug: c.slug }}
                     className="relative h-28 w-36 shrink-0 overflow-hidden rounded-[16px] bg-elevated"
                   >
-                    {preview ? (
-                      <LazyImage
-                        src={preview}
-                        alt={`${c.name} wallpaper preview`}
-                        fallback={plateFallback(preview)}
-                        className="size-full object-cover"
-                      />
-                    ) : (
-                      <div className="size-full bg-elevated" aria-hidden />
-                    )}
+                    <LazyImage
+                      src={preview}
+                      alt={`${c.name} wallpaper preview`}
+                      fallback={categoryPreviewFallback(c.slug)}
+                      className="size-full object-cover"
+                    />
                     <span className="absolute inset-x-0 bottom-0 bg-bg/55 px-2.5 py-2 text-sm font-medium text-fg backdrop-blur-sm">
                       {c.name}
                     </span>
