@@ -3,8 +3,6 @@ import { SITE_URL } from "@/lib/seo";
 
 const BODY = `User-agent: *
 Allow: /
-Disallow: /app
-Disallow: /app/
 Disallow: /ops
 Disallow: /ops/
 Disallow: /studio
