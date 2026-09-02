@@ -202,13 +202,10 @@ export const getHomeFeed = createServerFn({ method: "GET" })
           )
         : Promise.resolve(none),
     ]);
-    const wotdCard =
-      (wotd[0] && wotd[0].deviceType !== "tablet" ? wotd[0] : null) ?? trendingRaw[0] ?? wotd[0] ?? null;
-    const skip = new Set<string>();
-    if (wotdCard) skip.add(wotdCard.id);
-    const trending = trendingRaw.filter((w) => !skip.has(w.id)).slice(0, 16);
-    trending.forEach((w) => skip.add(w.id));
-    const fresh = freshRaw.filter((w) => !skip.has(w.id)).slice(0, 8);
+    const wotdCard = wotd[0] ?? trendingRaw[0] ?? null;
+    const wotdId = wotdCard?.id ?? null;
+    const trending = trendingRaw.filter((w) => w.id !== wotdId).slice(0, 16);
+    const fresh = freshRaw.filter((w) => w.id !== wotdId).slice(0, 8);
 
     let notificationsOn = true;
     let unreadCount = 0;
