@@ -10,6 +10,7 @@ import { LazyImage, LazyMount } from "@/components/lazy";
 import { brand } from "@/lib/brand";
 import { t } from "@/lib/i18n/en";
 import { getHomeFeed, saveTaste } from "@/lib/server/api";
+import { getSelectedWallpaperOfDay } from "@/lib/server/wotd";
 import { useCurrentUserState } from "@/lib/auth/use-current-user";
 import { readLocalTaste } from "@/lib/taste";
 import { shuffleTrendingByViews, trendingSlot } from "@/lib/trending";
@@ -21,6 +22,14 @@ const APP_HOME_TITLE = "Free HD & 4K Wallpapers for Phone & Tablet | Mr Wallpape
 const APP_HOME_DESCRIPTION =
   "Download free HD and 4K wallpapers for iPhone, Android, iPad and tablets. Explore aesthetic, motivational, Bible verse, anime, dark and more wallpapers.";
 
+async function loadHomeFeed(tasteIds?: string[]): Promise<HomePayload> {
+  const [feed, selectedWotd] = await Promise.all([
+    getHomeFeed({ data: tasteIds ? { tasteIds } : {} }),
+    getSelectedWallpaperOfDay(),
+  ]);
+  return selectedWotd ? { ...feed, wotd: selectedWotd } : feed;
+}
+
 export const Route = createFileRoute("/app/")({
   head: () =>
     pageHead({
@@ -28,7 +37,7 @@ export const Route = createFileRoute("/app/")({
       description: APP_HOME_DESCRIPTION,
       path: "/app",
     }),
-  loader: () => getHomeFeed({ data: {} }),
+  loader: () => loadHomeFeed(),
   staleTime: 15_000,
   component: HomePage,
 });
@@ -65,7 +74,7 @@ function HomePage() {
     if (isPending) return;
     const tasteIds = readLocalTaste();
     let cancelled = false;
-    void getHomeFeed({ data: { tasteIds } })
+    void loadHomeFeed(tasteIds)
       .then((d) => {
         if (cancelled) return;
         setData(d);
