@@ -14,8 +14,6 @@ export const Route = createFileRoute("/contact")({
 });
 
 function ContactPage() {
-  const supportEmail = import.meta.env.VITE_SUPPORT_EMAIL || brand.supportEmail;
-
   return (
     <main className="mx-auto max-w-5xl px-4 pb-20 pt-8">
       <a href="/app" className="text-sm text-muted transition-colors hover:text-fg">
@@ -26,18 +24,20 @@ function ContactPage() {
         <p className="text-xs font-medium uppercase tracking-[0.2em] text-subtle">Contact</p>
         <h1 className="mt-3 font-display text-4xl text-fg sm:text-5xl">Contact Us</h1>
         <p className="mt-5 text-sm leading-relaxed text-muted sm:text-base">
-          For support, feedback, website questions, or copyright matters, email us and include any relevant wallpaper or page URL.
+          For support, feedback, or website questions, send us a message on Instagram. Please include any relevant wallpaper or page URL so we can help faster.
         </p>
 
         <a
-          href={`mailto:${supportEmail}`}
+          href={brand.social.instagram}
+          target="_blank"
+          rel="noreferrer"
           className="mt-7 inline-flex min-h-11 items-center rounded-full bg-fg px-5 text-sm font-medium text-bg"
         >
-          {supportEmail}
+          Message us on Instagram
         </a>
 
         <p className="mt-6 text-sm text-muted">
-          For copyright complaints, you can also review our{" "}
+          For copyright complaints, please review our{" "}
           <a href={brand.legal.copyright} className="text-fg underline underline-offset-4">
             Copyright Complaint process
           </a>
