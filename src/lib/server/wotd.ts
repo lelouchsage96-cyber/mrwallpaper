@@ -4,6 +4,10 @@ import type { WallpaperCard } from "@/lib/types";
 import { optionalAuthMiddleware } from "./optional-auth";
 import { fetchCardsByIds } from "./queries";
 
+function wotdPreviewUrl(url: string): string {
+  return url.includes("/thumbs/") ? url.replace("/thumbs/", "/previews/") : url;
+}
+
 export const getSelectedWallpaperOfDay = createServerFn({ method: "GET" })
   .middleware([optionalAuthMiddleware])
   .handler(async ({ context }): Promise<WallpaperCard | null> => {
@@ -23,7 +27,8 @@ export const getSelectedWallpaperOfDay = createServerFn({ method: "GET" })
       const wallpaperId = rows[0]?.wallpaper_id;
       if (!wallpaperId) return null;
       const cards = await fetchCardsByIds([wallpaperId], context.userId);
-      return cards[0] ?? null;
+      const card = cards[0] ?? null;
+      return card ? { ...card, thumbnailUrl: wotdPreviewUrl(card.thumbnailUrl) } : null;
     } catch (err) {
       console.error("[wotd] selected wallpaper", err);
       return null;
