@@ -115,6 +115,14 @@ function DetailsPage() {
     void getPremiumStatus().then((s) => setIsPremium(s.isPremium));
   }, [id, initial]);
 
+  function goBack() {
+    if (typeof window !== "undefined" && window.history.length > 1) {
+      window.history.back();
+      return;
+    }
+    void navigate({ to: "/app" });
+  }
+
   async function share() {
     const url = `${window.location.origin}${wallpaperPath(wallpaper?.slug || id)}`;
     try {
@@ -135,13 +143,14 @@ function DetailsPage() {
     <div className="mx-auto max-w-5xl pb-16">
       <div className="px-4 pt-3">
         <div className="flex items-center justify-between">
-          <a
-            href="/app"
+          <button
+            type="button"
+            onClick={goBack}
             aria-label="Back"
             className="grid size-11 place-items-center rounded-full bg-elevated text-fg"
           >
             <ChevronLeft className="size-5" />
-          </a>
+          </button>
           <p className="text-xs tracking-[0.18em] text-muted uppercase">{t.preview.live}</p>
           <FavoriteButton
             wallpaperId={wallpaper.id}
