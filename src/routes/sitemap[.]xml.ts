@@ -23,20 +23,35 @@ export const Route = createFileRoute("/sitemap.xml")({
     handlers: {
       GET: async () => {
         const data = await getSitemapData();
-        const staticPages = ["/", "/wallpapers", "/legal/privacy", "/legal/terms", "/legal/copyright", "/legal/guidelines"];
+        const primaryPages = [
+          { path: "/app", priority: "1.0" },
+          { path: "/wallpapers", priority: "0.9" },
+          { path: "/", priority: "0.8" },
+        ];
+        const staticPages = [
+          "/about",
+          "/contact",
+          "/legal/privacy",
+          "/legal/terms",
+          "/legal/copyright",
+          "/legal/guidelines",
+        ];
         const devicePages = Object.keys(DEVICE_HUBS).map((slug) => categoryPath(slug));
         const parts = [
           `<?xml version="1.0" encoding="UTF-8"?>`,
           `<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:image="http://www.google.com/schemas/sitemap-image/1.1">`,
-          ...staticPages.map((p) => urlNode(p, "<changefreq>daily</changefreq><priority>0.8</priority>")),
-          ...devicePages.map((p) => urlNode(p, "<changefreq>daily</changefreq><priority>0.7</priority>")),
-          ...data.categories.map((c) => urlNode(categoryPath(c.slug), "<changefreq>daily</changefreq><priority>0.7</priority>")),
-          ...data.collections.map((c) => urlNode(`/collection/${c.slug}`, "<changefreq>weekly</changefreq>")),
-          ...(data.pairs ?? []).map((p) => urlNode(`/pair/${p.slug}`, "<changefreq>weekly</changefreq>")),
+          ...primaryPages.map((p) =>
+            urlNode(p.path, `<changefreq>daily</changefreq><priority>${p.priority}</priority>`),
+          ),
+          ...staticPages.map((p) => urlNode(p, "<changefreq>weekly</changefreq><priority>0.5</priority>")),
+          ...devicePages.map((p) => urlNode(p, "<changefreq>daily</changefreq><priority>0.8</priority>")),
+          ...data.categories.map((c) => urlNode(categoryPath(c.slug), "<changefreq>daily</changefreq><priority>0.8</priority>")),
+          ...data.collections.map((c) => urlNode(`/collection/${c.slug}`, "<changefreq>weekly</changefreq><priority>0.7</priority>")),
+          ...(data.pairs ?? []).map((p) => urlNode(`/pair/${p.slug}`, "<changefreq>weekly</changefreq><priority>0.6</priority>")),
           ...data.wallpapers.map((w) =>
             urlNode(
               wallpaperPath(w.slug),
-              `<lastmod>${esc(new Date(w.updated).toISOString())}</lastmod><image:image><image:loc>${esc(absUrl(w.image))}</image:loc><image:title>${esc(w.title)}</image:title></image:image>`,
+              `<lastmod>${esc(new Date(w.updated).toISOString())}</lastmod><changefreq>weekly</changefreq><priority>0.8</priority><image:image><image:loc>${esc(absUrl(w.image))}</image:loc><image:title>${esc(w.title)}</image:title></image:image>`,
             ),
           ),
           `</urlset>`,
