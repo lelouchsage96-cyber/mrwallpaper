@@ -6,6 +6,33 @@ import { wallpaperAlt, wallpaperPath } from "@/lib/seo";
 import type { WallpaperCard as Card } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
+function highQualityPreview(wallpaper: Card): string | null {
+  const url = wallpaper.thumbnailUrl;
+  if (!url) return null;
+
+  let path = url;
+  try {
+    path = new URL(url, "https://mrwallpaper.org").pathname;
+  } catch {
+    // Relative paths are already usable below.
+  }
+
+  const publicMediaThumb = path.match(/\/media\/(.+)-thumb\.(?:jpe?g|png|webp)$/i);
+  if (publicMediaThumb) return `/media/${publicMediaThumb[1]}-preview.jpg`;
+
+  if (path.startsWith("/api/media/") && /-thumb(?:\.|$)/i.test(path)) {
+    return path.replace(/-thumb(?=\.|$)/i, "-prev");
+  }
+
+  const r2Thumb = path.match(/\/thumbs\/(.+?)-[a-f0-9]{8,}\.(?:jpe?g|png|webp)$/i);
+  if (r2Thumb) return `/media/${wallpaper.id}-preview.jpg`;
+
+  const bundledThumb = path.match(/\/wallpapers\/thumbs\/([^/.]+)\.(?:jpe?g|png|webp)$/i);
+  if (bundledThumb) return `/wallpapers/${bundledThumb[1]}.jpg`;
+
+  return null;
+}
+
 export function WallpaperCard({
   wallpaper,
   onFavorite,
@@ -29,6 +56,11 @@ export function WallpaperCard({
     : wallpaper.deviceType === "tablet"
       ? "aspect-[3/4]"
       : "aspect-[9/16]";
+  const sharpPreview = highQualityPreview(wallpaper);
+  const sharpWidth = landscape ? 1440 : 1080;
+  const adaptiveSrcSet = sharpPreview
+    ? `${wallpaper.thumbnailUrl} 480w, ${sharpPreview} ${sharpWidth}w`
+    : undefined;
 
   return (
     <article
@@ -41,6 +73,8 @@ export function WallpaperCard({
         <div className={cn("overflow-hidden", previewRatio)}>
           <LazyImage
             src={wallpaper.thumbnailUrl}
+            srcSet={adaptiveSrcSet}
+            fallback={wallpaper.thumbnailUrl}
             alt={alt}
             width={wallpaper.width}
             height={wallpaper.height}
