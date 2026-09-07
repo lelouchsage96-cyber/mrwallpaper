@@ -24,9 +24,12 @@ export const Route = createRootRoute({
       { name: "viewport", content: "width=device-width, initial-scale=1, viewport-fit=cover" },
       { name: "theme-color", content: "#0a0a0b" },
       { name: "application-name", content: "Mr Wallpapers" },
+      { name: "mobile-web-app-capable", content: "yes" },
       { name: "apple-mobile-web-app-title", content: "Mr Wallpapers" },
       { name: "apple-mobile-web-app-capable", content: "yes" },
       { name: "apple-mobile-web-app-status-bar-style", content: "black-translucent" },
+      { name: "msapplication-TileColor", content: "#0a0a0b" },
+      { name: "msapplication-TileImage", content: "/icon-v3-512.png" },
     ] as Array<Record<string, string>>;
     if (seo.gscVerification) {
       meta.push({ name: "google-site-verification", content: seo.gscVerification });
@@ -45,9 +48,11 @@ export const Route = createRootRoute({
       meta,
       scripts,
       links: [
-        { rel: "icon", type: "image/png", sizes: "192x192", href: "/app-icon.png?v=2" },
-        { rel: "shortcut icon", type: "image/png", href: "/app-icon.png?v=2" },
-        { rel: "apple-touch-icon", sizes: "180x180", href: "/app-icon.png?v=2" },
+        { rel: "icon", type: "image/png", sizes: "32x32", href: "/favicon-v3.png" },
+        { rel: "icon", type: "image/png", sizes: "192x192", href: "/icon-v3-192.png" },
+        { rel: "shortcut icon", type: "image/png", href: "/favicon-v3.png" },
+        { rel: "apple-touch-icon", sizes: "180x180", href: "/apple-touch-icon-v3.png" },
+        { rel: "apple-touch-icon-precomposed", sizes: "180x180", href: "/apple-touch-icon-v3.png" },
         { rel: "stylesheet", href: appCss },
         { rel: "manifest", href: "/manifest.webmanifest" },
         { rel: "sitemap", type: "application/xml", href: "/sitemap.xml" },
