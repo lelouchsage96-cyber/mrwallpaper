@@ -6,13 +6,38 @@ import { LazyImage } from "@/components/lazy";
 import { Button } from "@/components/ui/button";
 import { useCurrentUserState } from "@/lib/auth/use-current-user";
 import { t } from "@/lib/i18n/en";
-import { categoryPreview, categoryPreviewFallback } from "@/lib/media";
+import { categoryPreviewFallback } from "@/lib/media";
 import { getExploreMeta, getTaste, saveTaste } from "@/lib/server/api";
 import { readLocalTaste, writeLocalTaste } from "@/lib/taste";
 import type { Category } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/app/taste")({ component: TastePage });
+
+function highQualityCategoryPreview(url: string | null | undefined, slug: string): string {
+  if (!url) return categoryPreviewFallback(slug);
+
+  let path = url;
+  try {
+    path = new URL(url, "https://mrwallpaper.org").pathname;
+  } catch {
+    // Keep the original string for relative paths that URL cannot parse.
+  }
+
+  const publicMediaThumb = path.match(/\/media\/(.+)-thumb\.(?:jpe?g|png|webp)$/i);
+  if (publicMediaThumb) return `/media/${publicMediaThumb[1]}-preview.jpg`;
+
+  // R2 thumbnail objects use `{wallpaperId}-{hash}.jpg`. Route the taste card
+  // through our public preview endpoint so it resolves the much larger preview
+  // asset instead of stretching a small thumbnail on high-DPI screens.
+  const r2Thumb = path.match(/\/thumbs\/(.+?)-[a-f0-9]{8,}\.(?:jpe?g|png|webp)$/i);
+  if (r2Thumb) return `/media/${r2Thumb[1]}-preview.jpg`;
+
+  const bundledThumb = path.match(/\/wallpapers\/thumbs\/([^/.]+)\.(?:jpe?g|png|webp)$/i);
+  if (bundledThumb) return `/wallpapers/${bundledThumb[1]}.jpg`;
+
+  return url;
+}
 
 function TastePage() {
   const { user, isPending } = useCurrentUserState();
@@ -106,9 +131,9 @@ function TastePage() {
         </div>
       ) : (
         <ul className="mt-6 grid grid-cols-2 gap-2.5 sm:grid-cols-3">
-          {categories.map((c) => {
+          {categories.map((c, i) => {
             const on = picked.includes(c.id);
-            const preview = c.coverUrl || categoryPreview(c.slug);
+            const preview = highQualityCategoryPreview(c.coverUrl, c.slug);
             return (
               <li key={c.id}>
                 <button
@@ -125,6 +150,7 @@ function TastePage() {
                       src={preview}
                       fallback={categoryPreviewFallback(c.slug)}
                       alt={`${c.name} wallpaper preview`}
+                      priority={i < 6}
                       className="size-full object-cover"
                     />
                     <span className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-bg/85 to-transparent px-3 py-2.5">
