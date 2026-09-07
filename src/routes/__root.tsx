@@ -29,7 +29,7 @@ export const Route = createRootRoute({
       { name: "apple-mobile-web-app-capable", content: "yes" },
       { name: "apple-mobile-web-app-status-bar-style", content: "black-translucent" },
       { name: "msapplication-TileColor", content: "#0a0a0b" },
-      { name: "msapplication-TileImage", content: "/icon-v3-512.png" },
+      { name: "msapplication-TileImage", content: "/icon-v3-192.png" },
     ] as Array<Record<string, string>>;
     if (seo.gscVerification) {
       meta.push({ name: "google-site-verification", content: seo.gscVerification });
@@ -48,11 +48,10 @@ export const Route = createRootRoute({
       meta,
       scripts,
       links: [
-        { rel: "icon", type: "image/png", sizes: "32x32", href: "/favicon-v3.png" },
         { rel: "icon", type: "image/png", sizes: "192x192", href: "/icon-v3-192.png" },
-        { rel: "shortcut icon", type: "image/png", href: "/favicon-v3.png" },
-        { rel: "apple-touch-icon", sizes: "180x180", href: "/apple-touch-icon-v3.png" },
-        { rel: "apple-touch-icon-precomposed", sizes: "180x180", href: "/apple-touch-icon-v3.png" },
+        { rel: "shortcut icon", type: "image/png", href: "/icon-v3-192.png" },
+        { rel: "apple-touch-icon", href: "/apple-touch-icon.png" },
+        { rel: "apple-touch-icon-precomposed", href: "/apple-touch-icon.png" },
         { rel: "stylesheet", href: appCss },
         { rel: "manifest", href: "/manifest.webmanifest" },
         { rel: "sitemap", type: "application/xml", href: "/sitemap.xml" },
