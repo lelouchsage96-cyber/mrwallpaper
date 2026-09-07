@@ -28,9 +28,9 @@ export const Route = createRootRoute({
       { name: "apple-mobile-web-app-title", content: "Mr Wallpapers" },
       { name: "apple-mobile-web-app-capable", content: "yes" },
       { name: "apple-mobile-web-app-status-bar-style", content: "black-translucent" },
-      { name: "msapplication-config", content: "/browserconfig.xml" },
+      { name: "msapplication-config", content: "/browserconfig.xml?v=3" },
       { name: "msapplication-TileColor", content: "#0a0a0b" },
-      { name: "msapplication-TileImage", content: "/icons/v4/mstile-144.png" },
+      { name: "msapplication-TileImage", content: "/icon-v3-192.png?v=3" },
     ] as Array<Record<string, string>>;
     if (seo.gscVerification) {
       meta.push({ name: "google-site-verification", content: seo.gscVerification });
@@ -49,16 +49,14 @@ export const Route = createRootRoute({
       meta,
       scripts,
       links: [
-        { rel: "icon", type: "image/x-icon", sizes: "16x16 32x32 48x48", href: "/favicon.ico?v=4" },
-        { rel: "icon", type: "image/png", sizes: "16x16", href: "/icons/v4/favicon-16.png" },
-        { rel: "icon", type: "image/png", sizes: "32x32", href: "/icons/v4/favicon-32.png" },
-        { rel: "icon", type: "image/png", sizes: "48x48", href: "/icons/v4/favicon-48.png" },
+        { rel: "icon", type: "image/png", sizes: "32x32", href: "/favicon-v3.png?v=3" },
+        { rel: "shortcut icon", type: "image/png", href: "/favicon-v3.png?v=3" },
         { rel: "apple-touch-icon", sizes: "120x120", href: "/icons/v4/apple-touch-icon-120.png" },
         { rel: "apple-touch-icon", sizes: "152x152", href: "/icons/v4/apple-touch-icon-152.png" },
         { rel: "apple-touch-icon", sizes: "167x167", href: "/icons/v4/apple-touch-icon-167.png" },
         { rel: "apple-touch-icon", sizes: "180x180", href: "/icons/v4/apple-touch-icon-180.png" },
         { rel: "stylesheet", href: appCss },
-        { rel: "manifest", href: "/manifest.webmanifest" },
+        { rel: "manifest", href: "/manifest.webmanifest?v=5" },
         { rel: "sitemap", type: "application/xml", href: "/sitemap.xml" },
         { rel: "preconnect", href: "https://fonts.googleapis.com" },
         { rel: "preconnect", href: "https://fonts.gstatic.com", crossOrigin: "anonymous" },
