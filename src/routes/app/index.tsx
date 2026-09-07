@@ -228,18 +228,18 @@ function HomePage() {
           ) : null}
 
           <section>
-            <SectionHeader title={t.home.trending} to="/app/explore" search={{ device: "phone" }} />
+            <SectionHeader title={t.home.trending} to="/app/trending" />
             <WallpaperGrid items={trending} onFavorite={onFavorite} eager={4} />
           </section>
 
           <section>
-            <SectionHeader title={t.home.fresh} to="/app/explore" search={{ device: "phone" }} />
+            <SectionHeader title={t.home.fresh} to="/app/fresh" />
             <WallpaperGrid items={data.fresh} onFavorite={onFavorite} eager={2} />
           </section>
 
           {(data.tablet ?? []).length > 0 ? (
             <section>
-              <SectionHeader title={t.home.tablet} to="/app/explore" search={{ device: "tablet" }} />
+              <SectionHeader title={t.home.tablet} to="/app/tablet" />
               <WallpaperGrid items={data.tablet ?? []} onFavorite={onFavorite} eager={2} />
             </section>
           ) : null}
