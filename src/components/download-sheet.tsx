@@ -15,30 +15,21 @@ async function fetchBytes(url: string): Promise<Uint8Array> {
 
 async function saveFiles(
   files: { data: Uint8Array; filename: string; mime: string }[],
-): Promise<"shared" | "downloaded"> {
-  const blobs = files.map((f) => {
-    const copy = new Uint8Array(f.data);
-    return new File([copy], f.filename, { type: f.mime });
-  });
-  if (navigator.canShare && blobs.every((f) => navigator.canShare({ files: [f] }))) {
-    try {
-      await navigator.share({ files: blobs, title: files[0]?.filename });
-      return "shared";
-    } catch (err) {
-      if (err instanceof Error && err.name === "AbortError") return "shared";
-    }
-  }
-  for (const file of blobs) {
+): Promise<void> {
+  for (const item of files) {
+    const copy = new Uint8Array(item.data);
+    const file = new File([copy], item.filename, { type: item.mime });
     const objectUrl = URL.createObjectURL(file);
     const a = document.createElement("a");
     a.href = objectUrl;
     a.download = file.name;
+    a.rel = "noopener";
+    a.style.display = "none";
     document.body.appendChild(a);
     a.click();
     a.remove();
-    URL.revokeObjectURL(objectUrl);
+    window.setTimeout(() => URL.revokeObjectURL(objectUrl), 2_000);
   }
-  return "downloaded";
 }
 
 export function DownloadSheet({
