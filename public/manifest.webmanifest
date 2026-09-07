@@ -1,4 +1,5 @@
 {
+  "id": "/app",
   "name": "Mr Wallpapers",
   "short_name": "Mr Wallpapers",
   "description": "Free HD and 4K wallpapers for phones and tablets.",
@@ -10,10 +11,16 @@
   "orientation": "any",
   "icons": [
     {
-      "src": "/app-icon.png?v=2",
+      "src": "/icon-v3-192.png",
       "sizes": "192x192",
       "type": "image/png",
-      "purpose": "any maskable"
+      "purpose": "any"
+    },
+    {
+      "src": "/icon-v3-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
     }
   ]
 }
