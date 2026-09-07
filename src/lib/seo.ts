@@ -131,8 +131,31 @@ export const HOME_DESCRIPTION =
 
 export const DEVICE_HUBS: Record<
   string,
-  { name: string; intro: string; device: "phone" | "tablet" | "all"; title: string; description: string }
+  {
+    name: string;
+    intro: string;
+    device: "phone" | "tablet" | "all";
+    order?: "trending" | "fresh";
+    title: string;
+    description: string;
+  }
 > = {
+  trending: {
+    name: "Trending",
+    device: "phone",
+    order: "trending",
+    intro: "The phone wallpapers people are viewing, saving, and downloading most right now.",
+    title: "Trending Phone Wallpapers HD & 4K | Mr Wallpapers",
+    description: "Browse trending HD and 4K phone wallpapers for iPhone and Android. Free downloads, updated as popular wallpapers change.",
+  },
+  fresh: {
+    name: "Fresh",
+    device: "phone",
+    order: "fresh",
+    intro: "The newest phone wallpapers added to Mr Wallpapers, with the latest uploads shown first.",
+    title: "Fresh New Phone Wallpapers HD & 4K | Mr Wallpapers",
+    description: "Discover the newest HD and 4K phone wallpapers for iPhone and Android. Browse fresh uploads and download them free.",
+  },
   iphone: {
     name: "iPhone",
     device: "phone",
@@ -158,11 +181,12 @@ export const DEVICE_HUBS: Record<
     description: "HD and 4K iPad wallpapers for portrait and landscape. Free downloads for iPad and iPad Pro.",
   },
   tablet: {
-    name: "Tablet",
+    name: "iPad & Tablet",
     device: "tablet",
-    intro: "Tablet-first wallpapers with room for a larger clock, dock, and widgets. Phone crops stay in the phone catalog.",
-    title: "Tablet Wallpapers HD & 4K | Mr Wallpapers",
-    description: "HD and 4K tablet wallpapers for iPad and Android tablets. Free landscape and portrait downloads.",
+    order: "fresh",
+    intro: "Tablet-first wallpapers for iPad and Android tablets, with room for a larger clock, dock, and widgets.",
+    title: "iPad & Tablet Wallpapers HD & 4K | Mr Wallpapers",
+    description: "HD and 4K wallpapers for iPad and Android tablets. Browse fresh landscape and portrait tablet wallpapers and download them free.",
   },
   all: {
     name: "All",
@@ -267,8 +291,8 @@ export function imageObjectJsonLd(opts: {
   description: string;
   image: string;
   path: string;
-  width: number;
-  height: number;
+  width?: number;
+  height?: number;
 }) {
   return {
     "@context": "https://schema.org",
@@ -277,33 +301,22 @@ export function imageObjectJsonLd(opts: {
     description: opts.description,
     contentUrl: absUrl(opts.image),
     url: absUrl(opts.path),
-    width: opts.width,
-    height: opts.height,
-    creditText: brand.name,
-    acquireLicensePage: absUrl(brand.legal.copyright),
+    ...(opts.width ? { width: opts.width } : {}),
+    ...(opts.height ? { height: opts.height } : {}),
   };
 }
 
-export function itemListJsonLd(opts: {
-  name: string;
-  path: string;
-  items: { name: string; path: string }[];
-}) {
+export function itemListJsonLd(opts: { name: string; path: string; items: { name: string; path: string }[] }) {
   return {
     "@context": "https://schema.org",
     "@type": "ItemList",
     name: opts.name,
     url: absUrl(opts.path),
-    numberOfItems: opts.items.length,
-    itemListElement: opts.items.map((item, i) => ({
+    itemListElement: opts.items.map((item, index) => ({
       "@type": "ListItem",
-      position: i + 1,
+      position: index + 1,
       name: item.name,
       url: absUrl(item.path),
     })),
   };
-}
-
-export function prettyMediaPath(slug: string, kind: "thumb" | "preview" | "original") {
-  return `/media/${slug}-${kind}.jpg`;
 }
