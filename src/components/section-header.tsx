@@ -3,6 +3,9 @@ import { t } from "@/lib/i18n/en";
 
 type SeeAllTo =
   | "/app/explore"
+  | "/app/trending"
+  | "/app/fresh"
+  | "/app/tablet"
   | "/app/premium"
   | "/app/downloads"
   | "/app/favorites"
