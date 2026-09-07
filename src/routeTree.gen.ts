@@ -11,24 +11,31 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as SplatRouteImport } from './routes/$'
+import { Route as AboutRouteImport } from './routes/about'
 import { Route as AppRouteImport } from './routes/app'
+import { Route as ContactRouteImport } from './routes/contact'
 import { Route as CreatorsRouteImport } from './routes/creators'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as OnboardingRouteImport } from './routes/onboarding'
 import { Route as OpsRouteImport } from './routes/ops'
+import { Route as ResetPasswordRouteImport } from './routes/reset-password'
 import { Route as RobotsDottxtRouteImport } from './routes/robots[.]txt'
 import { Route as SitemapDotxmlRouteImport } from './routes/sitemap[.]xml'
 import { Route as StudioRouteImport } from './routes/studio'
+import { Route as ApiOpsOriginalRouteImport } from './routes/api/ops-original'
 import { Route as ApiStudioOriginalRouteImport } from './routes/api/studio-original'
 import { Route as AppIndexRouteImport } from './routes/app/index'
 import { Route as AppCreatorsRouteImport } from './routes/app/creators'
 import { Route as AppDownloadsRouteImport } from './routes/app/downloads'
 import { Route as AppExploreRouteImport } from './routes/app/explore'
 import { Route as AppFavoritesRouteImport } from './routes/app/favorites'
+import { Route as AppFreshRouteImport } from './routes/app/fresh'
 import { Route as AppNotificationsRouteImport } from './routes/app/notifications'
 import { Route as AppPremiumRouteImport } from './routes/app/premium'
 import { Route as AppProfileRouteImport } from './routes/app/profile'
+import { Route as AppTabletRouteImport } from './routes/app/tablet'
 import { Route as AppTasteRouteImport } from './routes/app/taste'
+import { Route as AppTrendingRouteImport } from './routes/app/trending'
 import { Route as CategorySlugRouteImport } from './routes/category.$slug'
 import { Route as CollectionSlugRouteImport } from './routes/collection.$slug'
 import { Route as CreatorSlugRouteImport } from './routes/creator.$slug'
@@ -36,8 +43,10 @@ import { Route as LegalSlugRouteImport } from './routes/legal.$slug'
 import { Route as MediaSplatRouteImport } from './routes/media.$'
 import { Route as OpsIndexRouteImport } from './routes/ops/index'
 import { Route as OpsCreatorsRouteImport } from './routes/ops/creators'
+import { Route as OpsImportR2RouteImport } from './routes/ops/import-r2'
 import { Route as OpsReportsRouteImport } from './routes/ops/reports'
 import { Route as OpsSettingsRouteImport } from './routes/ops/settings'
+import { Route as OpsUploadRouteImport } from './routes/ops/upload'
 import { Route as OpsUsersRouteImport } from './routes/ops/users'
 import { Route as OpsWallpapersRouteImport } from './routes/ops/wallpapers'
 import { Route as PairSlugRouteImport } from './routes/pair.$slug'
@@ -49,6 +58,7 @@ import { Route as WallpapersIndexRouteImport } from './routes/wallpapers.index'
 import { Route as WallpapersSlugRouteImport } from './routes/wallpapers.$slug'
 import { Route as ApiAuthSplatRouteImport } from './routes/api/auth/$'
 import { Route as ApiMediaIdRouteImport } from './routes/api/media.$id'
+import { Route as OpsWallpaperEditIdRouteImport } from './routes/ops/wallpaper-edit.$id'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -60,9 +70,19 @@ const SplatRoute = SplatRouteImport.update({
   path: '/$',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AboutRoute = AboutRouteImport.update({
+  id: '/about',
+  path: '/about',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AppRoute = AppRouteImport.update({
   id: '/app',
   path: '/app',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ContactRoute = ContactRouteImport.update({
+  id: '/contact',
+  path: '/contact',
   getParentRoute: () => rootRouteImport,
 } as any)
 const CreatorsRoute = CreatorsRouteImport.update({
@@ -85,6 +105,11 @@ const OpsRoute = OpsRouteImport.update({
   path: '/ops',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ResetPasswordRoute = ResetPasswordRouteImport.update({
+  id: '/reset-password',
+  path: '/reset-password',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const RobotsDottxtRoute = RobotsDottxtRouteImport.update({
   id: '/robots.txt',
   path: '/robots.txt',
@@ -98,6 +123,11 @@ const SitemapDotxmlRoute = SitemapDotxmlRouteImport.update({
 const StudioRoute = StudioRouteImport.update({
   id: '/studio',
   path: '/studio',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiOpsOriginalRoute = ApiOpsOriginalRouteImport.update({
+  id: '/api/ops-original',
+  path: '/api/ops-original',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ApiStudioOriginalRoute = ApiStudioOriginalRouteImport.update({
@@ -130,6 +160,11 @@ const AppFavoritesRoute = AppFavoritesRouteImport.update({
   path: '/favorites',
   getParentRoute: () => AppRoute,
 } as any)
+const AppFreshRoute = AppFreshRouteImport.update({
+  id: '/fresh',
+  path: '/fresh',
+  getParentRoute: () => AppRoute,
+} as any)
 const AppNotificationsRoute = AppNotificationsRouteImport.update({
   id: '/notifications',
   path: '/notifications',
@@ -145,9 +180,19 @@ const AppProfileRoute = AppProfileRouteImport.update({
   path: '/profile',
   getParentRoute: () => AppRoute,
 } as any)
+const AppTabletRoute = AppTabletRouteImport.update({
+  id: '/tablet',
+  path: '/tablet',
+  getParentRoute: () => AppRoute,
+} as any)
 const AppTasteRoute = AppTasteRouteImport.update({
   id: '/taste',
   path: '/taste',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppTrendingRoute = AppTrendingRouteImport.update({
+  id: '/trending',
+  path: '/trending',
   getParentRoute: () => AppRoute,
 } as any)
 const CategorySlugRoute = CategorySlugRouteImport.update({
@@ -185,6 +230,11 @@ const OpsCreatorsRoute = OpsCreatorsRouteImport.update({
   path: '/creators',
   getParentRoute: () => OpsRoute,
 } as any)
+const OpsImportR2Route = OpsImportR2RouteImport.update({
+  id: '/import-r2',
+  path: '/import-r2',
+  getParentRoute: () => OpsRoute,
+} as any)
 const OpsReportsRoute = OpsReportsRouteImport.update({
   id: '/reports',
   path: '/reports',
@@ -193,6 +243,11 @@ const OpsReportsRoute = OpsReportsRouteImport.update({
 const OpsSettingsRoute = OpsSettingsRouteImport.update({
   id: '/settings',
   path: '/settings',
+  getParentRoute: () => OpsRoute,
+} as any)
+const OpsUploadRoute = OpsUploadRouteImport.update({
+  id: '/upload',
+  path: '/upload',
   getParentRoute: () => OpsRoute,
 } as any)
 const OpsUsersRoute = OpsUsersRouteImport.update({
@@ -250,35 +305,49 @@ const ApiMediaIdRoute = ApiMediaIdRouteImport.update({
   path: '/api/media/$id',
   getParentRoute: () => rootRouteImport,
 } as any)
+const OpsWallpaperEditIdRoute = OpsWallpaperEditIdRouteImport.update({
+  id: '/wallpaper-edit/$id',
+  path: '/wallpaper-edit/$id',
+  getParentRoute: () => OpsRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/$': typeof SplatRoute
+  '/about': typeof AboutRoute
   '/app': typeof AppRouteWithChildren
+  '/contact': typeof ContactRoute
   '/creators': typeof CreatorsRoute
   '/login': typeof LoginRoute
   '/onboarding': typeof OnboardingRoute
   '/ops': typeof OpsRouteWithChildren
+  '/reset-password': typeof ResetPasswordRoute
   '/robots.txt': typeof RobotsDottxtRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/studio': typeof StudioRouteWithChildren
+  '/api/ops-original': typeof ApiOpsOriginalRoute
   '/api/studio-original': typeof ApiStudioOriginalRoute
   '/app/creators': typeof AppCreatorsRoute
   '/app/downloads': typeof AppDownloadsRoute
   '/app/explore': typeof AppExploreRoute
   '/app/favorites': typeof AppFavoritesRoute
+  '/app/fresh': typeof AppFreshRoute
   '/app/notifications': typeof AppNotificationsRoute
   '/app/premium': typeof AppPremiumRoute
   '/app/profile': typeof AppProfileRoute
+  '/app/tablet': typeof AppTabletRoute
   '/app/taste': typeof AppTasteRoute
+  '/app/trending': typeof AppTrendingRoute
   '/category/$slug': typeof CategorySlugRoute
   '/collection/$slug': typeof CollectionSlugRoute
   '/creator/$slug': typeof CreatorSlugRoute
   '/legal/$slug': typeof LegalSlugRoute
   '/media/$': typeof MediaSplatRoute
   '/ops/creators': typeof OpsCreatorsRoute
+  '/ops/import-r2': typeof OpsImportR2Route
   '/ops/reports': typeof OpsReportsRoute
   '/ops/settings': typeof OpsSettingsRoute
+  '/ops/upload': typeof OpsUploadRoute
   '/ops/users': typeof OpsUsersRoute
   '/ops/wallpapers': typeof OpsWallpapersRoute
   '/pair/$slug': typeof PairSlugRoute
@@ -292,32 +361,42 @@ export interface FileRoutesByFullPath {
   '/wallpapers/': typeof WallpapersIndexRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/api/media/$id': typeof ApiMediaIdRoute
+  '/ops/wallpaper-edit/$id': typeof OpsWallpaperEditIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/$': typeof SplatRoute
+  '/about': typeof AboutRoute
+  '/contact': typeof ContactRoute
   '/creators': typeof CreatorsRoute
   '/login': typeof LoginRoute
   '/onboarding': typeof OnboardingRoute
+  '/reset-password': typeof ResetPasswordRoute
   '/robots.txt': typeof RobotsDottxtRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
+  '/api/ops-original': typeof ApiOpsOriginalRoute
   '/api/studio-original': typeof ApiStudioOriginalRoute
   '/app/creators': typeof AppCreatorsRoute
   '/app/downloads': typeof AppDownloadsRoute
   '/app/explore': typeof AppExploreRoute
   '/app/favorites': typeof AppFavoritesRoute
+  '/app/fresh': typeof AppFreshRoute
   '/app/notifications': typeof AppNotificationsRoute
   '/app/premium': typeof AppPremiumRoute
   '/app/profile': typeof AppProfileRoute
+  '/app/tablet': typeof AppTabletRoute
   '/app/taste': typeof AppTasteRoute
+  '/app/trending': typeof AppTrendingRoute
   '/category/$slug': typeof CategorySlugRoute
   '/collection/$slug': typeof CollectionSlugRoute
   '/creator/$slug': typeof CreatorSlugRoute
   '/legal/$slug': typeof LegalSlugRoute
   '/media/$': typeof MediaSplatRoute
   '/ops/creators': typeof OpsCreatorsRoute
+  '/ops/import-r2': typeof OpsImportR2Route
   '/ops/reports': typeof OpsReportsRoute
   '/ops/settings': typeof OpsSettingsRoute
+  '/ops/upload': typeof OpsUploadRoute
   '/ops/users': typeof OpsUsersRoute
   '/ops/wallpapers': typeof OpsWallpapersRoute
   '/pair/$slug': typeof PairSlugRoute
@@ -331,36 +410,46 @@ export interface FileRoutesByTo {
   '/wallpapers': typeof WallpapersIndexRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/api/media/$id': typeof ApiMediaIdRoute
+  '/ops/wallpaper-edit/$id': typeof OpsWallpaperEditIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/$': typeof SplatRoute
+  '/about': typeof AboutRoute
   '/app': typeof AppRouteWithChildren
+  '/contact': typeof ContactRoute
   '/creators': typeof CreatorsRoute
   '/login': typeof LoginRoute
   '/onboarding': typeof OnboardingRoute
   '/ops': typeof OpsRouteWithChildren
+  '/reset-password': typeof ResetPasswordRoute
   '/robots.txt': typeof RobotsDottxtRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/studio': typeof StudioRouteWithChildren
+  '/api/ops-original': typeof ApiOpsOriginalRoute
   '/api/studio-original': typeof ApiStudioOriginalRoute
   '/app/creators': typeof AppCreatorsRoute
   '/app/downloads': typeof AppDownloadsRoute
   '/app/explore': typeof AppExploreRoute
   '/app/favorites': typeof AppFavoritesRoute
+  '/app/fresh': typeof AppFreshRoute
   '/app/notifications': typeof AppNotificationsRoute
   '/app/premium': typeof AppPremiumRoute
   '/app/profile': typeof AppProfileRoute
+  '/app/tablet': typeof AppTabletRoute
   '/app/taste': typeof AppTasteRoute
+  '/app/trending': typeof AppTrendingRoute
   '/category/$slug': typeof CategorySlugRoute
   '/collection/$slug': typeof CollectionSlugRoute
   '/creator/$slug': typeof CreatorSlugRoute
   '/legal/$slug': typeof LegalSlugRoute
   '/media/$': typeof MediaSplatRoute
   '/ops/creators': typeof OpsCreatorsRoute
+  '/ops/import-r2': typeof OpsImportR2Route
   '/ops/reports': typeof OpsReportsRoute
   '/ops/settings': typeof OpsSettingsRoute
+  '/ops/upload': typeof OpsUploadRoute
   '/ops/users': typeof OpsUsersRoute
   '/ops/wallpapers': typeof OpsWallpapersRoute
   '/pair/$slug': typeof PairSlugRoute
@@ -374,37 +463,47 @@ export interface FileRoutesById {
   '/wallpapers/': typeof WallpapersIndexRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/api/media/$id': typeof ApiMediaIdRoute
+  '/ops/wallpaper-edit/$id': typeof OpsWallpaperEditIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
     | '/$'
+    | '/about'
     | '/app'
+    | '/contact'
     | '/creators'
     | '/login'
     | '/onboarding'
     | '/ops'
+    | '/reset-password'
     | '/robots.txt'
     | '/sitemap.xml'
     | '/studio'
+    | '/api/ops-original'
     | '/api/studio-original'
     | '/app/creators'
     | '/app/downloads'
     | '/app/explore'
     | '/app/favorites'
+    | '/app/fresh'
     | '/app/notifications'
     | '/app/premium'
     | '/app/profile'
+    | '/app/tablet'
     | '/app/taste'
+    | '/app/trending'
     | '/category/$slug'
     | '/collection/$slug'
     | '/creator/$slug'
     | '/legal/$slug'
     | '/media/$'
     | '/ops/creators'
+    | '/ops/import-r2'
     | '/ops/reports'
     | '/ops/settings'
+    | '/ops/upload'
     | '/ops/users'
     | '/ops/wallpapers'
     | '/pair/$slug'
@@ -418,32 +517,42 @@ export interface FileRouteTypes {
     | '/wallpapers/'
     | '/api/auth/$'
     | '/api/media/$id'
+    | '/ops/wallpaper-edit/$id'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
     | '/$'
+    | '/about'
+    | '/contact'
     | '/creators'
     | '/login'
     | '/onboarding'
+    | '/reset-password'
     | '/robots.txt'
     | '/sitemap.xml'
+    | '/api/ops-original'
     | '/api/studio-original'
     | '/app/creators'
     | '/app/downloads'
     | '/app/explore'
     | '/app/favorites'
+    | '/app/fresh'
     | '/app/notifications'
     | '/app/premium'
     | '/app/profile'
+    | '/app/tablet'
     | '/app/taste'
+    | '/app/trending'
     | '/category/$slug'
     | '/collection/$slug'
     | '/creator/$slug'
     | '/legal/$slug'
     | '/media/$'
     | '/ops/creators'
+    | '/ops/import-r2'
     | '/ops/reports'
     | '/ops/settings'
+    | '/ops/upload'
     | '/ops/users'
     | '/ops/wallpapers'
     | '/pair/$slug'
@@ -457,35 +566,45 @@ export interface FileRouteTypes {
     | '/wallpapers'
     | '/api/auth/$'
     | '/api/media/$id'
+    | '/ops/wallpaper-edit/$id'
   id:
     | '__root__'
     | '/'
     | '/$'
+    | '/about'
     | '/app'
+    | '/contact'
     | '/creators'
     | '/login'
     | '/onboarding'
     | '/ops'
+    | '/reset-password'
     | '/robots.txt'
     | '/sitemap.xml'
     | '/studio'
+    | '/api/ops-original'
     | '/api/studio-original'
     | '/app/creators'
     | '/app/downloads'
     | '/app/explore'
     | '/app/favorites'
+    | '/app/fresh'
     | '/app/notifications'
     | '/app/premium'
     | '/app/profile'
+    | '/app/tablet'
     | '/app/taste'
+    | '/app/trending'
     | '/category/$slug'
     | '/collection/$slug'
     | '/creator/$slug'
     | '/legal/$slug'
     | '/media/$'
     | '/ops/creators'
+    | '/ops/import-r2'
     | '/ops/reports'
     | '/ops/settings'
+    | '/ops/upload'
     | '/ops/users'
     | '/ops/wallpapers'
     | '/pair/$slug'
@@ -499,19 +618,24 @@ export interface FileRouteTypes {
     | '/wallpapers/'
     | '/api/auth/$'
     | '/api/media/$id'
+    | '/ops/wallpaper-edit/$id'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   SplatRoute: typeof SplatRoute
+  AboutRoute: typeof AboutRoute
   AppRoute: typeof AppRouteWithChildren
+  ContactRoute: typeof ContactRoute
   CreatorsRoute: typeof CreatorsRoute
   LoginRoute: typeof LoginRoute
   OnboardingRoute: typeof OnboardingRoute
   OpsRoute: typeof OpsRouteWithChildren
+  ResetPasswordRoute: typeof ResetPasswordRoute
   RobotsDottxtRoute: typeof RobotsDottxtRoute
   SitemapDotxmlRoute: typeof SitemapDotxmlRoute
   StudioRoute: typeof StudioRouteWithChildren
+  ApiOpsOriginalRoute: typeof ApiOpsOriginalRoute
   ApiStudioOriginalRoute: typeof ApiStudioOriginalRoute
   CategorySlugRoute: typeof CategorySlugRoute
   CollectionSlugRoute: typeof CollectionSlugRoute
@@ -542,11 +666,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SplatRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/about': {
+      id: '/about'
+      path: '/about'
+      fullPath: '/about'
+      preLoaderRoute: typeof AboutRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/app': {
       id: '/app'
       path: '/app'
       fullPath: '/app'
       preLoaderRoute: typeof AppRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/contact': {
+      id: '/contact'
+      path: '/contact'
+      fullPath: '/contact'
+      preLoaderRoute: typeof ContactRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/creators': {
@@ -577,6 +715,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof OpsRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/reset-password': {
+      id: '/reset-password'
+      path: '/reset-password'
+      fullPath: '/reset-password'
+      preLoaderRoute: typeof ResetPasswordRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/robots.txt': {
       id: '/robots.txt'
       path: '/robots.txt'
@@ -596,6 +741,13 @@ declare module '@tanstack/react-router' {
       path: '/studio'
       fullPath: '/studio'
       preLoaderRoute: typeof StudioRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/ops-original': {
+      id: '/api/ops-original'
+      path: '/api/ops-original'
+      fullPath: '/api/ops-original'
+      preLoaderRoute: typeof ApiOpsOriginalRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/studio-original': {
@@ -640,6 +792,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppFavoritesRouteImport
       parentRoute: typeof AppRoute
     }
+    '/app/fresh': {
+      id: '/app/fresh'
+      path: '/fresh'
+      fullPath: '/app/fresh'
+      preLoaderRoute: typeof AppFreshRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/app/notifications': {
       id: '/app/notifications'
       path: '/notifications'
@@ -661,11 +820,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppProfileRouteImport
       parentRoute: typeof AppRoute
     }
+    '/app/tablet': {
+      id: '/app/tablet'
+      path: '/tablet'
+      fullPath: '/app/tablet'
+      preLoaderRoute: typeof AppTabletRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/app/taste': {
       id: '/app/taste'
       path: '/taste'
       fullPath: '/app/taste'
       preLoaderRoute: typeof AppTasteRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/app/trending': {
+      id: '/app/trending'
+      path: '/trending'
+      fullPath: '/app/trending'
+      preLoaderRoute: typeof AppTrendingRouteImport
       parentRoute: typeof AppRoute
     }
     '/category/$slug': {
@@ -717,6 +890,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof OpsCreatorsRouteImport
       parentRoute: typeof OpsRoute
     }
+    '/ops/import-r2': {
+      id: '/ops/import-r2'
+      path: '/import-r2'
+      fullPath: '/ops/import-r2'
+      preLoaderRoute: typeof OpsImportR2RouteImport
+      parentRoute: typeof OpsRoute
+    }
     '/ops/reports': {
       id: '/ops/reports'
       path: '/reports'
@@ -729,6 +909,13 @@ declare module '@tanstack/react-router' {
       path: '/settings'
       fullPath: '/ops/settings'
       preLoaderRoute: typeof OpsSettingsRouteImport
+      parentRoute: typeof OpsRoute
+    }
+    '/ops/upload': {
+      id: '/ops/upload'
+      path: '/upload'
+      fullPath: '/ops/upload'
+      preLoaderRoute: typeof OpsUploadRouteImport
       parentRoute: typeof OpsRoute
     }
     '/ops/users': {
@@ -808,6 +995,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiMediaIdRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/ops/wallpaper-edit/$id': {
+      id: '/ops/wallpaper-edit/$id'
+      path: '/wallpaper-edit/$id'
+      fullPath: '/ops/wallpaper-edit/$id'
+      preLoaderRoute: typeof OpsWallpaperEditIdRouteImport
+      parentRoute: typeof OpsRoute
+    }
   }
 }
 
@@ -816,10 +1010,13 @@ interface AppRouteChildren {
   AppDownloadsRoute: typeof AppDownloadsRoute
   AppExploreRoute: typeof AppExploreRoute
   AppFavoritesRoute: typeof AppFavoritesRoute
+  AppFreshRoute: typeof AppFreshRoute
   AppNotificationsRoute: typeof AppNotificationsRoute
   AppPremiumRoute: typeof AppPremiumRoute
   AppProfileRoute: typeof AppProfileRoute
+  AppTabletRoute: typeof AppTabletRoute
   AppTasteRoute: typeof AppTasteRoute
+  AppTrendingRoute: typeof AppTrendingRoute
   AppIndexRoute: typeof AppIndexRoute
 }
 
@@ -828,10 +1025,13 @@ const AppRouteChildren: AppRouteChildren = {
   AppDownloadsRoute: AppDownloadsRoute,
   AppExploreRoute: AppExploreRoute,
   AppFavoritesRoute: AppFavoritesRoute,
+  AppFreshRoute: AppFreshRoute,
   AppNotificationsRoute: AppNotificationsRoute,
   AppPremiumRoute: AppPremiumRoute,
   AppProfileRoute: AppProfileRoute,
+  AppTabletRoute: AppTabletRoute,
   AppTasteRoute: AppTasteRoute,
+  AppTrendingRoute: AppTrendingRoute,
   AppIndexRoute: AppIndexRoute,
 }
 
@@ -839,20 +1039,26 @@ const AppRouteWithChildren = AppRoute._addFileChildren(AppRouteChildren)
 
 interface OpsRouteChildren {
   OpsCreatorsRoute: typeof OpsCreatorsRoute
+  OpsImportR2Route: typeof OpsImportR2Route
   OpsReportsRoute: typeof OpsReportsRoute
   OpsSettingsRoute: typeof OpsSettingsRoute
+  OpsUploadRoute: typeof OpsUploadRoute
   OpsUsersRoute: typeof OpsUsersRoute
   OpsWallpapersRoute: typeof OpsWallpapersRoute
   OpsIndexRoute: typeof OpsIndexRoute
+  OpsWallpaperEditIdRoute: typeof OpsWallpaperEditIdRoute
 }
 
 const OpsRouteChildren: OpsRouteChildren = {
   OpsCreatorsRoute: OpsCreatorsRoute,
+  OpsImportR2Route: OpsImportR2Route,
   OpsReportsRoute: OpsReportsRoute,
   OpsSettingsRoute: OpsSettingsRoute,
+  OpsUploadRoute: OpsUploadRoute,
   OpsUsersRoute: OpsUsersRoute,
   OpsWallpapersRoute: OpsWallpapersRoute,
   OpsIndexRoute: OpsIndexRoute,
+  OpsWallpaperEditIdRoute: OpsWallpaperEditIdRoute,
 }
 
 const OpsRouteWithChildren = OpsRoute._addFileChildren(OpsRouteChildren)
@@ -875,14 +1081,18 @@ const StudioRouteWithChildren =
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   SplatRoute: SplatRoute,
+  AboutRoute: AboutRoute,
   AppRoute: AppRouteWithChildren,
+  ContactRoute: ContactRoute,
   CreatorsRoute: CreatorsRoute,
   LoginRoute: LoginRoute,
   OnboardingRoute: OnboardingRoute,
   OpsRoute: OpsRouteWithChildren,
+  ResetPasswordRoute: ResetPasswordRoute,
   RobotsDottxtRoute: RobotsDottxtRoute,
   SitemapDotxmlRoute: SitemapDotxmlRoute,
   StudioRoute: StudioRouteWithChildren,
+  ApiOpsOriginalRoute: ApiOpsOriginalRoute,
   ApiStudioOriginalRoute: ApiStudioOriginalRoute,
   CategorySlugRoute: CategorySlugRoute,
   CollectionSlugRoute: CollectionSlugRoute,

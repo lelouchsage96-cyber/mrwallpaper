@@ -91,9 +91,10 @@ def main():
     root_path = ROOT / "src/routes/__root.tsx"
     root = root_path.read_text()
     root = root.replace('content: "/icon-v3-192.png"', 'content: "/icons/v4/mstile-144.png"')
-    root = root.replace('      { name: "msapplication-TileColor",',
-                        '      { name: "msapplication-config", content: "/browserconfig.xml" },\n'
-                        '      { name: "msapplication-TileColor",')
+    if 'name: "msapplication-config"' not in root:
+        root = root.replace('      { name: "msapplication-TileColor",',
+                            '      { name: "msapplication-config", content: "/browserconfig.xml" },\n'
+                            '      { name: "msapplication-TileColor",')
     start = root.index('        { rel: "icon",')
     end = root.index('        { rel: "stylesheet", href: appCss }', start)
     links = ['        { rel: "icon", type: "image/x-icon", sizes: "16x16 32x32 48x48", href: "/favicon.ico?v=4" },']
