@@ -131,31 +131,8 @@ export const HOME_DESCRIPTION =
 
 export const DEVICE_HUBS: Record<
   string,
-  {
-    name: string;
-    intro: string;
-    device: "phone" | "tablet" | "all";
-    order?: "trending" | "fresh";
-    title: string;
-    description: string;
-  }
+  { name: string; intro: string; device: "phone" | "tablet" | "all"; title: string; description: string }
 > = {
-  trending: {
-    name: "Trending",
-    device: "phone",
-    order: "trending",
-    intro: "The phone wallpapers people are viewing, saving, and downloading most right now.",
-    title: "Trending Phone Wallpapers HD & 4K | Mr Wallpapers",
-    description: "Browse trending HD and 4K phone wallpapers for iPhone and Android. Free downloads, updated as popular wallpapers change.",
-  },
-  fresh: {
-    name: "Fresh",
-    device: "phone",
-    order: "fresh",
-    intro: "The newest phone wallpapers added to Mr Wallpapers, with the latest uploads shown first.",
-    title: "Fresh New Phone Wallpapers HD & 4K | Mr Wallpapers",
-    description: "Discover the newest HD and 4K phone wallpapers for iPhone and Android. Browse fresh uploads and download them free.",
-  },
   iphone: {
     name: "iPhone",
     device: "phone",
@@ -181,12 +158,11 @@ export const DEVICE_HUBS: Record<
     description: "HD and 4K iPad wallpapers for portrait and landscape. Free downloads for iPad and iPad Pro.",
   },
   tablet: {
-    name: "iPad & Tablet",
+    name: "Tablet",
     device: "tablet",
-    order: "fresh",
-    intro: "Tablet-first wallpapers for iPad and Android tablets, with room for a larger clock, dock, and widgets.",
-    title: "iPad & Tablet Wallpapers HD & 4K | Mr Wallpapers",
-    description: "HD and 4K wallpapers for iPad and Android tablets. Browse fresh landscape and portrait tablet wallpapers and download them free.",
+    intro: "Tablet-first wallpapers with room for a larger clock, dock, and widgets. Phone crops stay in the phone catalog.",
+    title: "Tablet Wallpapers HD & 4K | Mr Wallpapers",
+    description: "HD and 4K tablet wallpapers for iPad and Android tablets. Free landscape and portrait downloads.",
   },
   all: {
     name: "All",
