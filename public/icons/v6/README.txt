@@ -1,1 +1,0 @@
-Native browser and Windows icon assets generated from the approved Mr Wallpapers app icon. Browser favicons use the simplified M mark for small-size legibility.
