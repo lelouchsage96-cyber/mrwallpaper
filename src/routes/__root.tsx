@@ -28,9 +28,9 @@ export const Route = createRootRoute({
       { name: "apple-mobile-web-app-title", content: "Mr Wallpapers" },
       { name: "apple-mobile-web-app-capable", content: "yes" },
       { name: "apple-mobile-web-app-status-bar-style", content: "black-translucent" },
-      { name: "msapplication-config", content: "/browserconfig.xml?v=6" },
+      { name: "msapplication-config", content: "/browserconfig.xml?v=10" },
       { name: "msapplication-TileColor", content: "#0a0a0b" },
-      { name: "msapplication-TileImage", content: "/icons/v6/mstile-144.png?v=6" },
+      { name: "msapplication-TileImage", content: "/icons/v10/icon-192.png?v=10" },
     ] as Array<Record<string, string>>;
     if (seo.gscVerification) {
       meta.push({ name: "google-site-verification", content: seo.gscVerification });
@@ -49,15 +49,13 @@ export const Route = createRootRoute({
       meta,
       scripts,
       links: [
-        { rel: "icon", type: "image/png", sizes: "16x16", href: "/icons/v7/favicon-16.png?v=9" },
-        { rel: "icon", type: "image/png", sizes: "32x32", href: "/icons/v7/favicon-32.png?v=9" },
-        { rel: "shortcut icon", type: "image/png", href: "/icons/v7/favicon-32.png?v=9" },
-        { rel: "apple-touch-icon", sizes: "120x120", href: "/icons/v4/apple-touch-icon-120.png" },
-        { rel: "apple-touch-icon", sizes: "152x152", href: "/icons/v4/apple-touch-icon-152.png" },
-        { rel: "apple-touch-icon", sizes: "167x167", href: "/icons/v4/apple-touch-icon-167.png" },
-        { rel: "apple-touch-icon", sizes: "180x180", href: "/icons/v4/apple-touch-icon-180.png" },
+        { rel: "icon", type: "image/x-icon", href: "/icons/v10/favicon.ico?v=10" },
+        { rel: "shortcut icon", type: "image/x-icon", href: "/icons/v10/favicon.ico?v=10" },
+        { rel: "icon", type: "image/png", sizes: "192x192", href: "/icons/v10/icon-192.png?v=10" },
+        { rel: "icon", type: "image/png", sizes: "512x512", href: "/icons/v10/icon-512.png?v=10" },
+        { rel: "apple-touch-icon", sizes: "180x180", href: "/icons/v10/icon-192.png?v=10" },
         { rel: "stylesheet", href: appCss },
-        { rel: "manifest", href: "/manifest.webmanifest?v=6" },
+        { rel: "manifest", href: "/manifest.webmanifest?v=10" },
         { rel: "sitemap", type: "application/xml", href: "/sitemap.xml" },
         { rel: "preconnect", href: "https://fonts.googleapis.com" },
         { rel: "preconnect", href: "https://fonts.gstatic.com", crossOrigin: "anonymous" },
