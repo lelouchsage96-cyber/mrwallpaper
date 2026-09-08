@@ -28,9 +28,9 @@ export const Route = createRootRoute({
       { name: "apple-mobile-web-app-title", content: "Mr Wallpapers" },
       { name: "apple-mobile-web-app-capable", content: "yes" },
       { name: "apple-mobile-web-app-status-bar-style", content: "black-translucent" },
-      { name: "msapplication-config", content: "/browserconfig.xml?v=12" },
+      { name: "msapplication-config", content: "/browserconfig.xml?v=13" },
       { name: "msapplication-TileColor", content: "#0a0a0b" },
-      { name: "msapplication-TileImage", content: "/icon-192.png?v=12" },
+      { name: "msapplication-TileImage", content: "/icons/v11/icon-192.png?v=13" },
     ] as Array<Record<string, string>>;
     if (seo.gscVerification) {
       meta.push({ name: "google-site-verification", content: seo.gscVerification });
@@ -49,14 +49,14 @@ export const Route = createRootRoute({
       meta,
       scripts,
       links: [
-        { rel: "icon", type: "image/x-icon", href: "/icons/v11/favicon.ico?v=12" },
-        { rel: "shortcut icon", type: "image/x-icon", href: "/icons/v11/favicon.ico?v=12" },
-        { rel: "icon", type: "image/png", sizes: "192x192", href: "/icons/v11/icon-192.png?v=12" },
-        { rel: "icon", type: "image/png", sizes: "512x512", href: "/icons/v11/icon-512.png?v=12" },
-        { rel: "apple-touch-icon", href: "/icons/v11/apple-touch-icon.png?v=12" },
-        { rel: "apple-touch-icon-precomposed", href: "/icons/v11/apple-touch-icon.png?v=12" },
+        { rel: "icon", type: "image/x-icon", href: "/icons/v11/favicon.ico?v=13" },
+        { rel: "shortcut icon", type: "image/x-icon", href: "/icons/v11/favicon.ico?v=13" },
+        { rel: "icon", type: "image/png", sizes: "192x192", href: "/icons/v11/icon-192.png?v=13" },
+        { rel: "icon", type: "image/png", sizes: "512x512", href: "/icons/v11/icon-512.png?v=13" },
+        { rel: "apple-touch-icon", href: "/icons/v11/apple-touch-icon.png?v=13" },
+        { rel: "apple-touch-icon-precomposed", href: "/icons/v11/apple-touch-icon.png?v=13" },
         { rel: "stylesheet", href: appCss },
-        { rel: "manifest", href: "/manifest.webmanifest?v=12" },
+        { rel: "manifest", href: "/manifest.webmanifest?v=13" },
         { rel: "sitemap", type: "application/xml", href: "/sitemap.xml" },
         { rel: "preconnect", href: "https://fonts.googleapis.com" },
         { rel: "preconnect", href: "https://fonts.gstatic.com", crossOrigin: "anonymous" },
@@ -86,7 +86,7 @@ function RootDocument() {
         <Scripts />
         <script
           dangerouslySetInnerHTML={{
-            __html: `if('serviceWorker' in navigator){window.addEventListener('load',function(){navigator.serviceWorker.getRegistrations().then(function(registrations){registrations.forEach(function(registration){registration.unregister();});}).catch(function(){});});}`,
+            __html: `if('serviceWorker' in navigator){window.addEventListener('load',function(){navigator.serviceWorker.register('/sw.js?v=13',{scope:'/'}).catch(function(){});});}`,
           }}
         />
       </body>
