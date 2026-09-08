@@ -1,6 +1,7 @@
 import { createFileRoute, Outlet } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { BottomNav } from "@/components/bottom-nav";
+import { InstallAppPrompt } from "@/components/install-app-prompt";
 import { SiteFooter } from "@/components/site-footer";
 import { useCurrentUserState } from "@/lib/auth/use-current-user";
 import { brand } from "@/lib/brand";
@@ -45,6 +46,7 @@ function AppShell() {
           <SiteFooter />
         </div>
       </div>
+      <InstallAppPrompt />
       <BottomNav />
     </div>
   );
