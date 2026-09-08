@@ -7,12 +7,14 @@ type BeforeInstallPromptEvent = Event & {
 };
 
 type NavigatorWithStandalone = Navigator & { standalone?: boolean };
+type PwaWindow = Window & { __mrPwaInstallPrompt?: BeforeInstallPromptEvent | null };
 
 export function PwaInstallPrompt() {
   const [installEvent, setInstallEvent] = useState<BeforeInstallPromptEvent | null>(null);
   const [isIos, setIsIos] = useState(false);
   const [isInstalled, setIsInstalled] = useState(false);
   const [dismissed, setDismissed] = useState(false);
+  const [showFallback, setShowFallback] = useState(false);
 
   useEffect(() => {
     const nav = navigator as NavigatorWithStandalone;
@@ -30,20 +32,37 @@ export function PwaInstallPrompt() {
       (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
     setIsIos(ios);
 
+    const pwaWindow = window as PwaWindow;
+    const syncSavedPrompt = () => {
+      setInstallEvent(pwaWindow.__mrPwaInstallPrompt ?? null);
+    };
+
     const onBeforeInstallPrompt = (event: Event) => {
       event.preventDefault();
-      setInstallEvent(event as BeforeInstallPromptEvent);
+      const promptEvent = event as BeforeInstallPromptEvent;
+      pwaWindow.__mrPwaInstallPrompt = promptEvent;
+      setInstallEvent(promptEvent);
     };
 
     const onInstalled = () => {
+      pwaWindow.__mrPwaInstallPrompt = null;
       setIsInstalled(true);
       setInstallEvent(null);
     };
 
+    syncSavedPrompt();
+    window.addEventListener("mr-pwa-install-ready", syncSavedPrompt);
+    window.addEventListener("mr-pwa-installed", onInstalled);
     window.addEventListener("beforeinstallprompt", onBeforeInstallPrompt);
     window.addEventListener("appinstalled", onInstalled);
 
+    if ("serviceWorker" in navigator) {
+      void navigator.serviceWorker.ready.then(syncSavedPrompt).catch(() => undefined);
+    }
+
     return () => {
+      window.removeEventListener("mr-pwa-install-ready", syncSavedPrompt);
+      window.removeEventListener("mr-pwa-installed", onInstalled);
       window.removeEventListener("beforeinstallprompt", onBeforeInstallPrompt);
       window.removeEventListener("appinstalled", onInstalled);
     };
@@ -67,17 +86,15 @@ export function PwaInstallPrompt() {
             <Share2 className="size-5" />
           </span>
           <div>
-            <p className="font-medium text-fg">Install Mr Wallpapers</p>
+            <p className="font-medium text-fg">Add Mr Wallpapers to iPhone</p>
             <p className="mt-1 text-sm leading-5 text-muted">
-              Open this site in Safari, tap Share, then choose Add to Home Screen. Keep Open as Web App enabled if shown.
+              In Safari: tap Share → Add to Home Screen → turn on Open as Web App → tap Add.
             </p>
           </div>
         </div>
       </aside>
     );
   }
-
-  if (!installEvent) return null;
 
   return (
     <aside className="fixed inset-x-3 bottom-20 z-50 mx-auto max-w-md rounded-[18px] border border-border bg-bg/95 p-4 shadow-2xl backdrop-blur-md">
@@ -102,7 +119,15 @@ export function PwaInstallPrompt() {
         type="button"
         className="mt-3 h-11 w-full rounded-full bg-fg px-4 text-sm font-medium text-bg"
         onClick={async () => {
-          const event = installEvent;
+          const pwaWindow = window as PwaWindow;
+          const event = installEvent ?? pwaWindow.__mrPwaInstallPrompt ?? null;
+
+          if (!event) {
+            setShowFallback(true);
+            return;
+          }
+
+          pwaWindow.__mrPwaInstallPrompt = null;
           setInstallEvent(null);
           await event.prompt();
           const choice = await event.userChoice;
@@ -111,6 +136,11 @@ export function PwaInstallPrompt() {
       >
         Install app
       </button>
+      {showFallback ? (
+        <p className="mt-3 text-xs leading-5 text-muted">
+          Chrome or Edge has not released the native install prompt yet. On Windows, open the ⋮ menu → Cast, save, and share → Install page as app. On Android, open the ⋮ menu → Add to Home screen / Install app.
+        </p>
+      ) : null}
     </aside>
   );
 }
