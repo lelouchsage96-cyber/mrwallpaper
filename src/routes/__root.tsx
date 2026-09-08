@@ -73,18 +73,8 @@ export const Route = createRootRoute({
 const PWA_BOOT_SCRIPT = `
 (function(){
   try {
-    window.__mrPwaInstallPrompt = window.__mrPwaInstallPrompt || null;
-    window.addEventListener('beforeinstallprompt', function(event){
-      event.preventDefault();
-      window.__mrPwaInstallPrompt = event;
-      window.dispatchEvent(new Event('mr-pwa-install-ready'));
-    });
-    window.addEventListener('appinstalled', function(){
-      window.__mrPwaInstallPrompt = null;
-      window.dispatchEvent(new Event('mr-pwa-installed'));
-    });
     if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.register('/sw.js?v=14', { scope: '/', updateViaCache: 'none' }).catch(function(){});
+      navigator.serviceWorker.register('/sw.js?v=15', { scope: '/', updateViaCache: 'none' }).catch(function(){});
     }
   } catch (error) {}
 })();`;
