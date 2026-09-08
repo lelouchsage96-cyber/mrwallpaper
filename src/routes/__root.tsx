@@ -28,9 +28,9 @@ export const Route = createRootRoute({
       { name: "apple-mobile-web-app-title", content: "Mr Wallpapers" },
       { name: "apple-mobile-web-app-capable", content: "yes" },
       { name: "apple-mobile-web-app-status-bar-style", content: "black-translucent" },
-      { name: "msapplication-config", content: "/browserconfig.xml?v=13" },
+      { name: "msapplication-config", content: "/browserconfig.xml" },
       { name: "msapplication-TileColor", content: "#0a0a0b" },
-      { name: "msapplication-TileImage", content: "/icons/v11/icon-192.png?v=13" },
+      { name: "msapplication-TileImage", content: "/icon-192.png" },
     ] as Array<Record<string, string>>;
     if (seo.gscVerification) {
       meta.push({ name: "google-site-verification", content: seo.gscVerification });
@@ -49,14 +49,14 @@ export const Route = createRootRoute({
       meta,
       scripts,
       links: [
-        { rel: "icon", type: "image/x-icon", href: "/icons/v11/favicon.ico?v=13" },
-        { rel: "shortcut icon", type: "image/x-icon", href: "/icons/v11/favicon.ico?v=13" },
-        { rel: "icon", type: "image/png", sizes: "192x192", href: "/icons/v11/icon-192.png?v=13" },
-        { rel: "icon", type: "image/png", sizes: "512x512", href: "/icons/v11/icon-512.png?v=13" },
-        { rel: "apple-touch-icon", href: "/icons/v11/apple-touch-icon.png?v=13" },
-        { rel: "apple-touch-icon-precomposed", href: "/icons/v11/apple-touch-icon.png?v=13" },
+        { rel: "icon", type: "image/x-icon", href: "/favicon.ico" },
+        { rel: "shortcut icon", type: "image/x-icon", href: "/favicon.ico" },
+        { rel: "icon", type: "image/png", sizes: "192x192", href: "/icon-192.png" },
+        { rel: "icon", type: "image/png", sizes: "512x512", href: "/icon-512.png" },
+        { rel: "apple-touch-icon", href: "/apple-touch-icon.png" },
+        { rel: "apple-touch-icon-precomposed", href: "/apple-touch-icon.png" },
         { rel: "stylesheet", href: appCss },
-        { rel: "manifest", href: "/manifest.webmanifest?v=13" },
+        { rel: "manifest", href: "/manifest.webmanifest" },
         { rel: "sitemap", type: "application/xml", href: "/sitemap.xml" },
         { rel: "preconnect", href: "https://fonts.googleapis.com" },
         { rel: "preconnect", href: "https://fonts.gstatic.com", crossOrigin: "anonymous" },
@@ -70,10 +70,30 @@ export const Route = createRootRoute({
   component: RootDocument,
 });
 
+const PWA_BOOT_SCRIPT = `
+(function(){
+  try {
+    window.__mrPwaInstallPrompt = window.__mrPwaInstallPrompt || null;
+    window.addEventListener('beforeinstallprompt', function(event){
+      event.preventDefault();
+      window.__mrPwaInstallPrompt = event;
+      window.dispatchEvent(new Event('mr-pwa-install-ready'));
+    });
+    window.addEventListener('appinstalled', function(){
+      window.__mrPwaInstallPrompt = null;
+      window.dispatchEvent(new Event('mr-pwa-installed'));
+    });
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('/sw.js?v=14', { scope: '/', updateViaCache: 'none' }).catch(function(){});
+    }
+  } catch (error) {}
+})();`;
+
 function RootDocument() {
   return (
     <html lang="en" className="dark antialiased" suppressHydrationWarning>
       <head>
+        <script dangerouslySetInnerHTML={{ __html: PWA_BOOT_SCRIPT }} />
         <script dangerouslySetInnerHTML={{ __html: BOOT_SCRIPT }} />
         <HeadContent />
       </head>
@@ -84,11 +104,6 @@ function RootDocument() {
           </ThemeProvider>
         </AuthProvider>
         <Scripts />
-        <script
-          dangerouslySetInnerHTML={{
-            __html: `if('serviceWorker' in navigator){window.addEventListener('load',function(){navigator.serviceWorker.register('/sw.js?v=13',{scope:'/'}).catch(function(){});});}`,
-          }}
-        />
       </body>
     </html>
   );
