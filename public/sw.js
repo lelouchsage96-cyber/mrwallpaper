@@ -1,4 +1,4 @@
-const VERSION = "mrwallpapers-v13";
+const VERSION = "mrwallpapers-v15";
 
 self.addEventListener("install", () => {
   self.skipWaiting();
