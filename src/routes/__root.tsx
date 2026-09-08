@@ -74,7 +74,7 @@ const PWA_BOOT_SCRIPT = `
 (function(){
   try {
     if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.register('/sw.js?v=15', { scope: '/', updateViaCache: 'none' }).catch(function(){});
+      navigator.serviceWorker.register('/sw.js?v=16', { scope: '/', updateViaCache: 'none' }).catch(function(){});
     }
   } catch (error) {}
 })();`;
