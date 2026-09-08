@@ -22,12 +22,14 @@ function detectMode(): PromptMode {
   const isiOS =
     /iPhone|iPad|iPod/i.test(ua) ||
     (/Macintosh/i.test(ua) && (nav.maxTouchPoints ?? 0) > 1);
+  const isAndroid = /Android/i.test(ua);
   const inApp = /Instagram|FBAN|FBAV|TikTok|musical_ly|Bytedance|Telegram|Line|Twitter/i.test(ua);
 
   if (isiOS && inApp) return "inapp-ios";
   if (isiOS) return "ios";
-  if (inApp && /Android/i.test(ua)) return "inapp-android";
-  return "browser";
+  if (isAndroid && inApp) return "inapp-android";
+  if (isAndroid) return "browser";
+  return null;
 }
 
 export function InstallAppPrompt() {
@@ -45,13 +47,14 @@ export function InstallAppPrompt() {
 
     const detectedMode = detectMode();
     const timer = window.setTimeout(() => {
+      if (!detectedMode) return;
       setMode(detectedMode);
       setVisible(true);
     }, 3500);
 
     const onBeforeInstallPrompt = (event: Event) => {
-      // Do not call preventDefault(): Chrome/Edge keep control of their native
-      // address-bar install UI while we retain the event for our helper button.
+      // Only show our helper on Android. Desktop browsers keep their own native UI.
+      if (!/Android/i.test(navigator.userAgent)) return;
       setDeferredPrompt(event as InstallPromptEvent);
       setMode("browser");
       setVisible(true);
@@ -177,7 +180,7 @@ export function InstallAppPrompt() {
             <p className="text-sm text-muted">
               {deferredPrompt
                 ? "Install the web app for a full-screen experience and quicker access."
-                : "Install from your browser’s address-bar install icon or menu."}
+                : "Install from Chrome’s menu using Install app or Add to Home screen."}
             </p>
             <button
               type="button"
@@ -189,7 +192,7 @@ export function InstallAppPrompt() {
             </button>
             {showSteps && (
               <p className="rounded-[12px] bg-bg px-3 py-2 text-xs leading-relaxed text-muted shadow-[var(--shadow-border)]">
-                Chrome/Edge: use the install icon near the right side of the address bar, or open the browser menu and choose <span className="font-medium text-fg">Install Mr Wallpapers</span> / <span className="font-medium text-fg">Install app</span>.
+                In Chrome, open the browser menu and choose <span className="font-medium text-fg">Install app</span> or <span className="font-medium text-fg">Add to Home screen</span>.
               </p>
             )}
           </div>
