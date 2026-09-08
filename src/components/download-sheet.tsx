@@ -7,18 +7,64 @@ import { createAdSession, requestDownload } from "@/lib/server/api";
 import { downloadLabel, type DeviceType } from "@/lib/device";
 import type { AccessType } from "@/lib/types";
 
+type DownloadFile = { data: Uint8Array; filename: string; mime: string };
+
 async function fetchBytes(url: string): Promise<Uint8Array> {
   const res = await fetch(url);
   if (!res.ok) throw new Error("fetch");
   return new Uint8Array(await res.arrayBuffer());
 }
 
-async function saveFiles(
-  files: { data: Uint8Array; filename: string; mime: string }[],
-): Promise<void> {
+function toBrowserFile(item: DownloadFile): File {
+  const copy = new Uint8Array(item.data);
+  return new File([copy], item.filename, { type: item.mime });
+}
+
+function isIOSDevice(): boolean {
+  if (typeof navigator === "undefined") return false;
+  return (
+    /iPad|iPhone|iPod/.test(navigator.userAgent) ||
+    (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1)
+  );
+}
+
+function canShareFile(file: File): boolean {
+  if (typeof navigator === "undefined" || typeof navigator.share !== "function") return false;
+  return typeof navigator.canShare !== "function" || navigator.canShare({ files: [file] });
+}
+
+function shareWasCancelled(error: unknown): boolean {
+  return error instanceof DOMException && error.name === "AbortError";
+}
+
+function hasActiveUserGesture(): boolean {
+  if (typeof navigator === "undefined") return false;
+  const activation = (navigator as Navigator & { userActivation?: { isActive: boolean } }).userActivation;
+  return activation?.isActive ?? true;
+}
+
+async function tryIOSImageShare(item: DownloadFile): Promise<"shared" | "cancelled" | "ready" | "unsupported"> {
+  if (!isIOSDevice() || !item.mime.startsWith("image/")) return "unsupported";
+
+  const file = toBrowserFile(item);
+  if (!canShareFile(file)) return "unsupported";
+
+  // Web Share needs transient user activation. Fast downloads can share from
+  // the original tap; slower ones fall through to a second, direct share tap.
+  if (!hasActiveUserGesture()) return "ready";
+
+  try {
+    await navigator.share({ files: [file] });
+    return "shared";
+  } catch (error) {
+    if (shareWasCancelled(error)) return "cancelled";
+    return "ready";
+  }
+}
+
+async function saveFiles(files: DownloadFile[]): Promise<void> {
   for (const item of files) {
-    const copy = new Uint8Array(item.data);
-    const file = new File([copy], item.filename, { type: item.mime });
+    const file = toBrowserFile(item);
     const objectUrl = URL.createObjectURL(file);
     const a = document.createElement("a");
     a.href = objectUrl;
@@ -50,19 +96,51 @@ export function DownloadSheet({
   deviceType?: DeviceType;
 }) {
   const navigate = useNavigate();
-  const [phase, setPhase] = useState<"idle" | "saving" | "guide" | "error">("idle");
+  const [phase, setPhase] = useState<"idle" | "saving" | "ready" | "guide" | "error">("idle");
   const [adSessionId, setAdSessionId] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
+  const [iosReadyFile, setIosReadyFile] = useState<DownloadFile | null>(null);
 
   useEffect(() => {
     if (!open) {
       setPhase("idle");
       setMessage(null);
       setAdSessionId(null);
+      setIosReadyFile(null);
     }
   }, [open]);
 
   if (!open) return null;
+
+  async function sharePreparedIOSFile() {
+    if (!iosReadyFile) return;
+
+    const file = toBrowserFile(iosReadyFile);
+    if (!canShareFile(file)) {
+      try {
+        await saveFiles([iosReadyFile]);
+        onClose();
+      } catch {
+        setPhase("error");
+        setMessage(t.download.failed);
+      }
+      return;
+    }
+
+    try {
+      await navigator.share({ files: [file] });
+      onClose();
+    } catch (error) {
+      if (shareWasCancelled(error)) return;
+      try {
+        await saveFiles([iosReadyFile]);
+        onClose();
+      } catch {
+        setPhase("error");
+        setMessage(t.download.failed);
+      }
+    }
+  }
 
   async function finish(sessionId?: string, pack = false) {
     setPhase("saving");
@@ -129,7 +207,29 @@ export function DownloadSheet({
       }
 
       const bytes = await fetchBytes(res.url);
-      await saveFiles([{ data: bytes, filename: res.filename, mime: res.mime || "image/jpeg" }]);
+      const downloadFile: DownloadFile = {
+        data: bytes,
+        filename: res.filename,
+        mime: res.mime || "image/jpeg",
+      };
+
+      const iosShare = await tryIOSImageShare(downloadFile);
+      if (iosShare === "shared") {
+        onClose();
+        return;
+      }
+      if (iosShare === "cancelled") {
+        setPhase("idle");
+        return;
+      }
+      if (iosShare === "ready") {
+        setIosReadyFile(downloadFile);
+        setPhase("ready");
+        return;
+      }
+
+      // Android, desktop, and unsupported browsers keep the existing direct-download behavior.
+      await saveFiles([downloadFile]);
       onClose();
     } catch {
       setPhase("error");
@@ -166,6 +266,19 @@ export function DownloadSheet({
             </ol>
             <Button className="w-full" onClick={onClose}>
               {t.done}
+            </Button>
+          </div>
+        ) : phase === "ready" ? (
+          <div className="mt-4 space-y-4">
+            <p className="text-sm text-muted">
+              Your wallpaper is ready. Tap below to open the iOS share sheet, then choose Save Image.
+            </p>
+            {message ? <p className="text-sm text-danger">{message}</p> : null}
+            <Button className="w-full" onClick={() => void sharePreparedIOSFile()}>
+              Save to Photos
+            </Button>
+            <Button variant="ghost" className="w-full" onClick={onClose}>
+              {t.cancel}
             </Button>
           </div>
         ) : (
