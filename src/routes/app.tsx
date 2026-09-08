@@ -39,7 +39,7 @@ function AppShell() {
   }
 
   return (
-    <div className="min-h-dvh bg-bg">
+    <div className="min-h-dvh bg-bg pt-[env(safe-area-inset-top)]">
       <div className="mx-auto max-w-5xl pb-24">
         <Outlet />
         <div className="px-4">
