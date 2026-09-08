@@ -2,6 +2,7 @@ import { createFileRoute, Outlet } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { BottomNav } from "@/components/bottom-nav";
 import { SiteFooter } from "@/components/site-footer";
+import { PwaInstallPrompt } from "@/components/pwa-install-prompt";
 import { useCurrentUserState } from "@/lib/auth/use-current-user";
 import { brand } from "@/lib/brand";
 import { noindexHead } from "@/lib/seo";
@@ -45,6 +46,7 @@ function AppShell() {
           <SiteFooter />
         </div>
       </div>
+      <PwaInstallPrompt />
       <BottomNav />
     </div>
   );
