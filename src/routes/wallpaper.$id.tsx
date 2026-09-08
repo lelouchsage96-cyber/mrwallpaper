@@ -140,7 +140,7 @@ function DetailsPage() {
   if (!wallpaper) return <EmptyState title={t.errors.notFound} />;
 
   return (
-    <div className="mx-auto max-w-5xl pb-16">
+    <div className="mx-auto max-w-5xl pb-16 pt-[env(safe-area-inset-top)]">
       <div className="px-4 pt-3">
         <div className="flex items-center justify-between">
           <button
