@@ -11,28 +11,16 @@
   "orientation": "any",
   "icons": [
     {
-      "src": "/icons/v6/icon-192.png?v=6",
+      "src": "/icons/v10/icon-192.png?v=10",
       "sizes": "192x192",
       "type": "image/png",
       "purpose": "any"
     },
     {
-      "src": "/icons/v6/icon-512.png?v=6",
+      "src": "/icons/v10/icon-512.png?v=10",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any"
-    },
-    {
-      "src": "/icons/v6/icon-maskable-192.png?v=6",
-      "sizes": "192x192",
-      "type": "image/png",
-      "purpose": "maskable"
-    },
-    {
-      "src": "/icons/v6/icon-maskable-512.png?v=6",
-      "sizes": "512x512",
-      "type": "image/png",
-      "purpose": "maskable"
     }
   ]
 }
