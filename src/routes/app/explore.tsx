@@ -177,6 +177,7 @@ function ExplorePage() {
           placeholder={t.explore.placeholder}
           aria-label={t.explore.placeholder}
           type="search"
+          className="text-base sm:text-sm"
         />
       </div>
 
