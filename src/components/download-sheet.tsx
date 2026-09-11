@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "@tanstack/react-router";
 import { Button } from "@/components/ui/button";
+import { trackEvent } from "@/lib/analytics";
 import { t } from "@/lib/i18n/en";
 import { injectLiveJpeg, injectLiveMov, liveAssetId, zipStore } from "@/lib/live-photo";
 import { createAdSession, requestDownload } from "@/lib/server/api";
@@ -49,8 +50,6 @@ async function tryIOSImageShare(item: DownloadFile): Promise<"shared" | "cancell
   const file = toBrowserFile(item);
   if (!canShareFile(file)) return "unsupported";
 
-  // Web Share needs transient user activation. Fast downloads can share from
-  // the original tap; slower ones fall through to a second, direct share tap.
   if (!hasActiveUserGesture()) return "ready";
 
   try {
@@ -182,6 +181,16 @@ export function DownloadSheet({
         return;
       }
 
+      trackEvent("download", {
+        wallpaperId,
+        metadata: {
+          device: deviceType,
+          live: res.isLive,
+          pack,
+          delivery: isIOSDevice() ? "ios" : "browser",
+        },
+      });
+
       if (res.isLive && res.stillUrl && res.stillFilename) {
         const [video, still] = await Promise.all([fetchBytes(res.url), fetchBytes(res.stillUrl)]);
         const id = liveAssetId();
@@ -228,7 +237,6 @@ export function DownloadSheet({
         return;
       }
 
-      // Android, desktop, and unsupported browsers keep the existing direct-download behavior.
       await saveFiles([downloadFile]);
       onClose();
     } catch {
