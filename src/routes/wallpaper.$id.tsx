@@ -1,6 +1,7 @@
 import { createFileRoute, notFound, redirect, useNavigate } from "@tanstack/react-router";
 import { ChevronLeft, Download, Flag, Share2 } from "lucide-react";
 import { useEffect, useState } from "react";
+import { trackEvent } from "@/lib/analytics";
 import { Breadcrumbs } from "@/components/breadcrumbs";
 import { DevicePreview, type PreviewMode } from "@/components/device-preview";
 import { DownloadSheet } from "@/components/download-sheet";
@@ -128,9 +129,19 @@ function DetailsPage() {
     try {
       if (navigator.share) {
         await navigator.share({ title: wallpaper?.title ?? brand.name, url });
+        trackEvent("share", {
+          wallpaperId: wallpaper?.id,
+          categorySlug: wallpaper?.categorySlug,
+          metadata: { method: "native" },
+        });
         return;
       }
       await navigator.clipboard.writeText(url);
+      trackEvent("share", {
+        wallpaperId: wallpaper?.id,
+        categorySlug: wallpaper?.categorySlug,
+        metadata: { method: "clipboard" },
+      });
       setShareMsg(t.shareCopied);
     } catch {
       setShareMsg(null);
