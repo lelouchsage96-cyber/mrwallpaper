@@ -1,5 +1,6 @@
 import { Link, useRouterState } from "@tanstack/react-router";
 import { Compass, Heart, Home, User } from "lucide-react";
+import { brand } from "@/lib/brand";
 import { t } from "@/lib/i18n/en";
 import { cn } from "@/lib/utils";
 
@@ -10,20 +11,65 @@ const items = [
   { to: "/app/profile", label: t.nav.profile, icon: User },
 ] as const;
 
-export function BottomNav() {
-  const pathname = useRouterState({ select: (s) => s.location.pathname });
+function useActivePath() {
+  return useRouterState({ select: (s) => s.location.pathname });
+}
+
+function isActivePath(pathname: string, item: (typeof items)[number]) {
+  return "exact" in item && item.exact
+    ? pathname === item.to
+    : pathname === item.to || pathname.startsWith(`${item.to}/`);
+}
+
+export function DesktopNav() {
+  const pathname = useActivePath();
 
   return (
     <nav
       aria-label="Main"
-      className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-bg/90 backdrop-blur-md"
+      className="sticky top-0 z-40 hidden border-b border-border bg-bg/90 backdrop-blur-md lg:block"
+    >
+      <div className="mx-auto flex max-w-[1440px] items-center justify-between gap-6 px-6 py-3 xl:px-8">
+        <Link to="/app" className="font-display text-xl text-fg">
+          {brand.name}
+        </Link>
+        <ul className="flex items-center gap-1">
+          {items.map((item) => {
+            const active = isActivePath(pathname, item);
+            const Icon = item.icon;
+            return (
+              <li key={item.to}>
+                <Link
+                  to={item.to}
+                  aria-current={active ? "page" : undefined}
+                  className={cn(
+                    "flex h-10 items-center gap-2 rounded-full px-4 text-sm font-medium transition-colors duration-150 ease-out",
+                    active ? "bg-elevated text-fg" : "text-muted hover:bg-elevated/70 hover:text-fg",
+                  )}
+                >
+                  <Icon className="size-4" strokeWidth={active ? 2 : 1.7} />
+                  {item.label}
+                </Link>
+              </li>
+            );
+          })}
+        </ul>
+      </div>
+    </nav>
+  );
+}
+
+export function BottomNav() {
+  const pathname = useActivePath();
+
+  return (
+    <nav
+      aria-label="Main"
+      className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-bg/90 backdrop-blur-md lg:hidden"
     >
       <ul className="mx-auto grid max-w-lg grid-cols-4 px-2 pb-[max(0.5rem,env(safe-area-inset-bottom))] pt-1">
         {items.map((item) => {
-          const active =
-            "exact" in item && item.exact
-              ? pathname === item.to
-              : pathname === item.to || pathname.startsWith(`${item.to}/`);
+          const active = isActivePath(pathname, item);
           const Icon = item.icon;
           return (
             <li key={item.to}>
