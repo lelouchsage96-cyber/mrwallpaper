@@ -168,7 +168,7 @@ function ExplorePage() {
   }, [debounced]);
 
   return (
-    <div className="px-4 pt-5">
+    <div className="px-4 pt-5 lg:px-6 lg:pt-8 xl:px-8">
       <h1 className="font-display text-3xl text-fg">{t.explore.title}</h1>
       <div className="mt-4">
         <Input
@@ -205,7 +205,7 @@ function ExplorePage() {
         </div>
       ) : null}
 
-      <div className="mt-4 flex flex-nowrap gap-2 overflow-x-auto pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+      <div className="mt-4 flex flex-nowrap gap-2 overflow-x-auto pb-1 [-ms-overflow-style:none] [scrollbar-width:none] lg:flex-wrap lg:overflow-visible [&::-webkit-scrollbar]:hidden">
         {deviceChips.map((f) => (
           <button
             key={f.id}
@@ -230,7 +230,7 @@ function ExplorePage() {
       </div>
 
       {categories.length > 0 ? (
-        <div className="mt-4 flex flex-nowrap gap-2 overflow-x-auto pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+        <div className="mt-4 flex flex-nowrap gap-2 overflow-x-auto pb-1 [-ms-overflow-style:none] [scrollbar-width:none] lg:flex-wrap lg:overflow-visible [&::-webkit-scrollbar]:hidden">
           {categories.map((c) => (
             <button
               key={c.id}
@@ -255,7 +255,7 @@ function ExplorePage() {
         </div>
       ) : null}
 
-      <div className="mt-3 flex flex-nowrap gap-2 overflow-x-auto pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+      <div className="mt-3 flex flex-nowrap gap-2 overflow-x-auto pb-1 [-ms-overflow-style:none] [scrollbar-width:none] lg:flex-wrap lg:overflow-visible [&::-webkit-scrollbar]:hidden">
         {sortChips.map((f) => (
           <button
             key={f.id}
