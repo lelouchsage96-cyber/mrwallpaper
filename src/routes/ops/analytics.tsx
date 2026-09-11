@@ -39,6 +39,7 @@ function OpsAnalyticsPage() {
   const [data, setData] = useState<AnalyticsOverview | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
+  const [reloadKey, setReloadKey] = useState(0);
 
   useEffect(() => {
     let cancelled = false;
@@ -57,14 +58,27 @@ function OpsAnalyticsPage() {
     return () => {
       cancelled = true;
     };
-  }, [days]);
+  }, [days, reloadKey]);
 
   const conversion = data?.metrics.wallpaperViews
     ? (data.metrics.downloads / data.metrics.wallpaperViews) * 100
     : 0;
+
+  const dailySeries = useMemo(() => {
+    const values = new Map((data?.daily ?? []).map((row) => [row.day, row.pageViews]));
+    const today = new Date();
+    const end = Date.UTC(today.getUTCFullYear(), today.getUTCMonth(), today.getUTCDate());
+
+    return Array.from({ length: days }, (_, index) => {
+      const timestamp = end - (days - 1 - index) * 86_400_000;
+      const day = new Date(timestamp).toISOString().slice(0, 10);
+      return { day, pageViews: values.get(day) ?? 0 };
+    });
+  }, [data?.daily, days]);
+
   const maxDaily = useMemo(
-    () => Math.max(1, ...(data?.daily.map((row) => row.pageViews) ?? [1])),
-    [data?.daily],
+    () => Math.max(1, ...dailySeries.map((row) => row.pageViews)),
+    [dailySeries],
   );
 
   return (
@@ -95,7 +109,7 @@ function OpsAnalyticsPage() {
       </div>
 
       {error ? (
-        <ErrorState onRetry={() => setDays((d) => d)} />
+        <ErrorState onRetry={() => setReloadKey((value) => value + 1)} />
       ) : loading && !data ? (
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
           {Array.from({ length: 8 }, (_, i) => <div key={i} className="h-32 animate-pulse rounded-xl bg-elevated" />)}
@@ -123,11 +137,22 @@ function OpsAnalyticsPage() {
             </div>
             {data.daily.length ? (
               <div className="mt-6 flex h-36 items-end gap-1" aria-label="Daily page views chart">
-                {data.daily.map((row) => (
-                  <div key={row.day} className="group relative flex h-full min-w-0 flex-1 items-end" title={`${row.day}: ${row.pageViews} page views`}>
+                {dailySeries.map((row) => (
+                  <div
+                    key={row.day}
+                    className="group relative flex h-full min-w-0 flex-1 items-end"
+                    title={`${row.day}: ${row.pageViews} page views`}
+                  >
                     <div
-                      className="w-full rounded-t-sm bg-fg/70 transition-opacity group-hover:bg-fg"
-                      style={{ height: `${Math.max(3, (row.pageViews / maxDaily) * 100)}%` }}
+                      className={cn(
+                        "w-full rounded-t-sm transition-colors",
+                        row.pageViews > 0 ? "bg-fg/70 group-hover:bg-fg" : "bg-border/70",
+                      )}
+                      style={{
+                        height: row.pageViews > 0
+                          ? `${Math.max(4, (row.pageViews / maxDaily) * 100)}%`
+                          : "2px",
+                      }}
                     />
                   </div>
                 ))}
