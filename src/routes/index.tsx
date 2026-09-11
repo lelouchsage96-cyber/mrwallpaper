@@ -6,6 +6,7 @@ import { MwMark } from "@/components/mw-mark";
 import { brand } from "@/lib/brand";
 import { CATEGORY_EDITORIAL } from "@/lib/category-content";
 import { t } from "@/lib/i18n/en";
+import { categoryPreview } from "@/lib/media";
 import {
   HOME_DESCRIPTION,
   HOME_TITLE,
@@ -25,6 +26,22 @@ const FEATURED_CATEGORY_SLUGS = [
   "minimal",
   "anime",
 ] as const;
+
+function isLegacyOriginal(url: string): boolean {
+  try {
+    return /\/originals\//i.test(new URL(url, "https://mrwallpaper.org").pathname);
+  } catch {
+    return false;
+  }
+}
+
+function displayImage(url: string | null | undefined, width = 720, quality = 80): string {
+  if (!url) return "";
+  if (isLegacyOriginal(url)) {
+    return `/_vercel/image?url=${encodeURIComponent(url)}&w=${width}&q=${quality}`;
+  }
+  return url;
+}
 
 export const Route = createFileRoute("/")({
   loader: () => getHomeFeed(),
@@ -61,6 +78,17 @@ function HomePage() {
     categories.find((category) => category.slug === slug),
   ).filter((category): category is NonNullable<typeof category> => Boolean(category));
 
+  const heroCandidates = [
+    fresh[0],
+    trending.find((wallpaper) => wallpaper.categorySlug === "bible-verse"),
+    trending.find((wallpaper) => wallpaper.categorySlug === "aesthetic"),
+    trending[0],
+    fresh[1],
+  ].filter((wallpaper): wallpaper is NonNullable<typeof wallpaper> => Boolean(wallpaper));
+  const heroWallpapers = heroCandidates
+    .filter((wallpaper, index, items) => items.findIndex((item) => item.id === wallpaper.id) === index)
+    .slice(0, 3);
+
   return (
     <main className="mx-auto max-w-5xl px-4 pb-20 pt-8">
       <header className="flex items-center justify-between gap-3">
@@ -76,25 +104,54 @@ function HomePage() {
         </a>
       </header>
 
-      <section className="mt-12 max-w-3xl">
-        <p className="text-xs font-medium tracking-[0.2em] text-subtle uppercase">{brand.tagline}</p>
-        <h1 className="mt-3 font-display text-4xl text-fg sm:text-6xl">HD & 4K wallpapers for every screen</h1>
-        <p className="mt-4 max-w-2xl text-base leading-relaxed text-muted sm:text-lg">{HOME_DESCRIPTION}</p>
-        <div className="mt-7 flex flex-wrap items-center gap-3">
-          <a
-            href="/wallpapers"
-            className="inline-flex h-11 items-center gap-2 rounded-full bg-fg px-5 text-sm font-medium text-bg transition-opacity hover:opacity-90"
-          >
-            Explore wallpapers
-            <ArrowRight className="size-4" aria-hidden="true" />
-          </a>
-          <a
-            href="/wallpapers/iphone"
-            className="inline-flex h-11 items-center rounded-full bg-elevated px-5 text-sm text-fg transition-colors hover:bg-surface"
-          >
-            Browse iPhone wallpapers
-          </a>
+      <section className="mt-10 grid gap-10 lg:grid-cols-2 lg:items-center">
+        <div className="max-w-3xl">
+          <p className="text-xs font-medium tracking-[0.2em] text-subtle uppercase">{brand.tagline}</p>
+          <h1 className="mt-3 font-display text-4xl text-fg sm:text-6xl">HD & 4K wallpapers for every screen</h1>
+          <p className="mt-4 max-w-2xl text-base leading-relaxed text-muted sm:text-lg">{HOME_DESCRIPTION}</p>
+          <div className="mt-7 flex flex-wrap items-center gap-3">
+            <a
+              href="/wallpapers"
+              className="inline-flex h-11 items-center gap-2 rounded-full bg-fg px-5 text-sm font-medium text-bg transition-opacity hover:opacity-90"
+            >
+              Explore wallpapers
+              <ArrowRight className="size-4" aria-hidden="true" />
+            </a>
+            <a
+              href="/wallpapers/iphone"
+              className="inline-flex h-11 items-center rounded-full bg-elevated px-5 text-sm text-fg transition-colors hover:bg-surface"
+            >
+              Browse iPhone wallpapers
+            </a>
+          </div>
         </div>
+
+        {heroWallpapers.length > 0 ? (
+          <div className="mx-auto grid w-full max-w-lg grid-cols-3 items-center gap-2" aria-label="Featured wallpapers">
+            {heroWallpapers.map((wallpaper, index) => (
+              <a
+                key={wallpaper.id}
+                href={wallpaperPath(wallpaper.slug || wallpaper.id)}
+                className={`group relative overflow-hidden rounded-xl bg-elevated ring-1 ring-border ${
+                  index === 0 ? "mt-10" : index === 2 ? "mt-6" : ""
+                }`}
+              >
+                <div className="aspect-[9/16] overflow-hidden">
+                  <img
+                    src={displayImage(wallpaper.thumbnailUrl, 480, 78)}
+                    alt={wallpaper.altText || wallpaper.title}
+                    width={wallpaper.width}
+                    height={wallpaper.height}
+                    loading={index === 0 ? "eager" : "lazy"}
+                    fetchPriority={index === 0 ? "high" : "low"}
+                    decoding="async"
+                    className="wallpaper-img size-full object-cover transition-transform duration-300 ease-out group-hover:scale-[1.03]"
+                  />
+                </div>
+              </a>
+            ))}
+          </div>
+        ) : null}
       </section>
 
       {featuredCategories.length > 0 ? (
@@ -113,23 +170,33 @@ function HomePage() {
           <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
             {featuredCategories.map((category) => {
               const editorial = CATEGORY_EDITORIAL[category.slug];
+              const cover = displayImage(category.coverUrl || categoryPreview(category.slug), 720, 82);
               return (
                 <a
                   key={category.id}
                   href={`/wallpapers/${category.slug}`}
-                  className="group rounded-lg bg-elevated p-5 shadow-[var(--shadow-border)] transition-colors hover:bg-surface"
+                  className="group relative overflow-hidden rounded-lg bg-elevated ring-1 ring-border"
                 >
-                  <div className="flex items-start justify-between gap-4">
+                  <div className="aspect-video overflow-hidden">
+                    <img
+                      src={cover}
+                      alt={`${category.name} wallpaper collection`}
+                      loading="lazy"
+                      decoding="async"
+                      className="size-full object-cover transition-transform duration-300 ease-out group-hover:scale-[1.03]"
+                    />
+                  </div>
+                  <div className="absolute inset-0 bg-gradient-to-t from-bg via-bg/20 to-transparent" aria-hidden="true" />
+                  <div className="absolute inset-x-0 bottom-0 flex items-end justify-between gap-4 p-4">
                     <div>
-                      <h3 className="font-display text-2xl text-fg">{category.name}</h3>
-                      <p className="mt-2 text-sm leading-relaxed text-muted">
+                      <h3 className="font-display text-2xl text-on-photo">{category.name}</h3>
+                      <p className="mt-1 text-sm text-on-photo-muted">
                         {editorial?.intro || category.description}
                       </p>
                     </div>
-                    <ArrowRight
-                      className="mt-1 size-4 shrink-0 text-subtle transition-transform group-hover:translate-x-0.5 group-hover:text-fg"
-                      aria-hidden="true"
-                    />
+                    <span className="grid size-9 shrink-0 place-items-center rounded-full bg-bg/70 text-on-photo backdrop-blur-sm transition-transform group-hover:translate-x-0.5">
+                      <ArrowRight className="size-4" aria-hidden="true" />
+                    </span>
                   </div>
                 </a>
               );
@@ -139,25 +206,27 @@ function HomePage() {
       ) : null}
 
       {categories.length > 0 ? (
-        <nav aria-label="All wallpaper collections" className="mt-8 flex flex-wrap gap-2">
-          {categories.map((category) => (
-            <a
-              key={category.id}
-              href={`/wallpapers/${category.slug}`}
-              className="grid h-11 place-items-center rounded-full bg-elevated px-4 text-sm text-fg transition-colors hover:bg-surface"
-            >
-              {category.name}
+        <nav aria-label="All wallpaper collections" className="-mx-4 mt-6 overflow-x-auto px-4 pb-2">
+          <div className="flex w-max gap-2">
+            {categories.map((category) => (
+              <a
+                key={category.id}
+                href={`/wallpapers/${category.slug}`}
+                className="grid h-11 shrink-0 place-items-center rounded-full bg-elevated px-4 text-sm text-fg transition-colors hover:bg-surface"
+              >
+                {category.name}
+              </a>
+            ))}
+            <a href="/wallpapers/iphone" className="grid h-11 shrink-0 place-items-center rounded-full bg-elevated px-4 text-sm text-fg transition-colors hover:bg-surface">
+              iPhone
             </a>
-          ))}
-          <a href="/wallpapers/iphone" className="grid h-11 place-items-center rounded-full bg-elevated px-4 text-sm text-fg transition-colors hover:bg-surface">
-            iPhone
-          </a>
-          <a href="/wallpapers/android" className="grid h-11 place-items-center rounded-full bg-elevated px-4 text-sm text-fg transition-colors hover:bg-surface">
-            Android
-          </a>
-          <a href="/wallpapers/ipad" className="grid h-11 place-items-center rounded-full bg-elevated px-4 text-sm text-fg transition-colors hover:bg-surface">
-            iPad
-          </a>
+            <a href="/wallpapers/android" className="grid h-11 shrink-0 place-items-center rounded-full bg-elevated px-4 text-sm text-fg transition-colors hover:bg-surface">
+              Android
+            </a>
+            <a href="/wallpapers/ipad" className="grid h-11 shrink-0 place-items-center rounded-full bg-elevated px-4 text-sm text-fg transition-colors hover:bg-surface">
+              iPad
+            </a>
+          </div>
         </nav>
       ) : null}
 
