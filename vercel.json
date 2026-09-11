@@ -1,0 +1,18 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "images": {
+    "sizes": [480, 1080, 1440],
+    "remotePatterns": [
+      {
+        "protocol": "https",
+        "hostname": "^cdn\\.mrwallpaper\\.org$",
+        "port": "",
+        "pathname": "^/.*$",
+        "search": ""
+      }
+    ],
+    "minimumCacheTTL": 86400,
+    "qualities": [75, 85],
+    "formats": ["image/webp"]
+  }
+}
