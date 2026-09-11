@@ -159,8 +159,8 @@ function DetailsPage() {
   if (!wallpaper) return <EmptyState title={t.errors.notFound} />;
 
   return (
-    <div className="mx-auto max-w-5xl pb-16 pt-[env(safe-area-inset-top)]">
-      <div className="px-4 pt-3">
+    <div className="mx-auto max-w-7xl pb-16 pt-[env(safe-area-inset-top)]">
+      <div className="px-4 pt-3 lg:px-6 lg:pt-5">
         <div className="flex items-center justify-between">
           <button
             type="button"
@@ -189,141 +189,163 @@ function DetailsPage() {
         </div>
       </div>
 
-      <div className="mt-4 px-4">
-        <DevicePreview
-          src={wallpaper.previewUrl}
-          alt={wallpaper.altText || wallpaper.title}
-          mode={mode}
-          onModeChange={setMode}
-          variant={wallpaper.deviceType === "tablet" ? "tablet" : "phone"}
-          landscape={isLandscape(wallpaper.width, wallpaper.height)}
-        />
-      </div>
+      <div className="mt-4 px-4 lg:mt-8 lg:grid lg:grid-cols-[minmax(0,1.1fr)_minmax(360px,0.9fr)] lg:items-start lg:gap-12 lg:px-6 xl:gap-20">
+        <div className="min-w-0">
+          <DevicePreview
+            src={wallpaper.previewUrl}
+            alt={wallpaper.altText || wallpaper.title}
+            mode={mode}
+            onModeChange={setMode}
+            variant={wallpaper.deviceType === "tablet" ? "tablet" : "phone"}
+            landscape={isLandscape(wallpaper.width, wallpaper.height)}
+          />
+        </div>
 
-      <div className="px-4 pt-6">
-        <div className="flex items-start justify-between gap-3">
-          <div>
-            <h1 className="font-display text-3xl text-fg">{wallpaper.title}</h1>
-            <p className="mt-1 text-sm text-fg">{designedFor(wallpaper.deviceType)}</p>
-            <p className="mt-1 text-sm text-muted">
-              {wallpaper.creatorSlug && wallpaper.creatorName ? (
-                <a href={`/creator/${wallpaper.creatorSlug}`} className="hover:text-fg">
-                  {wallpaper.creatorName}
+        <div className="pt-6 lg:pt-4">
+          <div className="flex items-start justify-between gap-3">
+            <div>
+              <p className="hidden text-xs font-medium tracking-[0.18em] text-subtle uppercase lg:block">
+                Wallpaper details
+              </p>
+              <h1 className="font-display text-3xl text-fg lg:mt-2 lg:text-4xl">{wallpaper.title}</h1>
+              <p className="mt-1 text-sm text-fg">{designedFor(wallpaper.deviceType)}</p>
+              <p className="mt-1 text-sm text-muted">
+                {wallpaper.creatorSlug && wallpaper.creatorName ? (
+                  <a href={`/creator/${wallpaper.creatorSlug}`} className="hover:text-fg">
+                    {wallpaper.creatorName}
+                  </a>
+                ) : (
+                  t.wallpaper.byPlatform
+                )}
+                {" · "}
+                <a href={categoryPath(wallpaper.categorySlug)} className="hover:text-fg">
+                  {wallpaper.categoryName}
                 </a>
-              ) : (
-                t.wallpaper.byPlatform
-              )}
-              {" · "}
-              <a href={categoryPath(wallpaper.categorySlug)} className="hover:text-fg">
-                {wallpaper.categoryName}
-              </a>
-            </p>
-          </div>
-        </div>
-        {wallpaper.description ? <p className="mt-3 text-sm text-muted">{wallpaper.description}</p> : null}
-        {wallpaper.tags.length > 0 ? (
-          <p className="mt-3 flex flex-wrap gap-2">
-            {wallpaper.tags.map((tag) => (
-              <a
-                key={tag}
-                href={`/wallpapers?q=${encodeURIComponent(tag)}`}
-                className="rounded-full bg-elevated px-3 py-1 text-xs text-muted hover:text-fg"
-              >
-                {tag}
-              </a>
-            ))}
-          </p>
-        ) : null}
-        <p className="mt-2 text-xs text-subtle">
-          {wallpaper.width}×{wallpaper.height} · {formatBytes(wallpaper.fileSizeBytes)} · {orientationOf(wallpaper.width, wallpaper.height)}
-          {" · "}
-          {formatCount(wallpaper.downloadCount)} {t.wallpaper.downloads}
-        </p>
-
-        <div className="mt-6 flex flex-wrap gap-2">
-          <Button onClick={() => setDownloadOpen(true)}>
-            <Download className="size-4" />
-            {downloadLabel(wallpaper.deviceType)}
-          </Button>
-          <Button variant="secondary" onClick={() => void share()}>
-            <Share2 className="size-4" />
-            {t.wallpaper.share}
-          </Button>
-          <Button
-            variant="secondary"
-            size="icon"
-            aria-label={t.wallpaper.report}
-            onClick={() => {
-              if (!user) {
-                void navigate({ to: "/login", search: { next: wallpaperPath(wallpaper.slug) } });
-                return;
-              }
-              setReportOpen(true);
-            }}
-          >
-            <Flag className="size-4" />
-          </Button>
-        </div>
-        {shareMsg ? <p className="mt-2 text-sm text-muted">{shareMsg}</p> : null}
-
-        {pair ? (
-          <section className="mt-10">
-            <h2 className="font-display text-xl text-fg">{t.pairs.title}</h2>
-            <p className="mt-1 text-sm text-muted">
-              {pair.lock.id === wallpaper.id ? t.pairs.asLock : t.pairs.asHome}
-            </p>
-            <div className="mt-4 flex items-start gap-6">
-              <PairCard pair={pair} />
-              <a
-                href={`/pair/${pair.slug}`}
-                className="mt-2 inline-flex h-11 items-center text-sm text-muted hover:text-fg"
-              >
-                {t.pairs.viewCombo}
-              </a>
+              </p>
             </div>
-          </section>
-        ) : null}
+          </div>
 
-        {reportOpen ? (
-          <div className="mt-4 rounded-[16px] bg-elevated p-4">
-            <p className="text-sm font-medium text-fg">{t.report.title}</p>
-            <div className="mt-3 flex flex-wrap gap-2">
-              {Object.entries(t.report.reasons).map(([key, label]) => (
-                <Button
-                  key={key}
-                  size="sm"
-                  variant="secondary"
-                  onClick={async () => {
-                    await submitReport({
-                      data: {
-                        wallpaperId: wallpaper.id,
-                        reason: key as
-                          | "copyright"
-                          | "offensive"
-                          | "spam"
-                          | "duplicate"
-                          | "misleading"
-                          | "other",
-                      },
-                    });
-                    setReportOpen(false);
-                    setShareMsg(t.report.thanks);
-                  }}
+          {wallpaper.description ? (
+            <p className="mt-3 max-w-xl text-sm leading-relaxed text-muted lg:mt-5 lg:text-base">
+              {wallpaper.description}
+            </p>
+          ) : null}
+
+          {wallpaper.tags.length > 0 ? (
+            <p className="mt-3 flex flex-wrap gap-2 lg:mt-5">
+              {wallpaper.tags.map((tag) => (
+                <a
+                  key={tag}
+                  href={`/wallpapers?q=${encodeURIComponent(tag)}`}
+                  className="rounded-full bg-elevated px-3 py-1 text-xs text-muted hover:text-fg"
                 >
-                  {label}
-                </Button>
+                  {tag}
+                </a>
               ))}
-            </div>
-          </div>
-        ) : null}
+            </p>
+          ) : null}
 
-        {related.length > 0 ? (
-          <section className="mt-10">
-            <h2 className="mb-3 font-display text-xl text-fg">{t.wallpaper.related}</h2>
-            <WallpaperGrid items={related} eager={2} />
-          </section>
-        ) : null}
+          <p className="mt-2 text-xs text-subtle lg:mt-4">
+            {wallpaper.width}×{wallpaper.height} · {formatBytes(wallpaper.fileSizeBytes)} · {orientationOf(wallpaper.width, wallpaper.height)}
+            {" · "}
+            {formatCount(wallpaper.downloadCount)} {t.wallpaper.downloads}
+          </p>
+
+          <div className="mt-6 flex flex-wrap gap-2 lg:mt-8">
+            <Button onClick={() => setDownloadOpen(true)}>
+              <Download className="size-4" />
+              {downloadLabel(wallpaper.deviceType)}
+            </Button>
+            <Button variant="secondary" onClick={() => void share()}>
+              <Share2 className="size-4" />
+              {t.wallpaper.share}
+            </Button>
+            <Button
+              variant="secondary"
+              size="icon"
+              aria-label={t.wallpaper.report}
+              onClick={() => {
+                if (!user) {
+                  void navigate({ to: "/login", search: { next: wallpaperPath(wallpaper.slug) } });
+                  return;
+                }
+                setReportOpen(true);
+              }}
+            >
+              <Flag className="size-4" />
+            </Button>
+          </div>
+          {shareMsg ? <p className="mt-2 text-sm text-muted">{shareMsg}</p> : null}
+
+          {reportOpen ? (
+            <div className="mt-4 rounded-[16px] bg-elevated p-4">
+              <p className="text-sm font-medium text-fg">{t.report.title}</p>
+              <div className="mt-3 flex flex-wrap gap-2">
+                {Object.entries(t.report.reasons).map(([key, label]) => (
+                  <Button
+                    key={key}
+                    size="sm"
+                    variant="secondary"
+                    onClick={async () => {
+                      await submitReport({
+                        data: {
+                          wallpaperId: wallpaper.id,
+                          reason: key as
+                            | "copyright"
+                            | "offensive"
+                            | "spam"
+                            | "duplicate"
+                            | "misleading"
+                            | "other",
+                        },
+                      });
+                      setReportOpen(false);
+                      setShareMsg(t.report.thanks);
+                    }}
+                  >
+                    {label}
+                  </Button>
+                ))}
+              </div>
+            </div>
+          ) : null}
+
+          {pair ? (
+            <section className="mt-10 border-t border-border pt-8">
+              <h2 className="font-display text-xl text-fg">{t.pairs.title}</h2>
+              <p className="mt-1 text-sm text-muted">
+                {pair.lock.id === wallpaper.id ? t.pairs.asLock : t.pairs.asHome}
+              </p>
+              <div className="mt-4 flex items-start gap-6">
+                <PairCard pair={pair} />
+                <a
+                  href={`/pair/${pair.slug}`}
+                  className="mt-2 inline-flex h-11 items-center text-sm text-muted hover:text-fg"
+                >
+                  {t.pairs.viewCombo}
+                </a>
+              </div>
+            </section>
+          ) : null}
+        </div>
       </div>
+
+      {related.length > 0 ? (
+        <section className="mt-10 px-4 lg:mt-16 lg:px-6">
+          <div className="mb-4 flex items-end justify-between gap-3 border-t border-border pt-8">
+            <div>
+              <p className="hidden text-xs font-medium tracking-[0.18em] text-subtle uppercase lg:block">
+                Keep exploring
+              </p>
+              <h2 className="font-display text-xl text-fg lg:mt-1 lg:text-2xl">{t.wallpaper.related}</h2>
+            </div>
+            <a href={categoryPath(wallpaper.categorySlug)} className="text-sm text-muted hover:text-fg">
+              View category
+            </a>
+          </div>
+          <WallpaperGrid items={related} eager={2} />
+        </section>
+      ) : null}
 
       <DownloadSheet
         open={downloadOpen}
