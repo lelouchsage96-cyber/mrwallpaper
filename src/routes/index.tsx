@@ -34,7 +34,7 @@ function isLegacyOriginal(url: string): boolean {
   }
 }
 
-function displayImage(url: string | null | undefined, width = 720, quality = 80): string {
+function displayImage(url: string | null | undefined, width = 720, quality = 75): string {
   if (!url) return "";
   if (isLegacyOriginal(url)) {
     return `/_vercel/image?url=${encodeURIComponent(url)}&w=${width}&q=${quality}`;
@@ -137,7 +137,7 @@ function HomePage() {
               >
                 <div className="aspect-[9/16] overflow-hidden">
                   <img
-                    src={displayImage(wallpaper.thumbnailUrl, 480, 78)}
+                    src={displayImage(wallpaper.thumbnailUrl, 480, 75)}
                     alt={wallpaper.altText || wallpaper.title}
                     width={wallpaper.width}
                     height={wallpaper.height}
@@ -168,7 +168,7 @@ function HomePage() {
           </div>
           <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
             {featuredCategories.map((category) => {
-              const cover = displayImage(category.coverUrl || categoryPreview(category.slug), 720, 82);
+              const cover = displayImage(category.coverUrl || categoryPreview(category.slug), 720, 85);
               return (
                 <a
                   key={category.id}
