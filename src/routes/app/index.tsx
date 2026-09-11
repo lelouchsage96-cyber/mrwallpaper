@@ -196,7 +196,7 @@ function HomePage() {
               <SectionHeader title={t.home.wotd} />
               <Link
                 to="/wallpaper/$id"
-                params={{ id: data.wotd.id }}
+                params={{ id: data.wotd.slug || data.wotd.id }}
                 className="relative block overflow-hidden rounded-[24px] bg-elevated"
               >
                 <div className="aspect-[4/5] sm:aspect-[16/10]">
@@ -252,7 +252,7 @@ function HomePage() {
                 return (
                   <Link
                     key={c.id}
-                    to="/category/$slug"
+                    to="/wallpapers/$slug"
                     params={{ slug: c.slug }}
                     className="relative h-28 w-36 shrink-0 overflow-hidden rounded-[16px] bg-elevated"
                   >
