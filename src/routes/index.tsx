@@ -89,7 +89,7 @@ function HomePage() {
     .slice(0, 3);
 
   return (
-    <main className="mx-auto max-w-5xl px-4 pb-20 pt-8">
+    <main className="mx-auto max-w-7xl px-4 pb-20 pt-8">
       <header className="flex items-center justify-between gap-3">
         <a href="/" className="flex items-center gap-2">
           <MwMark className="size-9" />
