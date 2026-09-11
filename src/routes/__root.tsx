@@ -4,6 +4,7 @@ import {
   Outlet,
   Scripts,
 } from "@tanstack/react-router";
+import { AnalyticsRouteTracker } from "@/lib/analytics";
 import { AuthProvider } from "@/lib/auth/provider";
 import { NotFoundPage } from "@/components/not-found-page";
 import { ThemeProvider } from "@/components/theme-provider";
@@ -43,7 +44,7 @@ export const Route = createRootRoute({
         src: `https://www.googletagmanager.com/gtag/js?id=${encodeURIComponent(seo.gaId)}`,
       });
       scripts.push({
-        children: `window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','${seo.gaId}',{anonymize_ip:true});`,
+        children: `window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}window.gtag=gtag;gtag('js',new Date());gtag('config','${seo.gaId}',{anonymize_ip:true,send_page_view:false});`,
       });
     }
     return {
@@ -91,6 +92,7 @@ function RootDocument() {
       <body className="min-h-dvh bg-bg text-fg">
         <AuthProvider>
           <ThemeProvider>
+            <AnalyticsRouteTracker />
             <Outlet />
           </ThemeProvider>
         </AuthProvider>
