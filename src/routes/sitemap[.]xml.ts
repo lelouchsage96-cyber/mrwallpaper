@@ -24,9 +24,8 @@ export const Route = createFileRoute("/sitemap.xml")({
       GET: async () => {
         const data = await getSitemapData();
         const primaryPages = [
-          { path: "/app", priority: "1.0" },
+          { path: "/", priority: "1.0" },
           { path: "/wallpapers", priority: "0.9" },
-          { path: "/", priority: "0.8" },
         ];
         const staticPages = [
           "/about",
