@@ -148,6 +148,7 @@ export function trackEvent(eventName: ClientAnalyticsEvent, data: EventData = {}
 export function AnalyticsRouteTracker() {
   const location = useRouterState({ select: (state) => state.location });
   const previous = useRef<string | null>(null);
+  const previousSearch = useRef<string | null>(null);
 
   useEffect(() => {
     const pathname = location.pathname;
@@ -160,6 +161,23 @@ export function AnalyticsRouteTracker() {
 
     const category = /^\/wallpapers\/([^/?#]+)\/?$/.exec(pathname)?.[1];
     if (category) trackEvent("category_view", { categorySlug: decodeURIComponent(category) });
+
+    const wallpaper = /^\/wallpaper\/([^/?#]+)\/?$/.exec(pathname)?.[1];
+    if (wallpaper) trackEvent("wallpaper_view", { wallpaperId: decodeURIComponent(wallpaper) });
+
+    const params = new URLSearchParams(location.searchStr || "");
+    const query = params.get("q")?.trim();
+    if (query && (pathname === "/wallpapers" || pathname === "/app/explore")) {
+      const searchKey = `${pathname}:${query.toLowerCase()}`;
+      if (previousSearch.current !== searchKey) {
+        previousSearch.current = searchKey;
+        trackEvent("search", {
+          searchQuery: query,
+          categorySlug: params.get("category") || undefined,
+        });
+      }
+    }
+
     if (pathname === "/app" || pathname === "/app/") trackEvent("open_app");
   }, [location.pathname, location.searchStr]);
 
