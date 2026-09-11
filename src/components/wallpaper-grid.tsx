@@ -2,6 +2,8 @@ import { WallpaperCard, WallpaperCardSkeleton } from "@/components/wallpaper-car
 import type { WallpaperCard as Card } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
+const GRID_CLASSES = "grid grid-cols-2 gap-2.5 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6";
+
 export function WallpaperGrid({
   items,
   onFavorite,
@@ -12,7 +14,7 @@ export function WallpaperGrid({
   eager?: number;
 }) {
   return (
-    <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3 lg:grid-cols-4">
+    <div className={GRID_CLASSES}>
       {items.map((w, i) => (
         <WallpaperCard
           key={w.id}
@@ -27,7 +29,7 @@ export function WallpaperGrid({
 
 export function WallpaperGridSkeleton({ count = 6 }: { count?: number }) {
   return (
-    <div className={cn("grid grid-cols-2 gap-2.5 sm:grid-cols-3 lg:grid-cols-4")}>
+    <div className={cn(GRID_CLASSES)}>
       {Array.from({ length: count }, (_, i) => (
         <WallpaperCardSkeleton key={i} />
       ))}
