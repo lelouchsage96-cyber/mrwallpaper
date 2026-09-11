@@ -116,6 +116,14 @@ function DetailsPage() {
     void getPremiumStatus().then((s) => setIsPremium(s.isPremium));
   }, [id, initial]);
 
+  useEffect(() => {
+    if (!initial.wallpaper) return;
+    trackEvent("wallpaper_view", {
+      wallpaperId: initial.wallpaper.id,
+      categorySlug: initial.wallpaper.categorySlug,
+    });
+  }, [initial.wallpaper?.id]);
+
   function goBack() {
     if (typeof window !== "undefined" && window.history.length > 1) {
       window.history.back();
