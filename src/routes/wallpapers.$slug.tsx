@@ -82,7 +82,7 @@ function HubPage() {
   const prev = page > 1 ? page - 1 : null;
 
   return (
-    <main className="mx-auto max-w-5xl px-4 pb-20 pt-[calc(env(safe-area-inset-top)+1.5rem)]">
+    <main className="mx-auto max-w-7xl px-4 pb-20 pt-[calc(env(safe-area-inset-top)+1.5rem)]">
       <Breadcrumbs
         items={[
           { name: "Home", href: "/" },
