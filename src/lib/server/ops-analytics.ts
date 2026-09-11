@@ -93,8 +93,9 @@ export const getOpsAnalytics = createServerFn({ method: "GET" })
                 count(*) filter (where e.event_name = 'download')::int as downloads,
                 count(*) filter (where e.event_name = 'share')::int as shares
          from analytics_events e
-         join wallpapers w on w.id = e.wallpaper_id
-         where e.${windowSql} and e.event_name in ('wallpaper_view','download','share')
+         join wallpapers w on w.id = e.wallpaper_id or w.slug = e.wallpaper_id
+         where e.occurred_at >= now() - ($1::int * interval '1 day')
+           and e.event_name in ('wallpaper_view','download','share')
          group by w.id, w.slug, w.title
          order by views desc, downloads desc, shares desc
          limit 10`,
