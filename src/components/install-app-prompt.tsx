@@ -6,6 +6,10 @@ type InstallPromptEvent = Event & {
   userChoice: Promise<{ outcome: "accepted" | "dismissed"; platform: string }>;
 };
 
+type InstallPromptWindow = Window & {
+  __mrWallpapersInstallPrompt?: InstallPromptEvent | null;
+};
+
 type PromptMode = "ios" | "inapp-ios" | "inapp-android" | "browser" | null;
 
 const DISMISS_KEY = "mrwallpapers.install-prompt.dismissed-at";
@@ -14,6 +18,14 @@ const DISMISS_FOR_MS = 7 * 24 * 60 * 60 * 1000;
 function isInstalled() {
   const nav = navigator as Navigator & { standalone?: boolean };
   return window.matchMedia("(display-mode: standalone)").matches || nav.standalone === true;
+}
+
+function getCapturedInstallPrompt() {
+  return (window as InstallPromptWindow).__mrWallpapersInstallPrompt ?? null;
+}
+
+function setCapturedInstallPrompt(prompt: InstallPromptEvent | null) {
+  (window as InstallPromptWindow).__mrWallpapersInstallPrompt = prompt;
 }
 
 function detectMode(): PromptMode {
@@ -45,6 +57,13 @@ export function InstallAppPrompt() {
     const dismissedAt = Number(localStorage.getItem(DISMISS_KEY) ?? 0);
     if (dismissedAt && Date.now() - dismissedAt < DISMISS_FOR_MS) return;
 
+    const capturedPrompt = getCapturedInstallPrompt();
+    if (capturedPrompt && /Android/i.test(navigator.userAgent)) {
+      setDeferredPrompt(capturedPrompt);
+      setMode("browser");
+      setVisible(true);
+    }
+
     const detectedMode = detectMode();
     const timer = window.setTimeout(() => {
       if (!detectedMode) return;
@@ -55,7 +74,10 @@ export function InstallAppPrompt() {
     const onBeforeInstallPrompt = (event: Event) => {
       // Only show our helper on Android. Desktop browsers keep their own native UI.
       if (!/Android/i.test(navigator.userAgent)) return;
-      setDeferredPrompt(event as InstallPromptEvent);
+      event.preventDefault();
+      const promptEvent = event as InstallPromptEvent;
+      setCapturedInstallPrompt(promptEvent);
+      setDeferredPrompt(promptEvent);
       setMode("browser");
       setVisible(true);
     };
@@ -63,6 +85,7 @@ export function InstallAppPrompt() {
     const onInstalled = () => {
       setVisible(false);
       setDeferredPrompt(null);
+      setCapturedInstallPrompt(null);
       localStorage.removeItem(DISMISS_KEY);
     };
 
@@ -84,19 +107,22 @@ export function InstallAppPrompt() {
   };
 
   const install = async () => {
-    if (!deferredPrompt) {
+    const installPrompt = deferredPrompt ?? getCapturedInstallPrompt();
+    if (!installPrompt) {
       setShowSteps(true);
       return;
     }
 
     try {
-      await deferredPrompt.prompt();
-      const choice = await deferredPrompt.userChoice;
+      await installPrompt.prompt();
+      const choice = await installPrompt.userChoice;
       setDeferredPrompt(null);
+      setCapturedInstallPrompt(null);
       if (choice.outcome === "accepted") setVisible(false);
       else setShowSteps(true);
     } catch {
       setDeferredPrompt(null);
+      setCapturedInstallPrompt(null);
       setShowSteps(true);
     }
   };
