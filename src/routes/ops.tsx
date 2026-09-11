@@ -1,5 +1,6 @@
 import { createFileRoute, Link, Outlet, useNavigate, useRouterState } from "@tanstack/react-router";
 import {
+  BarChart3,
   CloudDownload,
   Flag,
   Image,
@@ -28,6 +29,7 @@ export const Route = createFileRoute("/ops")({
 type NavItem = {
   to:
     | "/ops"
+    | "/ops/analytics"
     | "/ops/wallpapers"
     | "/ops/upload"
     | "/ops/import-r2"
@@ -61,6 +63,9 @@ function OpsShell() {
 
   const nav: NavItem[] = [
     { to: "/ops", label: t.ops.overview, exact: true, icon: <LayoutDashboard className="size-4" /> },
+    ...(session?.canAdmin
+      ? [{ to: "/ops/analytics" as const, label: "Analytics", icon: <BarChart3 className="size-4" /> }]
+      : []),
     { to: "/ops/wallpapers", label: t.ops.wallpapers, icon: <Image className="size-4" /> },
     ...(session?.canAdmin
       ? [
