@@ -84,13 +84,21 @@ function firstTitleThatFits(candidates: string[], maxLength = 75): string {
   return truncateAtWord(candidates[candidates.length - 1] || brand.name, maxLength);
 }
 
+function looksMachineGeneratedAlt(input: string): boolean {
+  const text = normalizeMetaText(input);
+  if (!text) return true;
+  const tokens = text.split(/\s+/);
+  return tokens.some((token) => token.length >= 18 && /^[a-z0-9_-]+$/i.test(token));
+}
+
 export function wallpaperAlt(opts: {
   title: string;
   categoryName?: string;
   deviceType?: DeviceType;
   altText?: string | null;
 }): string {
-  if (opts.altText?.trim()) return opts.altText.trim().slice(0, 125);
+  const customAlt = opts.altText ? normalizeMetaText(opts.altText) : "";
+  if (customAlt && !looksMachineGeneratedAlt(customAlt)) return customAlt;
   const device =
     opts.deviceType === "tablet"
       ? "iPad wallpaper"
@@ -98,7 +106,7 @@ export function wallpaperAlt(opts: {
         ? "phone and tablet wallpaper"
         : "phone wallpaper";
   const cat = opts.categoryName ? ` in ${opts.categoryName}` : "";
-  return `${opts.title} ${device}${cat}`.slice(0, 125);
+  return normalizeMetaText(`${opts.title} ${device}${cat}`);
 }
 
 export function wallpaperMeta(opts: {
@@ -208,17 +216,25 @@ export const DEVICE_HUBS: Record<
 };
 
 export function pageHead(page: SeoPage) {
-  const url = absUrl(canonicalPath(page.path));
+  const canonical = canonicalPath(page.path);
+  const url = absUrl(canonical);
   const image = absUrl(page.image || "/og.jpg");
+  const isAppRoute = canonical === "/app" || canonical.startsWith("/app/");
   const robots = page.noindex
     ? "noindex, nofollow"
-    : page.robots === "noindex"
+    : page.robots === "noindex" || isAppRoute
       ? "noindex, follow"
       : "index, follow";
   const jsonLd = page.jsonLd ?? [];
   const links: Array<Record<string, string>> = [{ rel: "canonical", href: url }];
   if (page.prev) links.push({ rel: "prev", href: absUrl(canonicalPath(page.prev)) });
   if (page.next) links.push({ rel: "next", href: absUrl(canonicalPath(page.next)) });
+  const imageDimensions = !page.image || page.image === "/og.jpg"
+    ? [
+        { property: "og:image:width", content: "1200" },
+        { property: "og:image:height", content: "630" },
+      ]
+    : [];
   return {
     meta: [
       { title: page.title },
@@ -232,8 +248,7 @@ export function pageHead(page: SeoPage) {
       { property: "og:url", content: url },
       { property: "og:image", content: image },
       { property: "og:image:alt", content: page.imageAlt || page.title },
-      { property: "og:image:width", content: "1200" },
-      { property: "og:image:height", content: "630" },
+      ...imageDimensions,
       { property: "og:locale", content: "en_US" },
       { name: "twitter:card", content: "summary_large_image" },
       { name: "twitter:title", content: page.title },
