@@ -6,21 +6,27 @@ import { wallpaperAlt, wallpaperPath } from "@/lib/seo";
 import type { WallpaperCard as Card } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
+function isLegacyOriginal(url: string): boolean {
+  try {
+    return /\/originals\//i.test(new URL(url, "https://mrwallpaper.org").pathname);
+  } catch {
+    return false;
+  }
+}
+
+function optimizedImage(url: string, width: number, quality: 75 | 85): string {
+  return `/_vercel/image?url=${encodeURIComponent(url)}&w=${width}&q=${quality}`;
+}
+
 function cardSource(wallpaper: Card): string {
   const url = wallpaper.thumbnailUrl;
-  if (!url) return url;
-  try {
-    const parsed = new URL(url, "https://mrwallpaper.org");
-    if (/\/originals\//i.test(parsed.pathname)) {
-      return `/media/${wallpaper.slug || wallpaper.id}-thumb.jpg`;
-    }
-  } catch {
-    // Relative paths continue unchanged.
-  }
+  if (url && isLegacyOriginal(url)) return optimizedImage(url, 480, 75);
   return url;
 }
 
-function highQualityPreview(wallpaper: Card, source: string): string | null {
+function highQualityPreview(wallpaper: Card, source: string, width: number): string | null {
+  const original = wallpaper.thumbnailUrl;
+  if (original && isLegacyOriginal(original)) return optimizedImage(original, width, 85);
   if (!source) return null;
 
   let path = source;
@@ -70,8 +76,8 @@ export function WallpaperCard({
       ? "aspect-[3/4]"
       : "aspect-[9/16]";
   const source = cardSource(wallpaper);
-  const sharpPreview = highQualityPreview(wallpaper, source);
   const sharpWidth = landscape ? 1440 : 1080;
+  const sharpPreview = highQualityPreview(wallpaper, source, sharpWidth);
   const adaptiveSrcSet = sharpPreview
     ? `${source} 480w, ${sharpPreview} ${sharpWidth}w`
     : undefined;
