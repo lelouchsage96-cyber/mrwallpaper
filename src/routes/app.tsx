@@ -1,6 +1,6 @@
 import { createFileRoute, Outlet } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { BottomNav } from "@/components/bottom-nav";
+import { BottomNav, DesktopNav } from "@/components/bottom-nav";
 import { InstallAppPrompt } from "@/components/install-app-prompt";
 import { SiteFooter } from "@/components/site-footer";
 import { useCurrentUserState } from "@/lib/auth/use-current-user";
@@ -40,9 +40,10 @@ function AppShell() {
 
   return (
     <div className="min-h-dvh bg-bg pt-[env(safe-area-inset-top)]">
-      <div className="mx-auto max-w-5xl pb-24">
+      <DesktopNav />
+      <div className="mx-auto max-w-5xl pb-24 lg:max-w-7xl lg:pb-12 xl:max-w-[1440px]">
         <Outlet />
-        <div className="px-4">
+        <div className="px-4 lg:px-6 xl:px-8">
           <SiteFooter />
         </div>
       </div>
