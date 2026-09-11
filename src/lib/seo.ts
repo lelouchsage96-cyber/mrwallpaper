@@ -58,11 +58,7 @@ function normalizeMetaText(input: string): string {
   return input.replace(/\s+/g, " ").trim();
 }
 
-/**
- * Keep generated snippets concise without cutting a word or brand name in half.
- * Google may still rewrite/truncate snippets in search results, but the HTML we
- * provide should always contain complete human-readable text.
- */
+/** Keep generated titles concise without cutting a word or brand name in half. */
 function truncateAtWord(input: string, maxLength: number): string {
   const text = normalizeMetaText(input);
   if (text.length <= maxLength) return text;
@@ -121,7 +117,7 @@ export function wallpaperMeta(opts: {
         : "phone wallpaper";
   const cleanTitle = normalizeMetaText(opts.title);
   const title = opts.seoTitle?.trim()
-    ? truncateAtWord(opts.seoTitle, 90)
+    ? normalizeMetaText(opts.seoTitle)
     : firstTitleThatFits([
         `${cleanTitle} – ${opts.categoryName} ${device} | ${brand.name}`,
         `${cleanTitle} ${device} | ${brand.name}`,
@@ -130,13 +126,10 @@ export function wallpaperMeta(opts: {
       ]);
   const extra = opts.description?.trim();
   const description = opts.seoDescription?.trim()
-    ? truncateAtWord(opts.seoDescription, 160)
-    : truncateAtWord(
-        extra
-          ? `${cleanTitle} ${device} in ${opts.categoryName}. ${extra}`
-          : `Download ${cleanTitle}, a free HD ${opts.categoryName.toLowerCase()} ${device} for iPhone, Android and iPad from ${brand.name}.`,
-        160,
-      );
+    ? normalizeMetaText(opts.seoDescription)
+    : extra
+      ? normalizeMetaText(extra)
+      : `Download ${cleanTitle}, a free HD ${opts.categoryName.toLowerCase()} ${device} for iPhone, Android and iPad from ${brand.name}.`;
   return { title, description };
 }
 
@@ -151,7 +144,7 @@ export function categoryMeta(opts: {
   const pageBit = opts.page && opts.page > 1 ? ` – Page ${opts.page}` : "";
   const cleanName = normalizeMetaText(opts.name);
   const title = opts.seoTitle?.trim()
-    ? truncateAtWord(`${opts.seoTitle}${pageBit}`, 90)
+    ? normalizeMetaText(`${opts.seoTitle}${pageBit}`)
     : firstTitleThatFits([
         `${cleanName} Wallpapers for iPhone, Android & iPad${pageBit} | ${brand.name}`,
         `${cleanName} Wallpapers for Phone & Tablet${pageBit} | ${brand.name}`,
@@ -159,13 +152,10 @@ export function categoryMeta(opts: {
         `${cleanName} Wallpapers${pageBit}`,
       ]);
   const description = opts.seoDescription?.trim()
-    ? truncateAtWord(opts.seoDescription, 160)
-    : truncateAtWord(
-        opts.description?.trim()
-          ? `${opts.description.trim()} Browse ${cleanName.toLowerCase()} wallpapers for phone and tablet.`
-          : `HD and 4K ${cleanName.toLowerCase()} wallpapers for iPhone, Android, iPad and tablets. Free downloads from ${brand.name}.`,
-        160,
-      );
+    ? normalizeMetaText(opts.seoDescription)
+    : opts.description?.trim()
+      ? normalizeMetaText(`${opts.description.trim()} Browse ${cleanName.toLowerCase()} wallpapers for phone and tablet.`)
+      : `HD and 4K ${cleanName.toLowerCase()} wallpapers for iPhone, Android, iPad and tablets. Free downloads from ${brand.name}.`;
   return { title, description };
 }
 
