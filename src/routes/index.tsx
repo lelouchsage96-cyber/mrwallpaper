@@ -4,7 +4,6 @@ import { SiteFooter } from "@/components/site-footer";
 import { WallpaperGrid } from "@/components/wallpaper-grid";
 import { MwMark } from "@/components/mw-mark";
 import { brand } from "@/lib/brand";
-import { CATEGORY_EDITORIAL } from "@/lib/category-content";
 import { t } from "@/lib/i18n/en";
 import { categoryPreview } from "@/lib/media";
 import {
@@ -169,7 +168,6 @@ function HomePage() {
           </div>
           <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
             {featuredCategories.map((category) => {
-              const editorial = CATEGORY_EDITORIAL[category.slug];
               const cover = displayImage(category.coverUrl || categoryPreview(category.slug), 720, 82);
               return (
                 <a
@@ -186,13 +184,11 @@ function HomePage() {
                       className="size-full object-cover transition-transform duration-300 ease-out group-hover:scale-[1.03]"
                     />
                   </div>
-                  <div className="absolute inset-0 bg-gradient-to-t from-bg via-bg/20 to-transparent" aria-hidden="true" />
+                  <div className="absolute inset-0 bg-gradient-to-t from-bg via-transparent to-transparent" aria-hidden="true" />
                   <div className="absolute inset-x-0 bottom-0 flex items-end justify-between gap-4 p-4">
                     <div>
+                      <span className="sr-only">{category.description}</span>
                       <h3 className="font-display text-2xl text-on-photo">{category.name}</h3>
-                      <p className="mt-1 text-sm text-on-photo-muted">
-                        {editorial?.intro || category.description}
-                      </p>
                     </div>
                     <span className="grid size-9 shrink-0 place-items-center rounded-full bg-bg/70 text-on-photo backdrop-blur-sm transition-transform group-hover:translate-x-0.5">
                       <ArrowRight className="size-4" aria-hidden="true" />
