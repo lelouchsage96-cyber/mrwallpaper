@@ -162,9 +162,6 @@ export function AnalyticsRouteTracker() {
     const category = /^\/wallpapers\/([^/?#]+)\/?$/.exec(pathname)?.[1];
     if (category) trackEvent("category_view", { categorySlug: decodeURIComponent(category) });
 
-    const wallpaper = /^\/wallpaper\/([^/?#]+)\/?$/.exec(pathname)?.[1];
-    if (wallpaper) trackEvent("wallpaper_view", { wallpaperId: decodeURIComponent(wallpaper) });
-
     const params = new URLSearchParams(location.searchStr || "");
     const query = params.get("q")?.trim();
     if (query && (pathname === "/wallpapers" || pathname === "/app/explore")) {
