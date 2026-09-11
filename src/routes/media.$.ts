@@ -1,5 +1,4 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { loadOptimizedLegacyPlate } from "@/lib/server/optimized-media";
 import { loadPublicPlate } from "@/lib/server/queries";
 
 export const Route = createFileRoute("/media/$")({
@@ -9,17 +8,6 @@ export const Route = createFileRoute("/media/$")({
         const name = params._splat ?? "";
         if (!name || name.length > 120) return new Response("Not found", { status: 404 });
         try {
-          const optimized = await loadOptimizedLegacyPlate(name);
-          if (optimized) {
-            return new Response(new Uint8Array(optimized.bytes), {
-              headers: {
-                "Content-Type": optimized.mime,
-                "Cache-Control": "public, max-age=31536000, immutable",
-                "Content-Disposition": `inline; filename="${optimized.downloadName}"`,
-              },
-            });
-          }
-
           const plate = await loadPublicPlate(name);
           if (!plate) return new Response("Not found", { status: 404 });
           if (plate.redirect) {
