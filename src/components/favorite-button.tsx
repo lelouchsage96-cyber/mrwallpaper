@@ -1,6 +1,7 @@
 import { Heart } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useNavigate } from "@tanstack/react-router";
+import { trackEvent } from "@/lib/analytics";
 import { useCurrentUserState } from "@/lib/auth/use-current-user";
 import { toggleFavorite } from "@/lib/server/api";
 import { t } from "@/lib/i18n/en";
@@ -53,6 +54,7 @@ export function FavoriteButton({
           const res = await toggleFavorite({ data: { wallpaperId } });
           setLocal(res.isFavorite);
           onChange?.(res.isFavorite);
+          trackEvent(res.isFavorite ? "favorite_add" : "favorite_remove", { wallpaperId });
         } catch {
           setLocal(prev);
           onChange?.(prev);
