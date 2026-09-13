@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "@tanstack/react-router";
+import { showActionToast } from "@/components/action-toast";
 import { Button } from "@/components/ui/button";
 import { trackEvent } from "@/lib/analytics";
 import { t } from "@/lib/i18n/en";
@@ -129,6 +130,7 @@ export function DownloadSheet({
 
       await saveFiles([readyFile]);
       recordDownload(isMobileDevice() ? "mobile" : "browser");
+      showActionToast("Download started");
       onClose();
     } catch {
       setPhase("error");
@@ -205,6 +207,7 @@ export function DownloadSheet({
         }
 
         recordDownload(isIOSDevice() ? "ios" : "browser", true, pack);
+        showActionToast("Download ready");
         setPhase("guide");
         return;
       }
@@ -219,11 +222,13 @@ export function DownloadSheet({
       if (isMobileDevice()) {
         setReadyFile(file);
         setPhase("ready");
+        showActionToast("Download ready");
         return;
       }
 
       await saveFiles([file]);
       recordDownload("browser");
+      showActionToast("Download started");
       onClose();
     } catch {
       setPhase("error");
