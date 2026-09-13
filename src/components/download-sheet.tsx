@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "@tanstack/react-router";
 import { Button } from "@/components/ui/button";
 import { trackEvent } from "@/lib/analytics";
@@ -99,17 +99,10 @@ export function DownloadSheet({
   const [adSessionId, setAdSessionId] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
   const [iosReadyFile, setIosReadyFile] = useState<DownloadFile | null>(null);
+  const autoStartedRef = useRef(false);
 
-  useEffect(() => {
-    if (!open) {
-      setPhase("idle");
-      setMessage(null);
-      setAdSessionId(null);
-      setIosReadyFile(null);
-    }
-  }, [open]);
-
-  if (!open) return null;
+  void accessType;
+  void isPremiumUser;
 
   async function sharePreparedIOSFile() {
     if (!iosReadyFile) return;
@@ -143,6 +136,8 @@ export function DownloadSheet({
 
   async function finish(sessionId?: string, pack = false) {
     setPhase("saving");
+    setMessage(null);
+
     try {
       const res = await requestDownload({
         data: {
@@ -151,6 +146,7 @@ export function DownloadSheet({
           adSessionId: sessionId ?? adSessionId ?? undefined,
         },
       });
+
       if (res.status === "needs_auth") {
         void navigate({ to: "/login", search: { next: `/wallpaper/${wallpaperId}` } });
         return;
@@ -196,6 +192,7 @@ export function DownloadSheet({
         const id = liveAssetId();
         const mov = injectLiveMov(video, id);
         const jpg = injectLiveJpeg(still, id);
+
         if (pack) {
           const zip = zipStore([
             { name: res.stillFilename, data: jpg },
@@ -211,6 +208,7 @@ export function DownloadSheet({
             { data: mov, filename: res.filename, mime: "video/quicktime" },
           ]);
         }
+
         setPhase("guide");
         return;
       }
@@ -245,6 +243,30 @@ export function DownloadSheet({
     }
   }
 
+  useEffect(() => {
+    autoStartedRef.current = false;
+  }, [wallpaperId]);
+
+  useEffect(() => {
+    if (!open) {
+      autoStartedRef.current = false;
+      setPhase("idle");
+      setMessage(null);
+      setAdSessionId(null);
+      setIosReadyFile(null);
+      return;
+    }
+
+    if (!isLive && !autoStartedRef.current) {
+      autoStartedRef.current = true;
+      void finish();
+    }
+  }, [open, isLive, wallpaperId]);
+
+  if (!open) return null;
+
+  const preparing = !isLive && (phase === "idle" || phase === "saving");
+
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center sm:items-center">
       <button
@@ -263,7 +285,11 @@ export function DownloadSheet({
           {isLive ? t.download.liveTitle : t.download.title}
         </h2>
 
-        {phase === "guide" ? (
+        {preparing ? (
+          <div className="mt-4 py-4">
+            <p className="text-sm text-muted">Preparing your wallpaper…</p>
+          </div>
+        ) : phase === "guide" ? (
           <div className="mt-4 space-y-3">
             <p className="text-sm text-fg">{t.download.saved}</p>
             <ol className="list-decimal space-y-2 pl-5 text-sm text-muted">
@@ -279,7 +305,7 @@ export function DownloadSheet({
         ) : phase === "ready" ? (
           <div className="mt-4 space-y-4">
             <p className="text-sm text-muted">
-              Your wallpaper is ready. Tap below to open the iOS share sheet, then choose Save Image.
+              Tap below, then choose Save Image to put the wallpaper in Photos.
             </p>
             {message ? <p className="text-sm text-danger">{message}</p> : null}
             <Button className="w-full" onClick={() => void sharePreparedIOSFile()}>
@@ -289,33 +315,34 @@ export function DownloadSheet({
               {t.cancel}
             </Button>
           </div>
+        ) : phase === "error" ? (
+          <div className="mt-4 space-y-4">
+            <p className="text-sm text-danger">{message || t.download.failed}</p>
+            <Button className="w-full" onClick={() => void finish()}>
+              Try again
+            </Button>
+            <Button variant="ghost" className="w-full" onClick={onClose}>
+              {t.cancel}
+            </Button>
+          </div>
         ) : (
           <div className="mt-4 space-y-4">
-            <p className="text-sm text-muted">
-              {isLive ? t.download.liveDirect : t.download.freeDirect}
-            </p>
-            {message ? <p className="text-sm text-danger">{message}</p> : null}
+            <p className="text-sm text-muted">{t.download.liveDirect}</p>
             <Button
               className="w-full"
               disabled={phase === "saving"}
               onClick={() => void finish()}
             >
-              {phase === "saving"
-                ? t.download.saving
-                : isLive
-                  ? t.download.saveIphone
-                  : downloadLabel(deviceType)}
+              {phase === "saving" ? t.download.saving : t.download.saveIphone}
             </Button>
-            {isLive ? (
-              <Button
-                variant="secondary"
-                className="w-full"
-                disabled={phase === "saving"}
-                onClick={() => void finish(undefined, true)}
-              >
-                {t.download.savePack}
-              </Button>
-            ) : null}
+            <Button
+              variant="secondary"
+              className="w-full"
+              disabled={phase === "saving"}
+              onClick={() => void finish(undefined, true)}
+            >
+              {t.download.savePack}
+            </Button>
             <Button variant="ghost" className="w-full" onClick={onClose}>
               {t.cancel}
             </Button>
