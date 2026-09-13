@@ -1,8 +1,9 @@
-import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { Bell, Search, X } from "lucide-react";
+import { createFileRoute, Link } from "@tanstack/react-router";
+import { Bell, Search } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { ErrorState } from "@/components/empty-state";
 import { PairCard } from "@/components/pair-card";
+import { MobileSearchOverlay } from "@/components/smart-search";
 import { SectionHeader } from "@/components/section-header";
 import { Skeleton } from "@/components/ui/skeleton";
 import { WallpaperGrid, WallpaperGridSkeleton } from "@/components/wallpaper-grid";
@@ -52,14 +53,12 @@ function patchFav(list: Card[], id: string, next: boolean): Card[] {
 
 function HomePage() {
   const initial = Route.useLoaderData();
-  const navigate = useNavigate();
   const { user, isPending } = useCurrentUserState();
   const [data, setData] = useState<HomePayload | null>(initial);
   const [error, setError] = useState(false);
   const [tick, setTick] = useState(0);
   const [slot, setSlot] = useState<number | null>(null);
   const [searchOpen, setSearchOpen] = useState(false);
-  const [searchQuery, setSearchQuery] = useState("");
   const userId = user?.id ?? null;
 
   useEffect(() => {
@@ -123,13 +122,6 @@ function HomePage() {
 
   const wotdHero = data?.wotd ? resolveHero(data.wotd.id, data.wotd.thumbnailUrl) : null;
 
-  function submitSearch(event: React.FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    const q = searchQuery.trim();
-    if (!q) return;
-    void navigate({ to: "/app/explore", search: { q } });
-  }
-
   function onFavorite(id: string, next: boolean) {
     setData((prev) => {
       if (!prev) return prev;
@@ -162,16 +154,12 @@ function HomePage() {
         <div className="flex items-center gap-1">
           <button
             type="button"
-            onClick={() => setSearchOpen((open) => !open)}
-            aria-label={searchOpen ? "Close search" : t.home.search}
+            onClick={() => setSearchOpen(true)}
+            aria-label={t.home.search}
             aria-expanded={searchOpen}
-            className="grid size-11 place-items-center rounded-[12px] text-fg"
+            className="grid size-11 place-items-center rounded-[12px] text-fg lg:hidden"
           >
-            {searchOpen ? (
-              <X className="size-5" strokeWidth={1.75} />
-            ) : (
-              <Search className="size-5" strokeWidth={1.75} />
-            )}
+            <Search className="size-5" strokeWidth={1.75} />
           </button>
           <Link
             to="/app/notifications"
@@ -186,37 +174,7 @@ function HomePage() {
         </div>
       </header>
 
-      {searchOpen ? (
-        <form onSubmit={submitSearch} className="-mt-2 mb-6 flex items-center gap-2">
-          <div className="relative min-w-0 flex-1">
-            <Search
-              className="pointer-events-none absolute left-4 top-1/2 size-4 -translate-y-1/2 text-subtle"
-              strokeWidth={1.75}
-              aria-hidden="true"
-            />
-            <input
-              autoFocus
-              type="search"
-              value={searchQuery}
-              onChange={(event) => setSearchQuery(event.target.value)}
-              onKeyDown={(event) => {
-                if (event.key === "Escape") setSearchOpen(false);
-              }}
-              placeholder={t.explore.placeholder}
-              aria-label={t.explore.placeholder}
-              className="h-11 w-full rounded-[12px] bg-elevated pl-10 pr-4 text-base text-fg placeholder:text-subtle shadow-[var(--shadow-border)] outline-none focus-visible:ring-2 focus-visible:ring-ring sm:text-sm"
-            />
-          </div>
-          <button
-            type="submit"
-            disabled={!searchQuery.trim()}
-            className="grid size-11 shrink-0 place-items-center rounded-[12px] bg-fg text-bg transition-opacity disabled:opacity-40"
-            aria-label="Search"
-          >
-            <Search className="size-5" strokeWidth={1.9} />
-          </button>
-        </form>
-      ) : null}
+      <MobileSearchOverlay open={searchOpen} onOpenChange={setSearchOpen} />
 
       {!data ? (
         <div className="space-y-8">
