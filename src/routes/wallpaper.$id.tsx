@@ -1,5 +1,5 @@
 import { createFileRoute, notFound, redirect, useNavigate } from "@tanstack/react-router";
-import { ChevronLeft, Download, Flag, Share2 } from "lucide-react";
+import { ChevronDown, ChevronLeft, Download, Flag, Share2 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { trackEvent } from "@/lib/analytics";
 import { Breadcrumbs } from "@/components/breadcrumbs";
@@ -11,7 +11,7 @@ import { PairCard } from "@/components/pair-card";
 import { Button } from "@/components/ui/button";
 import { WallpaperGrid } from "@/components/wallpaper-grid";
 import { useCurrentUserState } from "@/lib/auth/use-current-user";
-import { designedFor, downloadLabel, isLandscape, orientationOf } from "@/lib/device";
+import { designedFor, isLandscape, orientationOf } from "@/lib/device";
 import { t } from "@/lib/i18n/en";
 import { brand } from "@/lib/brand";
 import {
@@ -170,15 +170,24 @@ function DetailsPage() {
           >
             <ChevronLeft className="size-5" />
           </button>
-          <p className="text-xs tracking-[0.18em] text-muted uppercase">{t.preview.live}</p>
-          <FavoriteButton
-            wallpaperId={wallpaper.id}
-            isFavorite={wallpaper.isFavorite}
-            onChange={(next) => setWallpaper((w) => (w ? { ...w, isFavorite: next } : w))}
-            className="bg-elevated backdrop-blur-none"
-          />
+          <div className="flex items-center gap-1">
+            <button
+              type="button"
+              onClick={() => void share()}
+              aria-label={t.wallpaper.share}
+              className="grid size-11 place-items-center rounded-full bg-elevated text-fg"
+            >
+              <Share2 className="size-5" strokeWidth={1.75} />
+            </button>
+            <FavoriteButton
+              wallpaperId={wallpaper.id}
+              isFavorite={wallpaper.isFavorite}
+              onChange={(next) => setWallpaper((w) => (w ? { ...w, isFavorite: next } : w))}
+              className="bg-elevated backdrop-blur-none"
+            />
+          </div>
         </div>
-        <div className="mt-3">
+        <div className="mt-3 hidden lg:block">
           <Breadcrumbs
             items={[
               { name: "Home", href: "/app" },
@@ -202,125 +211,122 @@ function DetailsPage() {
         </div>
 
         <div className="pt-6 lg:pt-4">
-          <div className="flex items-start justify-between gap-3">
-            <div>
-              <p className="hidden text-xs font-medium tracking-[0.18em] text-subtle uppercase lg:block">
-                Wallpaper details
-              </p>
-              <h1 className="font-display text-3xl text-fg lg:mt-2 lg:text-4xl">{wallpaper.title}</h1>
-              <p className="mt-1 text-sm text-fg">{designedFor(wallpaper.deviceType)}</p>
-              <p className="mt-1 text-sm text-muted">
-                {wallpaper.creatorSlug && wallpaper.creatorName ? (
-                  <a href={`/creator/${wallpaper.creatorSlug}`} className="hover:text-fg">
-                    {wallpaper.creatorName}
-                  </a>
-                ) : (
-                  t.wallpaper.byPlatform
-                )}
+          <h1 className="font-display text-3xl text-fg lg:text-4xl">{wallpaper.title}</h1>
+          <p className="mt-1 text-sm text-muted">
+            <a href={categoryPath(wallpaper.categorySlug)} className="hover:text-fg">
+              {wallpaper.categoryName}
+            </a>
+            {wallpaper.creatorSlug && wallpaper.creatorName ? (
+              <>
                 {" · "}
-                <a href={categoryPath(wallpaper.categorySlug)} className="hover:text-fg">
-                  {wallpaper.categoryName}
+                <a href={`/creator/${wallpaper.creatorSlug}`} className="hover:text-fg">
+                  {wallpaper.creatorName}
                 </a>
-              </p>
-            </div>
-          </div>
-
-          {wallpaper.description ? (
-            <p className="mt-3 max-w-xl text-sm leading-relaxed text-muted lg:mt-5 lg:text-base">
-              {wallpaper.description}
-            </p>
-          ) : null}
-
-          {wallpaper.tags.length > 0 ? (
-            <p className="mt-3 flex flex-wrap gap-2 lg:mt-5">
-              {wallpaper.tags.map((tag) => (
-                <a
-                  key={tag}
-                  href={`/wallpapers?q=${encodeURIComponent(tag)}`}
-                  className="rounded-full bg-elevated px-3 py-1 text-xs text-muted hover:text-fg"
-                >
-                  {tag}
-                </a>
-              ))}
-            </p>
-          ) : null}
-
-          <p className="mt-2 text-xs text-subtle lg:mt-4">
-            {wallpaper.width}×{wallpaper.height} · {formatBytes(wallpaper.fileSizeBytes)} · {orientationOf(wallpaper.width, wallpaper.height)}
-            {" · "}
-            {formatCount(wallpaper.downloadCount)} {t.wallpaper.downloads}
+              </>
+            ) : null}
           </p>
+          <p className="mt-1 text-sm text-subtle">{designedFor(wallpaper.deviceType)}</p>
 
-          <div className="mt-6 flex flex-wrap gap-2 lg:mt-8">
-            <Button onClick={() => setDownloadOpen(true)}>
-              <Download className="size-4" />
-              {downloadLabel(wallpaper.deviceType)}
-            </Button>
-            <Button variant="secondary" onClick={() => void share()}>
-              <Share2 className="size-4" />
-              {t.wallpaper.share}
-            </Button>
-            <Button
-              variant="secondary"
-              size="icon"
-              aria-label={t.wallpaper.report}
-              onClick={() => {
-                if (!user) {
-                  void navigate({ to: "/login", search: { next: wallpaperPath(wallpaper.slug) } });
-                  return;
-                }
-                setReportOpen(true);
-              }}
-            >
-              <Flag className="size-4" />
-            </Button>
-          </div>
+          <Button className="mt-5 w-full sm:w-auto sm:min-w-52" onClick={() => setDownloadOpen(true)}>
+            <Download className="size-4" />
+            Download wallpaper
+          </Button>
+
           {shareMsg ? <p className="mt-2 text-sm text-muted">{shareMsg}</p> : null}
 
-          {reportOpen ? (
-            <div className="mt-4 rounded-[16px] bg-elevated p-4">
-              <p className="text-sm font-medium text-fg">{t.report.title}</p>
-              <div className="mt-3 flex flex-wrap gap-2">
-                {Object.entries(t.report.reasons).map(([key, label]) => (
-                  <Button
-                    key={key}
-                    size="sm"
-                    variant="secondary"
-                    onClick={async () => {
-                      await submitReport({
-                        data: {
-                          wallpaperId: wallpaper.id,
-                          reason: key as
-                            | "copyright"
-                            | "offensive"
-                            | "spam"
-                            | "duplicate"
-                            | "misleading"
-                            | "other",
-                        },
-                      });
-                      setReportOpen(false);
-                      setShareMsg(t.report.thanks);
-                    }}
-                  >
-                    {label}
-                  </Button>
-                ))}
-              </div>
+          <details className="group mt-6 border-t border-border pt-2">
+            <summary className="flex min-h-11 cursor-pointer list-none items-center justify-between gap-3 text-sm font-medium text-muted hover:text-fg [&::-webkit-details-marker]:hidden">
+              <span>Wallpaper details</span>
+              <ChevronDown className="size-4 transition-transform duration-150 group-open:rotate-180" />
+            </summary>
+            <div className="pb-2 pt-2">
+              {wallpaper.description ? (
+                <p className="max-w-xl text-sm leading-relaxed text-muted lg:text-base">
+                  {wallpaper.description}
+                </p>
+              ) : null}
+
+              <p className="mt-3 text-xs text-subtle">
+                {wallpaper.width}×{wallpaper.height} · {formatBytes(wallpaper.fileSizeBytes)} · {orientationOf(wallpaper.width, wallpaper.height)}
+                {" · "}
+                {formatCount(wallpaper.downloadCount)} {t.wallpaper.downloads}
+              </p>
+
+              {wallpaper.tags.length > 0 ? (
+                <div className="mt-4 flex flex-wrap gap-2">
+                  {wallpaper.tags.map((tag) => (
+                    <a
+                      key={tag}
+                      href={`/wallpapers?q=${encodeURIComponent(tag)}`}
+                      className="rounded-full bg-elevated px-3 py-1.5 text-xs text-muted hover:text-fg"
+                    >
+                      {tag}
+                    </a>
+                  ))}
+                </div>
+              ) : null}
+
+              <button
+                type="button"
+                className="mt-3 inline-flex min-h-11 items-center gap-2 text-xs text-subtle hover:text-fg"
+                onClick={() => {
+                  if (!user) {
+                    void navigate({ to: "/login", search: { next: wallpaperPath(wallpaper.slug) } });
+                    return;
+                  }
+                  setReportOpen((open) => !open);
+                }}
+              >
+                <Flag className="size-4" />
+                {t.wallpaper.report}
+              </button>
+
+              {reportOpen ? (
+                <div className="mt-2 rounded-[16px] bg-elevated p-4">
+                  <p className="text-sm font-medium text-fg">{t.report.title}</p>
+                  <div className="mt-3 flex flex-wrap gap-2">
+                    {Object.entries(t.report.reasons).map(([key, label]) => (
+                      <Button
+                        key={key}
+                        size="sm"
+                        variant="secondary"
+                        onClick={async () => {
+                          await submitReport({
+                            data: {
+                              wallpaperId: wallpaper.id,
+                              reason: key as
+                                | "copyright"
+                                | "offensive"
+                                | "spam"
+                                | "duplicate"
+                                | "misleading"
+                                | "other",
+                            },
+                          });
+                          setReportOpen(false);
+                          setShareMsg(t.report.thanks);
+                        }}
+                      >
+                        {label}
+                      </Button>
+                    ))}
+                  </div>
+                </div>
+              ) : null}
             </div>
-          ) : null}
+          </details>
 
           {pair ? (
-            <section className="mt-10 border-t border-border pt-8">
-              <h2 className="font-display text-xl text-fg">{t.pairs.title}</h2>
+            <section className="mt-6 border-t border-border pt-6">
+              <h2 className="font-display text-xl text-fg">Matching set</h2>
               <p className="mt-1 text-sm text-muted">
                 {pair.lock.id === wallpaper.id ? t.pairs.asLock : t.pairs.asHome}
               </p>
-              <div className="mt-4 flex items-start gap-6">
+              <div className="mt-4 flex items-start gap-5">
                 <PairCard pair={pair} />
                 <a
                   href={`/pair/${pair.slug}`}
-                  className="mt-2 inline-flex h-11 items-center text-sm text-muted hover:text-fg"
+                  className="mt-2 inline-flex min-h-11 items-center text-sm text-muted hover:text-fg"
                 >
                   {t.pairs.viewCombo}
                 </a>
@@ -333,12 +339,7 @@ function DetailsPage() {
       {related.length > 0 ? (
         <section className="mt-10 px-4 lg:mt-16 lg:px-6">
           <div className="mb-4 flex items-end justify-between gap-3 border-t border-border pt-8">
-            <div>
-              <p className="hidden text-xs font-medium tracking-[0.18em] text-subtle uppercase lg:block">
-                Keep exploring
-              </p>
-              <h2 className="font-display text-xl text-fg lg:mt-1 lg:text-2xl">{t.wallpaper.related}</h2>
-            </div>
+            <h2 className="font-display text-xl text-fg lg:text-2xl">More like this</h2>
             <a href={categoryPath(wallpaper.categorySlug)} className="text-sm text-muted hover:text-fg">
               View category
             </a>
