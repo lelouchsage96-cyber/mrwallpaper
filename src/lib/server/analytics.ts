@@ -5,6 +5,7 @@ export const ANALYTICS_EVENTS = [
   "wallpaper_view",
   "category_view",
   "search",
+  "search_zero_results",
   "download",
   "favorite_add",
   "favorite_remove",
