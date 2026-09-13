@@ -5,15 +5,30 @@ import { trackEvent } from "@/lib/analytics";
 import { t } from "@/lib/i18n/en";
 import { injectLiveJpeg, injectLiveMov, liveAssetId, zipStore } from "@/lib/live-photo";
 import { createAdSession, requestDownload } from "@/lib/server/api";
-import { downloadLabel, type DeviceType } from "@/lib/device";
+import type { DeviceType } from "@/lib/device";
 import type { AccessType } from "@/lib/types";
 
 type DownloadFile = { data: Uint8Array; filename: string; mime: string };
 
-async function fetchBytes(url: string): Promise<Uint8Array> {
-  const res = await fetch(url);
-  if (!res.ok) throw new Error("fetch");
-  return new Uint8Array(await res.arrayBuffer());
+function wait(ms: number) {
+  return new Promise((resolve) => window.setTimeout(resolve, ms));
+}
+
+async function fetchBytes(url: string, attempts = 2): Promise<Uint8Array> {
+  let lastError: unknown = new Error("fetch");
+
+  for (let attempt = 0; attempt < attempts; attempt += 1) {
+    try {
+      const res = await fetch(url, { cache: "no-store" });
+      if (!res.ok) throw new Error(`fetch:${res.status}`);
+      return new Uint8Array(await res.arrayBuffer());
+    } catch (error) {
+      lastError = error;
+      if (attempt + 1 < attempts) await wait(350);
+    }
+  }
+
+  throw lastError;
 }
 
 function toBrowserFile(item: DownloadFile): File {
@@ -29,6 +44,12 @@ function isIOSDevice(): boolean {
   );
 }
 
+function isMobileDevice(): boolean {
+  if (typeof navigator === "undefined" || typeof window === "undefined") return false;
+  return /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent) ||
+    (navigator.maxTouchPoints > 1 && window.innerWidth < 1024);
+}
+
 function canShareFile(file: File): boolean {
   if (typeof navigator === "undefined" || typeof navigator.share !== "function") return false;
   return typeof navigator.canShare !== "function" || navigator.canShare({ files: [file] });
@@ -36,29 +57,6 @@ function canShareFile(file: File): boolean {
 
 function shareWasCancelled(error: unknown): boolean {
   return error instanceof DOMException && error.name === "AbortError";
-}
-
-function hasActiveUserGesture(): boolean {
-  if (typeof navigator === "undefined") return false;
-  const activation = (navigator as Navigator & { userActivation?: { isActive: boolean } }).userActivation;
-  return activation?.isActive ?? true;
-}
-
-async function tryIOSImageShare(item: DownloadFile): Promise<"shared" | "cancelled" | "ready" | "unsupported"> {
-  if (!isIOSDevice() || !item.mime.startsWith("image/")) return "unsupported";
-
-  const file = toBrowserFile(item);
-  if (!canShareFile(file)) return "unsupported";
-
-  if (!hasActiveUserGesture()) return "ready";
-
-  try {
-    await navigator.share({ files: [file] });
-    return "shared";
-  } catch (error) {
-    if (shareWasCancelled(error)) return "cancelled";
-    return "ready";
-  }
 }
 
 async function saveFiles(files: DownloadFile[]): Promise<void> {
@@ -73,7 +71,7 @@ async function saveFiles(files: DownloadFile[]): Promise<void> {
     document.body.appendChild(a);
     a.click();
     a.remove();
-    window.setTimeout(() => URL.revokeObjectURL(objectUrl), 2_000);
+    window.setTimeout(() => URL.revokeObjectURL(objectUrl), 10_000);
   }
 }
 
@@ -98,39 +96,43 @@ export function DownloadSheet({
   const [phase, setPhase] = useState<"idle" | "saving" | "ready" | "guide" | "error">("idle");
   const [adSessionId, setAdSessionId] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
-  const [iosReadyFile, setIosReadyFile] = useState<DownloadFile | null>(null);
+  const [readyFile, setReadyFile] = useState<DownloadFile | null>(null);
   const autoStartedRef = useRef(false);
 
   void accessType;
   void isPremiumUser;
 
-  async function sharePreparedIOSFile() {
-    if (!iosReadyFile) return;
+  function recordDownload(delivery: "ios" | "mobile" | "browser", live = false, pack = false) {
+    trackEvent("download", {
+      wallpaperId,
+      metadata: { device: deviceType, live, pack, delivery },
+    });
+  }
 
-    const file = toBrowserFile(iosReadyFile);
-    if (!canShareFile(file)) {
-      try {
-        await saveFiles([iosReadyFile]);
-        onClose();
-      } catch {
-        setPhase("error");
-        setMessage(t.download.failed);
-      }
-      return;
-    }
+  async function deliverPreparedFile() {
+    if (!readyFile) return;
 
     try {
-      await navigator.share({ files: [file] });
-      onClose();
-    } catch (error) {
-      if (shareWasCancelled(error)) return;
-      try {
-        await saveFiles([iosReadyFile]);
-        onClose();
-      } catch {
-        setPhase("error");
-        setMessage(t.download.failed);
+      if (isIOSDevice()) {
+        const file = toBrowserFile(readyFile);
+        if (canShareFile(file)) {
+          try {
+            await navigator.share({ files: [file] });
+            recordDownload("ios");
+            onClose();
+            return;
+          } catch (error) {
+            if (shareWasCancelled(error)) return;
+          }
+        }
       }
+
+      await saveFiles([readyFile]);
+      recordDownload(isMobileDevice() ? "mobile" : "browser");
+      onClose();
+    } catch {
+      setPhase("error");
+      setMessage(t.download.failed);
     }
   }
 
@@ -177,18 +179,11 @@ export function DownloadSheet({
         return;
       }
 
-      trackEvent("download", {
-        wallpaperId,
-        metadata: {
-          device: deviceType,
-          live: res.isLive,
-          pack,
-          delivery: isIOSDevice() ? "ios" : "browser",
-        },
-      });
-
       if (res.isLive && res.stillUrl && res.stillFilename) {
-        const [video, still] = await Promise.all([fetchBytes(res.url), fetchBytes(res.stillUrl)]);
+        const [video, still] = await Promise.all([
+          fetchBytes(res.url, 2),
+          fetchBytes(res.stillUrl, 2),
+        ]);
         const id = liveAssetId();
         const mov = injectLiveMov(video, id);
         const jpg = injectLiveJpeg(still, id);
@@ -209,33 +204,26 @@ export function DownloadSheet({
           ]);
         }
 
+        recordDownload(isIOSDevice() ? "ios" : "browser", true, pack);
         setPhase("guide");
         return;
       }
 
-      const bytes = await fetchBytes(res.url);
-      const downloadFile: DownloadFile = {
+      const bytes = await fetchBytes(res.url, 2);
+      const file: DownloadFile = {
         data: bytes,
         filename: res.filename,
         mime: res.mime || "image/jpeg",
       };
 
-      const iosShare = await tryIOSImageShare(downloadFile);
-      if (iosShare === "shared") {
-        onClose();
-        return;
-      }
-      if (iosShare === "cancelled") {
-        setPhase("idle");
-        return;
-      }
-      if (iosShare === "ready") {
-        setIosReadyFile(downloadFile);
+      if (isMobileDevice()) {
+        setReadyFile(file);
         setPhase("ready");
         return;
       }
 
-      await saveFiles([downloadFile]);
+      await saveFiles([file]);
+      recordDownload("browser");
       onClose();
     } catch {
       setPhase("error");
@@ -253,7 +241,7 @@ export function DownloadSheet({
       setPhase("idle");
       setMessage(null);
       setAdSessionId(null);
-      setIosReadyFile(null);
+      setReadyFile(null);
       return;
     }
 
@@ -266,6 +254,7 @@ export function DownloadSheet({
   if (!open) return null;
 
   const preparing = !isLive && (phase === "idle" || phase === "saving");
+  const ios = isIOSDevice();
 
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center sm:items-center">
@@ -273,7 +262,9 @@ export function DownloadSheet({
         type="button"
         className="mw-backdrop absolute inset-0 bg-bg/70"
         aria-label={t.close}
-        onClick={onClose}
+        onClick={() => {
+          if (phase !== "saving") onClose();
+        }}
       />
       <div
         role="dialog"
@@ -288,6 +279,7 @@ export function DownloadSheet({
         {preparing ? (
           <div className="mt-4 py-4">
             <p className="text-sm text-muted">Preparing your wallpaper…</p>
+            <p className="mt-1 text-xs text-subtle">Keep this open for a moment.</p>
           </div>
         ) : phase === "guide" ? (
           <div className="mt-4 space-y-3">
@@ -305,11 +297,13 @@ export function DownloadSheet({
         ) : phase === "ready" ? (
           <div className="mt-4 space-y-4">
             <p className="text-sm text-muted">
-              Tap below, then choose Save Image to put the wallpaper in Photos.
+              {ios
+                ? "Ready. Tap below, then choose Save Image to put it in Photos."
+                : "Ready. Tap below to save the wallpaper to your device."}
             </p>
             {message ? <p className="text-sm text-danger">{message}</p> : null}
-            <Button className="w-full" onClick={() => void sharePreparedIOSFile()}>
-              Save to Photos
+            <Button className="w-full" onClick={() => void deliverPreparedFile()}>
+              {ios ? "Save to Photos" : "Download wallpaper"}
             </Button>
             <Button variant="ghost" className="w-full" onClick={onClose}>
               {t.cancel}
