@@ -6,7 +6,8 @@ import { WallpaperGrid, WallpaperGridSkeleton } from "@/components/wallpaper-gri
 import { InfiniteSentinel } from "@/components/lazy";
 import { noindexHead } from "@/lib/seo";
 import { t } from "@/lib/i18n/en";
-import { getAppConfig, getExploreMeta, searchWallpapers } from "@/lib/server/api";
+import { getAppConfig } from "@/lib/server/api";
+import { getSearchMetaV2, searchWallpapersV2 } from "@/lib/server/search-v2";
 import type { Category, WallpaperCard } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
@@ -72,10 +73,10 @@ function ExplorePage() {
   const access = search.access;
   const sort = search.sort ?? "trending";
   const categorySlug = search.category;
-  const device: Device = search.device ?? "phone";
+  const device: Device = search.device ?? (search.q ? "all" : "phone");
 
   useEffect(() => {
-    void getExploreMeta()
+    void getSearchMetaV2()
       .then((m) => {
         setCategories(m.categories);
         setPopular(m.popular);
@@ -97,7 +98,7 @@ function ExplorePage() {
   }, []);
 
   useEffect(() => {
-    const id = window.setTimeout(() => setDebounced(q.trim()), 350);
+    const id = window.setTimeout(() => setDebounced(q.trim()), 250);
     return () => window.clearTimeout(id);
   }, [q]);
 
@@ -127,7 +128,7 @@ function ExplorePage() {
     else setRefreshing(true);
     setError(false);
     const nextOffset = reset ? 0 : offset;
-    void searchWallpapers({
+    void searchWallpapersV2({
       data: {
         q: debounced || undefined,
         access,
@@ -162,7 +163,7 @@ function ExplorePage() {
       category: categorySlug,
       access,
       sort,
-      device,
+      device: debounced ? "all" : device,
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [debounced]);
@@ -194,7 +195,7 @@ function ExplorePage() {
                 onClick={() => {
                   setQ(term);
                   setDebounced(term);
-                  setSearch({ q: term, category: categorySlug, access, sort, device });
+                  setSearch({ q: term, category: categorySlug, access, sort, device: "all" });
                 }}
                 className="h-9 rounded-full bg-elevated px-3 text-sm text-muted hover:text-fg"
               >
