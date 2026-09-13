@@ -6,6 +6,7 @@ import {
 } from "@tanstack/react-router";
 import { AnalyticsRouteTracker } from "@/lib/analytics";
 import { AuthProvider } from "@/lib/auth/provider";
+import { ActionToastViewport } from "@/components/action-toast";
 import { NotFoundPage } from "@/components/not-found-page";
 import { ThemeProvider } from "@/components/theme-provider";
 import { BOOT_SCRIPT } from "@/lib/boot-script";
@@ -103,6 +104,7 @@ function RootDocument() {
           <ThemeProvider>
             <AnalyticsRouteTracker />
             <Outlet />
+            <ActionToastViewport />
           </ThemeProvider>
         </AuthProvider>
         <Scripts />
