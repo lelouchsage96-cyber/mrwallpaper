@@ -2,6 +2,7 @@ import { createFileRoute, notFound, redirect, useNavigate } from "@tanstack/reac
 import { ChevronDown, ChevronLeft, Download, Flag, Share2 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { trackEvent } from "@/lib/analytics";
+import { showActionToast } from "@/components/action-toast";
 import { Breadcrumbs } from "@/components/breadcrumbs";
 import { DevicePreview, type PreviewMode } from "@/components/device-preview";
 import { DownloadSheet } from "@/components/download-sheet";
@@ -101,7 +102,6 @@ function DetailsPage() {
   const [downloadOpen, setDownloadOpen] = useState(false);
   const [isPremium, setIsPremium] = useState(false);
   const [reportOpen, setReportOpen] = useState(false);
-  const [shareMsg, setShareMsg] = useState<string | null>(null);
   const [mode, setMode] = useState<PreviewMode>(
     initial.pair && initial.wallpaper && initial.pair.home.id === initial.wallpaper.id ? "home" : "lock",
   );
@@ -142,6 +142,7 @@ function DetailsPage() {
           categorySlug: wallpaper?.categorySlug,
           metadata: { method: "native" },
         });
+        showActionToast("Shared");
         return;
       }
       await navigator.clipboard.writeText(url);
@@ -150,9 +151,9 @@ function DetailsPage() {
         categorySlug: wallpaper?.categorySlug,
         metadata: { method: "clipboard" },
       });
-      setShareMsg(t.shareCopied);
+      showActionToast("Link copied");
     } catch {
-      setShareMsg(null);
+      // Native share cancellation should stay quiet.
     }
   }
 
@@ -232,8 +233,6 @@ function DetailsPage() {
             Download wallpaper
           </Button>
 
-          {shareMsg ? <p className="mt-2 text-sm text-muted">{shareMsg}</p> : null}
-
           <details className="group mt-6 border-t border-border pt-2">
             <summary className="flex min-h-11 cursor-pointer list-none items-center justify-between gap-3 text-sm font-medium text-muted hover:text-fg [&::-webkit-details-marker]:hidden">
               <span>Wallpaper details</span>
@@ -304,7 +303,7 @@ function DetailsPage() {
                             },
                           });
                           setReportOpen(false);
-                          setShareMsg(t.report.thanks);
+                          showActionToast(t.report.thanks);
                         }}
                       >
                         {label}
