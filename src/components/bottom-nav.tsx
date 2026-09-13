@@ -1,5 +1,6 @@
 import { Link, useRouterState } from "@tanstack/react-router";
 import { Compass, Heart, Home, User } from "lucide-react";
+import { DesktopSearch } from "@/components/smart-search";
 import { brand } from "@/lib/brand";
 import { t } from "@/lib/i18n/en";
 import { cn } from "@/lib/utils";
@@ -29,11 +30,14 @@ export function DesktopNav() {
       aria-label="Main"
       className="sticky top-0 z-40 hidden border-b border-border bg-bg/90 backdrop-blur-md lg:block"
     >
-      <div className="mx-auto flex max-w-[1440px] items-center justify-between gap-6 px-6 py-3 xl:px-8">
-        <Link to="/app" className="font-display text-xl text-fg">
+      <div className="mx-auto flex max-w-[1440px] items-center gap-4 px-6 py-3 xl:px-8">
+        <Link to="/app" className="shrink-0 font-display text-xl text-fg">
           {brand.name}
         </Link>
-        <ul className="flex items-center gap-1">
+        <div className="min-w-0 flex-1">
+          <DesktopSearch />
+        </div>
+        <ul className="flex shrink-0 items-center gap-1">
           {items.map((item) => {
             const active = isActivePath(pathname, item);
             const Icon = item.icon;
