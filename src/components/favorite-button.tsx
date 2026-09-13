@@ -1,6 +1,7 @@
 import { Heart } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useNavigate } from "@tanstack/react-router";
+import { showActionToast } from "@/components/action-toast";
 import { trackEvent } from "@/lib/analytics";
 import { useCurrentUserState } from "@/lib/auth/use-current-user";
 import { toggleFavorite } from "@/lib/server/api";
@@ -55,9 +56,11 @@ export function FavoriteButton({
           setLocal(res.isFavorite);
           onChange?.(res.isFavorite);
           trackEvent(res.isFavorite ? "favorite_add" : "favorite_remove", { wallpaperId });
+          showActionToast(res.isFavorite ? "Added to Favorites" : "Removed from Favorites");
         } catch {
           setLocal(prev);
           onChange?.(prev);
+          showActionToast("Couldn’t update Favorites");
         } finally {
           setBusy(false);
         }
