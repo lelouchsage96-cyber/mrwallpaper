@@ -4,6 +4,7 @@ import { EmptyState, ErrorState } from "@/components/empty-state";
 import { Input } from "@/components/ui/input";
 import { WallpaperGrid, WallpaperGridSkeleton } from "@/components/wallpaper-grid";
 import { InfiniteSentinel } from "@/components/lazy";
+import { trackEvent } from "@/lib/analytics";
 import { noindexHead } from "@/lib/seo";
 import { t } from "@/lib/i18n/en";
 import { getAppConfig } from "@/lib/server/api";
@@ -22,6 +23,21 @@ type ExploreSearch = {
   sort?: Sort;
   device?: Device;
 };
+
+const SEARCH_FILLER = new Set(["wallpaper", "wallpapers", "background", "backgrounds", "download", "free", "4k", "hd"]);
+
+function fallbackTerms(value: string): string[] {
+  return [...new Set(
+    value
+      .toLocaleLowerCase()
+      .replace(/[^a-z0-9]+/g, " ")
+      .split(" ")
+      .map((term) => term.trim())
+      .filter((term) => term.length >= 2 && !SEARCH_FILLER.has(term)),
+  )]
+    .sort((a, b) => b.length - a.length)
+    .slice(0, 3);
+}
 
 export const Route = createFileRoute("/app/explore")({
   validateSearch: (s: Record<string, unknown>): ExploreSearch => ({
@@ -68,7 +84,9 @@ function ExplorePage() {
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState(false);
   const [premiumOn, setPremiumOn] = useState(false);
+  const [showingSuggestions, setShowingSuggestions] = useState(false);
   const busy = useRef(false);
+  const zeroTracked = useRef<string | null>(null);
 
   const access = search.access;
   const sort = search.sort ?? "trending";
@@ -121,34 +139,93 @@ function ExplorePage() {
     });
   }
 
+  async function closestMatches(): Promise<WallpaperCard[]> {
+    const terms = fallbackTerms(debounced);
+    if (!terms.length) return [];
+
+    const responses = await Promise.all(
+      terms.map((term) =>
+        searchWallpapersV2({
+          data: {
+            q: term,
+            access,
+            sort,
+            offset: 0,
+            categorySlug,
+            device,
+          },
+        }).catch(() => ({ items: [] as WallpaperCard[], offset: 0, hasMore: false })),
+      ),
+    );
+
+    const seen = new Set<string>();
+    const merged: WallpaperCard[] = [];
+    for (const response of responses) {
+      for (const wallpaper of response.items) {
+        if (seen.has(wallpaper.id)) continue;
+        seen.add(wallpaper.id);
+        merged.push(wallpaper);
+        if (merged.length >= 24) return merged;
+      }
+    }
+    return merged;
+  }
+
   function load(reset: boolean) {
     if (!reset && busy.current) return;
+    if (!reset && showingSuggestions) return;
     busy.current = true;
     if (reset && items.length === 0) setLoading(true);
     else setRefreshing(true);
     setError(false);
+    if (reset) setShowingSuggestions(false);
     const nextOffset = reset ? 0 : offset;
-    void searchWallpapersV2({
-      data: {
-        q: debounced || undefined,
-        access,
-        sort,
-        offset: nextOffset,
-        categorySlug,
-        device,
-      },
-    })
-      .then((res) => {
+
+    void (async () => {
+      try {
+        const res = await searchWallpapersV2({
+          data: {
+            q: debounced || undefined,
+            access,
+            sort,
+            offset: nextOffset,
+            categorySlug,
+            device,
+          },
+        });
+
+        if (reset && debounced && res.items.length === 0) {
+          const trackKey = [debounced.toLocaleLowerCase(), categorySlug ?? "", device, sort, access ?? ""].join("|");
+          if (zeroTracked.current !== trackKey) {
+            zeroTracked.current = trackKey;
+            trackEvent("search_zero_results", {
+              searchQuery: debounced,
+              categorySlug,
+              metadata: { device, sort, access: access ?? "all" },
+            });
+          }
+
+          const suggestions = await closestMatches();
+          if (suggestions.length > 0) {
+            setItems(suggestions);
+            setOffset(0);
+            setHasMore(false);
+            setShowingSuggestions(true);
+            return;
+          }
+        }
+
         setItems((prev) => (reset ? res.items : [...prev, ...res.items]));
         setOffset(res.offset);
         setHasMore(res.hasMore);
-      })
-      .catch(() => setError(true))
-      .finally(() => {
+      } catch {
+        setError(true);
+      } finally {
         busy.current = false;
         setLoading(false);
         setRefreshing(false);
-      });
+      }
+    })();
   }
 
   useEffect(() => {
@@ -286,9 +363,34 @@ function ExplorePage() {
         ) : loading && items.length === 0 ? (
           <WallpaperGridSkeleton count={8} />
         ) : items.length === 0 ? (
-          <EmptyState title={t.explore.empty} />
+          <div>
+            <EmptyState title={debounced ? `No wallpapers found for “${debounced}”` : t.explore.empty} />
+            {debounced && popular.length > 0 ? (
+              <div className="mt-4 flex flex-wrap justify-center gap-2">
+                {popular.slice(0, 6).map((term) => (
+                  <button
+                    key={term}
+                    type="button"
+                    onClick={() => {
+                      setQ(term);
+                      setDebounced(term);
+                      setSearch({ q: term, category: undefined, access, sort, device: "all" });
+                    }}
+                    className="min-h-10 rounded-full bg-elevated px-3.5 text-sm text-muted hover:text-fg"
+                  >
+                    {term}
+                  </button>
+                ))}
+              </div>
+            ) : null}
+          </div>
         ) : (
           <>
+            {showingSuggestions && debounced ? (
+              <p className="mb-4 text-sm text-muted">
+                No exact matches for “{debounced}”. Try these instead.
+              </p>
+            ) : null}
             <WallpaperGrid
               items={items}
               eager={4}
@@ -299,10 +401,10 @@ function ExplorePage() {
               }
             />
             <InfiniteSentinel
-              disabled={!hasMore || loading || refreshing}
+              disabled={!hasMore || loading || refreshing || showingSuggestions}
               onLoad={() => load(false)}
             />
-            {hasMore && (loading || refreshing) ? <div className="mt-4"><WallpaperGridSkeleton count={2} /></div> : null}
+            {hasMore && !showingSuggestions && (loading || refreshing) ? <div className="mt-4"><WallpaperGridSkeleton count={2} /></div> : null}
           </>
         )}
       </div>
