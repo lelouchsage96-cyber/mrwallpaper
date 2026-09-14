@@ -149,19 +149,12 @@ function HomePage() {
   }
 
   return (
-    <div className="mw-enter px-4 pt-5 lg:px-6 lg:pt-8 xl:px-8">
-      <header className="mb-7 flex items-center justify-between gap-3 lg:mb-10 lg:items-end">
-        <div className="lg:hidden">
+    <div className="mw-enter px-4 pt-5 lg:px-6 lg:pt-6 xl:px-8">
+      <header className="mb-7 flex items-center justify-between gap-3 lg:hidden">
+        <div>
           <p className="text-xs tracking-[0.22em] text-muted uppercase">{brand.tagline}</p>
           <h1 className="font-display text-3xl text-fg">{brand.name}</h1>
           <p className="mt-1 max-w-sm text-sm text-muted">Find it. Preview it. Download it.</p>
-        </div>
-        <div className="hidden lg:block">
-          <p className="text-xs font-medium tracking-[0.2em] text-subtle uppercase">Discover</p>
-          <h1 className="mt-1 font-display text-4xl text-fg xl:text-5xl">Find your next wallpaper</h1>
-          <p className="mt-2 max-w-2xl text-base text-muted">
-            Fresh picks for your phone, iPad and tablet, with more ways to browse on a bigger screen.
-          </p>
         </div>
         <div className="flex items-center gap-1">
           <button
@@ -169,14 +162,14 @@ function HomePage() {
             onClick={() => setSearchOpen(true)}
             aria-label={t.home.search}
             aria-expanded={searchOpen}
-            className="grid size-11 place-items-center rounded-[12px] text-fg lg:hidden"
+            className="grid size-11 place-items-center rounded-[12px] text-fg"
           >
             <Search className="size-5" strokeWidth={1.75} />
           </button>
           <Link
             to="/app/notifications"
             aria-label={t.home.notifications}
-            className="relative grid size-11 place-items-center rounded-md text-fg lg:rounded-full lg:bg-elevated lg:transition-colors lg:hover:bg-surface"
+            className="relative grid size-11 place-items-center rounded-md text-fg"
           >
             <Bell className="size-5" strokeWidth={1.75} />
             {data && data.unreadCount > 0 ? (
@@ -190,7 +183,7 @@ function HomePage() {
 
       {!data ? (
         <div className="space-y-8">
-          <Skeleton className="aspect-[4/5] w-full rounded-[24px] lg:aspect-[16/5]" />
+          <Skeleton className="aspect-[4/5] w-full rounded-[24px] lg:hidden" />
           <WallpaperGridSkeleton />
         </div>
       ) : (
