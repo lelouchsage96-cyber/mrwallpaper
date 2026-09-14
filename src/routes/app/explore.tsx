@@ -1,4 +1,5 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { EmptyState, ErrorState } from "@/components/empty-state";
 import { Input } from "@/components/ui/input";
@@ -87,6 +88,7 @@ function ExplorePage() {
   const [showingSuggestions, setShowingSuggestions] = useState(false);
   const busy = useRef(false);
   const zeroTracked = useRef<string | null>(null);
+  const categoryRailRef = useRef<HTMLDivElement | null>(null);
 
   const access = search.access;
   const sort = search.sort ?? "trending";
@@ -137,6 +139,10 @@ function ExplorePage() {
       },
       replace: true,
     });
+  }
+
+  function scrollCategories(direction: -1 | 1) {
+    categoryRailRef.current?.scrollBy({ left: direction * 440, behavior: "smooth" });
   }
 
   async function closestMatches(): Promise<WallpaperCard[]> {
@@ -245,8 +251,74 @@ function ExplorePage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [debounced]);
 
+  const deviceButtons = deviceChips.map((f) => (
+    <button
+      key={f.id}
+      type="button"
+      onClick={() =>
+        setSearch({
+          q: debounced || undefined,
+          category: categorySlug,
+          access,
+          sort,
+          device: f.id,
+        })
+      }
+      className={cn(
+        "h-9 shrink-0 rounded-full px-4 text-sm transition-colors duration-150 ease-out",
+        device === f.id ? "bg-fg text-bg" : "bg-elevated text-muted hover:text-fg",
+      )}
+    >
+      {f.label}
+    </button>
+  ));
+
+  const categoryButtons = categories.map((c) => (
+    <button
+      key={c.id}
+      type="button"
+      onClick={() =>
+        setSearch({
+          q: debounced || undefined,
+          category: c.slug === categorySlug ? undefined : c.slug,
+          access,
+          sort,
+          device,
+        })
+      }
+      className={cn(
+        "h-9 shrink-0 rounded-full px-4 text-sm transition-colors duration-150 ease-out",
+        categorySlug === c.slug ? "bg-fg text-bg" : "bg-elevated text-muted hover:text-fg",
+      )}
+    >
+      {c.name}
+    </button>
+  ));
+
+  const sortButtons = sortChips.map((f) => (
+    <button
+      key={f.id}
+      type="button"
+      onClick={() =>
+        setSearch({
+          q: debounced || undefined,
+          category: categorySlug,
+          access,
+          sort: f.id,
+          device,
+        })
+      }
+      className={cn(
+        "h-9 shrink-0 rounded-full px-4 text-sm transition-colors duration-150",
+        sort === f.id ? "bg-fg text-bg" : "bg-elevated text-muted hover:text-fg",
+      )}
+    >
+      {f.label}
+    </button>
+  ));
+
   return (
-    <div className="px-4 pt-5 lg:px-6 lg:pt-8 xl:px-8">
+    <div className="px-4 pt-5 lg:px-6 lg:pt-6 xl:px-8">
       <h1 className="font-display text-3xl text-fg lg:text-4xl">{t.explore.title}</h1>
 
       <div className="mt-4 lg:hidden">
@@ -284,80 +356,54 @@ function ExplorePage() {
         </div>
       ) : null}
 
-      <div className="lg:mt-6 lg:grid lg:grid-cols-[auto_minmax(0,1fr)_auto] lg:items-center lg:gap-4">
-        <div className="mt-4 flex flex-nowrap gap-2 overflow-x-auto pb-1 [-ms-overflow-style:none] [scrollbar-width:none] lg:mt-0 lg:overflow-visible lg:pb-0 [&::-webkit-scrollbar]:hidden">
-          {deviceChips.map((f) => (
-            <button
-              key={f.id}
-              type="button"
-              onClick={() =>
-                setSearch({
-                  q: debounced || undefined,
-                  category: categorySlug,
-                  access,
-                  sort,
-                  device: f.id,
-                })
-              }
-              className={cn(
-                "h-9 shrink-0 rounded-full px-4 text-sm transition-colors duration-150 ease-out",
-                device === f.id ? "bg-fg text-bg" : "bg-elevated text-muted",
-              )}
-            >
-              {f.label}
-            </button>
-          ))}
+      <div className="lg:hidden">
+        <div className="mt-4 flex flex-nowrap gap-2 overflow-x-auto pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+          {deviceButtons}
         </div>
 
         {categories.length > 0 ? (
-          <div className="mt-4 flex min-w-0 flex-nowrap gap-2 overflow-x-auto pb-1 [-ms-overflow-style:none] [scrollbar-width:none] lg:mt-0 lg:pb-0 [&::-webkit-scrollbar]:hidden">
-            {categories.map((c) => (
-              <button
-                key={c.id}
-                type="button"
-                onClick={() =>
-                  setSearch({
-                    q: debounced || undefined,
-                    category: c.slug === categorySlug ? undefined : c.slug,
-                    access,
-                    sort,
-                    device,
-                  })
-                }
-                className={cn(
-                  "h-9 shrink-0 rounded-full px-4 text-sm transition-colors duration-150 ease-out",
-                  categorySlug === c.slug ? "bg-fg text-bg" : "bg-elevated text-muted",
-                )}
-              >
-                {c.name}
-              </button>
-            ))}
+          <div className="mt-4 flex flex-nowrap gap-2 overflow-x-auto pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+            {categoryButtons}
           </div>
-        ) : <div />}
+        ) : null}
 
-        <div className="mt-3 flex flex-nowrap gap-2 overflow-x-auto pb-1 [-ms-overflow-style:none] [scrollbar-width:none] lg:mt-0 lg:justify-end lg:overflow-visible lg:pb-0 [&::-webkit-scrollbar]:hidden">
-          {sortChips.map((f) => (
-            <button
-              key={f.id}
-              type="button"
-              onClick={() =>
-                setSearch({
-                  q: debounced || undefined,
-                  category: categorySlug,
-                  access,
-                  sort: f.id,
-                  device,
-                })
-              }
-              className={cn(
-                "h-9 shrink-0 rounded-full px-4 text-sm",
-                sort === f.id ? "bg-fg text-bg" : "bg-elevated text-muted",
-              )}
-            >
-              {f.label}
-            </button>
-          ))}
+        <div className="mt-3 flex flex-nowrap gap-2 overflow-x-auto pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+          {sortButtons}
         </div>
+      </div>
+
+      <div className="mt-5 hidden lg:block">
+        <div className="flex items-center justify-between gap-6">
+          <div className="flex shrink-0 gap-2">{deviceButtons}</div>
+          <div className="flex shrink-0 gap-2">{sortButtons}</div>
+        </div>
+
+        {categories.length > 0 ? (
+          <div className="mt-3 flex items-center gap-2 rounded-2xl border border-border/80 bg-elevated/25 p-2">
+            <button
+              type="button"
+              onClick={() => scrollCategories(-1)}
+              aria-label="Scroll categories left"
+              className="grid size-8 shrink-0 place-items-center rounded-full bg-elevated text-muted transition-colors hover:bg-surface hover:text-fg"
+            >
+              <ChevronLeft className="size-4" />
+            </button>
+            <div
+              ref={categoryRailRef}
+              className="flex min-w-0 flex-1 gap-2 overflow-x-auto scroll-smooth [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+            >
+              {categoryButtons}
+            </div>
+            <button
+              type="button"
+              onClick={() => scrollCategories(1)}
+              aria-label="Scroll categories right"
+              className="grid size-8 shrink-0 place-items-center rounded-full bg-elevated text-muted transition-colors hover:bg-surface hover:text-fg"
+            >
+              <ChevronRight className="size-4" />
+            </button>
+          </div>
+        ) : null}
       </div>
 
       <div className={cn("mt-5 transition-opacity duration-200 ease-out lg:mt-6", refreshing && items.length > 0 ? "opacity-55" : "opacity-100")}>
