@@ -22,6 +22,9 @@ function isActivePath(pathname: string, item: (typeof items)[number]) {
     : pathname === item.to || pathname.startsWith(`${item.to}/`);
 }
 
+const browseChipClass =
+  "shrink-0 rounded-full border border-border bg-elevated/55 px-3.5 py-1.5 text-sm text-muted transition-colors duration-150 hover:bg-surface hover:text-fg";
+
 export function DesktopNav() {
   const pathname = useActivePath();
 
@@ -30,7 +33,7 @@ export function DesktopNav() {
       aria-label="Main"
       className="sticky top-0 z-40 hidden border-b border-border/80 bg-bg/90 shadow-[0_1px_0_rgba(255,255,255,0.02)] backdrop-blur-xl lg:block"
     >
-      <div className="mx-auto flex h-16 max-w-[1440px] items-center gap-6 px-6 xl:px-8">
+      <div className="mx-auto flex h-16 max-w-7xl items-center gap-6 px-6 xl:px-8">
         <Link to="/app" className="shrink-0 font-display text-2xl text-fg">
           {brand.name}
         </Link>
@@ -60,6 +63,47 @@ export function DesktopNav() {
             );
           })}
         </ul>
+      </div>
+
+      <div className="border-t border-border/70">
+        <div className="mx-auto flex max-w-7xl gap-2 overflow-x-auto px-6 py-2.5 [-ms-overflow-style:none] [scrollbar-width:none] xl:px-8 [&::-webkit-scrollbar]:hidden">
+          <Link to="/app/fresh" className={browseChipClass}>
+            Fresh
+          </Link>
+          <Link to="/app/tablet" className={browseChipClass}>
+            iPad &amp; Tablets
+          </Link>
+          <Link to="/app/explore" search={{ category: "motivational" }} className={browseChipClass}>
+            Motivational
+          </Link>
+          <Link to="/app/explore" search={{ category: "bible-verse" }} className={browseChipClass}>
+            Bible Verses
+          </Link>
+          <Link to="/app/explore" search={{ category: "aesthetic" }} className={browseChipClass}>
+            Aesthetic
+          </Link>
+          <Link to="/app/explore" search={{ category: "amoled" }} className={browseChipClass}>
+            AMOLED
+          </Link>
+          <Link to="/app/explore" search={{ category: "minimal" }} className={browseChipClass}>
+            Minimal
+          </Link>
+          <Link to="/app/explore" search={{ category: "anime" }} className={browseChipClass}>
+            Anime
+          </Link>
+          <Link to="/app/explore" search={{ category: "cars" }} className={browseChipClass}>
+            Cars
+          </Link>
+          <Link to="/app/explore" search={{ category: "nature" }} className={browseChipClass}>
+            Nature
+          </Link>
+          <Link to="/app/explore" search={{ category: "dark" }} className={browseChipClass}>
+            Dark
+          </Link>
+          <Link to="/app/explore" search={{ category: "space" }} className={browseChipClass}>
+            Space
+          </Link>
+        </div>
       </div>
     </nav>
   );
