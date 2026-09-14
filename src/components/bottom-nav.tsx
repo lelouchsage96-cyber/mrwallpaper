@@ -27,6 +27,7 @@ const browseChipClass =
 
 export function DesktopNav() {
   const pathname = useActivePath();
+  const showHomeBrowse = pathname === "/app";
 
   return (
     <nav
@@ -65,46 +66,48 @@ export function DesktopNav() {
         </ul>
       </div>
 
-      <div className="border-t border-border/70">
-        <div className="mx-auto flex max-w-7xl gap-2 overflow-x-auto px-6 py-2.5 [-ms-overflow-style:none] [scrollbar-width:none] xl:px-8 [&::-webkit-scrollbar]:hidden">
-          <Link to="/app/fresh" className={browseChipClass}>
-            Fresh
-          </Link>
-          <Link to="/app/tablet" className={browseChipClass}>
-            iPad &amp; Tablets
-          </Link>
-          <Link to="/app/explore" search={{ category: "motivational" }} className={browseChipClass}>
-            Motivational
-          </Link>
-          <Link to="/app/explore" search={{ category: "bible-verse" }} className={browseChipClass}>
-            Bible Verses
-          </Link>
-          <Link to="/app/explore" search={{ category: "aesthetic" }} className={browseChipClass}>
-            Aesthetic
-          </Link>
-          <Link to="/app/explore" search={{ category: "amoled" }} className={browseChipClass}>
-            AMOLED
-          </Link>
-          <Link to="/app/explore" search={{ category: "minimal" }} className={browseChipClass}>
-            Minimal
-          </Link>
-          <Link to="/app/explore" search={{ category: "anime" }} className={browseChipClass}>
-            Anime
-          </Link>
-          <Link to="/app/explore" search={{ category: "cars" }} className={browseChipClass}>
-            Cars
-          </Link>
-          <Link to="/app/explore" search={{ category: "nature" }} className={browseChipClass}>
-            Nature
-          </Link>
-          <Link to="/app/explore" search={{ category: "dark" }} className={browseChipClass}>
-            Dark
-          </Link>
-          <Link to="/app/explore" search={{ category: "space" }} className={browseChipClass}>
-            Space
-          </Link>
+      {showHomeBrowse ? (
+        <div className="border-t border-border/70">
+          <div className="mx-auto flex max-w-7xl gap-2 overflow-x-auto px-6 py-2.5 [-ms-overflow-style:none] [scrollbar-width:none] xl:px-8 [&::-webkit-scrollbar]:hidden">
+            <Link to="/app/fresh" className={browseChipClass}>
+              Fresh
+            </Link>
+            <Link to="/app/tablet" className={browseChipClass}>
+              iPad &amp; Tablets
+            </Link>
+            <Link to="/app/explore" search={{ category: "motivational" }} className={browseChipClass}>
+              Motivational
+            </Link>
+            <Link to="/app/explore" search={{ category: "bible-verse" }} className={browseChipClass}>
+              Bible Verses
+            </Link>
+            <Link to="/app/explore" search={{ category: "aesthetic" }} className={browseChipClass}>
+              Aesthetic
+            </Link>
+            <Link to="/app/explore" search={{ category: "amoled" }} className={browseChipClass}>
+              AMOLED
+            </Link>
+            <Link to="/app/explore" search={{ category: "minimal" }} className={browseChipClass}>
+              Minimal
+            </Link>
+            <Link to="/app/explore" search={{ category: "anime" }} className={browseChipClass}>
+              Anime
+            </Link>
+            <Link to="/app/explore" search={{ category: "cars" }} className={browseChipClass}>
+              Cars
+            </Link>
+            <Link to="/app/explore" search={{ category: "nature" }} className={browseChipClass}>
+              Nature
+            </Link>
+            <Link to="/app/explore" search={{ category: "dark" }} className={browseChipClass}>
+              Dark
+            </Link>
+            <Link to="/app/explore" search={{ category: "space" }} className={browseChipClass}>
+              Space
+            </Link>
+          </div>
         </div>
-      </div>
+      ) : null}
     </nav>
   );
 }
