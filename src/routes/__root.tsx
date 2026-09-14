@@ -33,7 +33,7 @@ export const Route = createRootRoute({
       { name: "apple-mobile-web-app-status-bar-style", content: "black-translucent" },
       { name: "msapplication-config", content: "/browserconfig.xml" },
       { name: "msapplication-TileColor", content: "#0a0a0b" },
-      { name: "msapplication-TileImage", content: "/icon-192.png" },
+      { name: "msapplication-TileImage", content: "/icons/v11/icon-192.png?v=11" },
     ] as Array<Record<string, string>>;
     if (seo.gscVerification) {
       meta.push({ name: "google-site-verification", content: seo.gscVerification });
@@ -52,11 +52,10 @@ export const Route = createRootRoute({
       meta,
       scripts,
       links: [
-        { rel: "icon", type: "image/png", sizes: "16x16", href: "/icons/v7/favicon-16.png" },
-        { rel: "icon", type: "image/png", sizes: "32x32", href: "/icons/v7/favicon-32.png" },
-        { rel: "shortcut icon", type: "image/png", href: "/icons/v7/favicon-32.png" },
-        { rel: "apple-touch-icon", type: "image/png", sizes: "180x180", href: "/apple-touch-icon-v18.png" },
-        { rel: "apple-touch-icon-precomposed", type: "image/png", sizes: "180x180", href: "/apple-touch-icon-v18.png" },
+        { rel: "icon", type: "image/x-icon", href: "/icons/v11/favicon.ico?v=11" },
+        { rel: "shortcut icon", type: "image/x-icon", href: "/icons/v11/favicon.ico?v=11" },
+        { rel: "apple-touch-icon", type: "image/png", sizes: "180x180", href: "/icons/v11/apple-touch-icon-180.png?v=11" },
+        { rel: "apple-touch-icon-precomposed", type: "image/png", sizes: "180x180", href: "/icons/v11/apple-touch-icon-180.png?v=11" },
         { rel: "stylesheet", href: appCss },
         { rel: "manifest", href: "/manifest.webmanifest" },
         { rel: "sitemap", type: "application/xml", href: "/sitemap.xml" },
