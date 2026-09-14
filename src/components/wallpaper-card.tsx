@@ -1,3 +1,4 @@
+import { Star } from "lucide-react";
 import { FavoriteButton } from "@/components/favorite-button";
 import { LazyImage } from "@/components/lazy";
 import { deviceBadge, isLandscape } from "@/lib/device";
@@ -56,10 +57,12 @@ export function WallpaperCard({
   wallpaper,
   onFavorite,
   priority,
+  featureLabel,
 }: {
   wallpaper: Card;
   onFavorite?: (id: string, next: boolean) => void;
   priority?: boolean;
+  featureLabel?: string;
 }) {
   const landscape = isLandscape(wallpaper.width, wallpaper.height);
   const badge = deviceBadge(wallpaper.deviceType);
@@ -108,7 +111,12 @@ export function WallpaperCard({
           />
         </div>
       </a>
-      {badge ? (
+      {featureLabel ? (
+        <span className="pointer-events-none absolute left-2 top-2 inline-flex max-w-[calc(100%-3.75rem)] items-center gap-1 rounded-full bg-amber-400 px-2.5 py-1 text-[10px] font-semibold tracking-wide text-black shadow-sm sm:left-2.5 sm:top-2.5 sm:text-[11px]">
+          <Star className="size-3 shrink-0" fill="currentColor" strokeWidth={1.7} />
+          <span className="truncate">{featureLabel}</span>
+        </span>
+      ) : badge ? (
         <span className="pointer-events-none absolute left-2.5 top-2.5 rounded-full bg-bg/70 px-2.5 py-1 text-[11px] font-medium tracking-wide text-fg backdrop-blur-sm">
           {badge}
         </span>

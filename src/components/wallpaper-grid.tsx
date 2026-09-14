@@ -8,10 +8,12 @@ export function WallpaperGrid({
   items,
   onFavorite,
   eager = 0,
+  feature,
 }: {
   items: Card[];
   onFavorite?: (id: string, next: boolean) => void;
   eager?: number;
+  feature?: { id: string; label: string };
 }) {
   return (
     <div className={GRID_CLASSES}>
@@ -21,6 +23,7 @@ export function WallpaperGrid({
           wallpaper={w}
           onFavorite={onFavorite}
           priority={i < eager}
+          featureLabel={feature?.id === w.id ? feature.label : undefined}
         />
       ))}
     </div>

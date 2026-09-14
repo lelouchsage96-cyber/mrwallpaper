@@ -101,11 +101,22 @@ function HomePage() {
     return thumbs;
   }, [data]);
 
+  const freshWithWallpaperOfDay = useMemo(() => {
+    if (!data) return [];
+    if (!data.wotd) return data.fresh.slice(0, 8);
+
+    return [data.wotd, ...data.fresh.filter((wallpaper) => wallpaper.id !== data.wotd?.id)].slice(0, 8);
+  }, [data]);
+
   function onFavorite(id: string, next: boolean) {
     setData((prev) => {
       if (!prev) return prev;
       return {
         ...prev,
+        wotd:
+          prev.wotd?.id === id
+            ? { ...prev.wotd, isFavorite: next, favoriteCount: prev.wotd.favoriteCount + (next ? 1 : -1) }
+            : prev.wotd,
         trending: patchFav(prev.trending, id, next),
         fresh: patchFav(prev.fresh, id, next),
         recommended: patchFav(prev.recommended, id, next),
@@ -174,7 +185,12 @@ function HomePage() {
 
           <section>
             <SectionHeader title={t.home.fresh} to="/app/fresh" />
-            <WallpaperGrid items={data.fresh.slice(0, 8)} onFavorite={onFavorite} eager={2} />
+            <WallpaperGrid
+              items={freshWithWallpaperOfDay}
+              onFavorite={onFavorite}
+              eager={2}
+              feature={data.wotd ? { id: data.wotd.id, label: "Wallpaper of the Day" } : undefined}
+            />
           </section>
 
           {(data.tablet ?? []).length > 0 ? (
