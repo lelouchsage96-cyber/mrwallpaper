@@ -2,6 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { ArrowRight } from "lucide-react";
 import { SiteFooter } from "@/components/site-footer";
 import { WallpaperGrid } from "@/components/wallpaper-grid";
+import { HomeLibraryShowcase } from "@/components/home-library-showcase";
 import { MwMark } from "@/components/mw-mark";
 import { brand } from "@/lib/brand";
 import { t } from "@/lib/i18n/en";
@@ -68,7 +69,7 @@ export const Route = createFileRoute("/")({
 
 function HomePage() {
   const data = Route.useLoaderData();
-  const trending = (data.trending ?? []).slice(0, 8);
+  const trending = (data.trending ?? []).slice(0, 16);
   const fresh = (data.fresh ?? []).slice(0, 8);
   const tablet = (data.tablet ?? []).slice(0, 4);
   const categories = data.categories ?? [];
@@ -76,6 +77,10 @@ function HomePage() {
   const featuredCategories = FEATURED_CATEGORY_SLUGS.map((slug) =>
     categories.find((category) => category.slug === slug),
   ).filter((category): category is NonNullable<typeof category> => Boolean(category));
+
+  const libraryItems = [...fresh, ...trending]
+    .filter((wallpaper, index, items) => items.findIndex((item) => item.id === wallpaper.id) === index)
+    .slice(0, 16);
 
   const heroCandidates = [
     fresh[0],
@@ -123,6 +128,9 @@ function HomePage() {
               Browse iPhone wallpapers
             </a>
           </div>
+          <p className="mt-4 text-xs tracking-wide text-subtle sm:text-sm">
+            {categories.length > 0 ? `${categories.length} collections` : "Multiple collections"} · Phone & tablet · New drops regularly
+          </p>
         </div>
 
         {heroWallpapers.length > 0 ? (
@@ -152,6 +160,8 @@ function HomePage() {
           </div>
         ) : null}
       </section>
+
+      <HomeLibraryShowcase items={libraryItems} categoryCount={categories.length} />
 
       {featuredCategories.length > 0 ? (
         <section className="mt-14" aria-labelledby="popular-collections-title">
@@ -224,21 +234,6 @@ function HomePage() {
             </a>
           </div>
         </nav>
-      ) : null}
-
-      {trending.length > 0 ? (
-        <section className="mt-14">
-          <div className="mb-4 flex items-end justify-between gap-3">
-            <div>
-              <p className="text-xs font-medium tracking-[0.18em] text-subtle uppercase">Most downloaded</p>
-              <h2 className="mt-1 font-display text-3xl text-fg">{t.home.trending}</h2>
-            </div>
-            <a href="/wallpapers" className="text-sm text-muted hover:text-fg">
-              {t.explore.title}
-            </a>
-          </div>
-          <WallpaperGrid items={trending} eager={2} />
-        </section>
       ) : null}
 
       {fresh.length > 0 ? (
