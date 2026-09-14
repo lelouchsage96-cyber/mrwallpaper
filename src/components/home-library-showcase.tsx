@@ -11,6 +11,22 @@ export function HomeLibraryShowcase({
 }) {
   if (!items.length) return null;
 
+  const seenCategories = new Set<string>();
+  const diverseFirst: WallpaperCard[] = [];
+  const remaining: WallpaperCard[] = [];
+
+  for (const item of items) {
+    const categoryKey = item.categorySlug || item.categoryId || "";
+    if (categoryKey && !seenCategories.has(categoryKey)) {
+      seenCategories.add(categoryKey);
+      diverseFirst.push(item);
+    } else {
+      remaining.push(item);
+    }
+  }
+
+  const displayItems = [...diverseFirst, ...remaining];
+
   return (
     <section className="mt-12" aria-labelledby="homepage-library-title">
       <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
@@ -29,7 +45,7 @@ export function HomeLibraryShowcase({
         </a>
       </div>
 
-      <WallpaperGrid items={items} eager={4} />
+      <WallpaperGrid items={displayItems} eager={4} />
 
       <div className="mt-6 flex justify-center">
         <a
