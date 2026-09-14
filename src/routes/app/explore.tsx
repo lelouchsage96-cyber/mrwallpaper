@@ -247,8 +247,9 @@ function ExplorePage() {
 
   return (
     <div className="px-4 pt-5 lg:px-6 lg:pt-8 xl:px-8">
-      <h1 className="font-display text-3xl text-fg">{t.explore.title}</h1>
-      <div className="mt-4">
+      <h1 className="font-display text-3xl text-fg lg:text-4xl">{t.explore.title}</h1>
+
+      <div className="mt-4 lg:hidden">
         <Input
           value={q}
           onChange={(e) => setQ(e.target.value)}
@@ -260,7 +261,7 @@ function ExplorePage() {
       </div>
 
       {!debounced && popular.length > 0 ? (
-        <div className="mt-4">
+        <div className="mt-4 lg:hidden">
           <p className="mb-2 text-xs tracking-[0.16em] text-subtle uppercase">
             {t.explore.popularSearches}
           </p>
@@ -283,81 +284,83 @@ function ExplorePage() {
         </div>
       ) : null}
 
-      <div className="mt-4 flex flex-nowrap gap-2 overflow-x-auto pb-1 [-ms-overflow-style:none] [scrollbar-width:none] lg:flex-wrap lg:overflow-visible [&::-webkit-scrollbar]:hidden">
-        {deviceChips.map((f) => (
-          <button
-            key={f.id}
-            type="button"
-            onClick={() =>
-              setSearch({
-                q: debounced || undefined,
-                category: categorySlug,
-                access,
-                sort,
-                device: f.id,
-              })
-            }
-            className={cn(
-              "h-9 shrink-0 rounded-full px-4 text-sm transition-colors duration-150 ease-out",
-              device === f.id ? "bg-fg text-bg" : "bg-elevated text-muted",
-            )}
-          >
-            {f.label}
-          </button>
-        ))}
-      </div>
-
-      {categories.length > 0 ? (
-        <div className="mt-4 flex flex-nowrap gap-2 overflow-x-auto pb-1 [-ms-overflow-style:none] [scrollbar-width:none] lg:flex-wrap lg:overflow-visible [&::-webkit-scrollbar]:hidden">
-          {categories.map((c) => (
+      <div className="lg:mt-6 lg:grid lg:grid-cols-[auto_minmax(0,1fr)_auto] lg:items-center lg:gap-4">
+        <div className="mt-4 flex flex-nowrap gap-2 overflow-x-auto pb-1 [-ms-overflow-style:none] [scrollbar-width:none] lg:mt-0 lg:overflow-visible lg:pb-0 [&::-webkit-scrollbar]:hidden">
+          {deviceChips.map((f) => (
             <button
-              key={c.id}
+              key={f.id}
               type="button"
               onClick={() =>
                 setSearch({
                   q: debounced || undefined,
-                  category: c.slug === categorySlug ? undefined : c.slug,
+                  category: categorySlug,
                   access,
                   sort,
-                  device,
+                  device: f.id,
                 })
               }
               className={cn(
                 "h-9 shrink-0 rounded-full px-4 text-sm transition-colors duration-150 ease-out",
-                categorySlug === c.slug ? "bg-fg text-bg" : "bg-elevated text-muted",
+                device === f.id ? "bg-fg text-bg" : "bg-elevated text-muted",
               )}
             >
-              {c.name}
+              {f.label}
             </button>
           ))}
         </div>
-      ) : null}
 
-      <div className="mt-3 flex flex-nowrap gap-2 overflow-x-auto pb-1 [-ms-overflow-style:none] [scrollbar-width:none] lg:flex-wrap lg:overflow-visible [&::-webkit-scrollbar]:hidden">
-        {sortChips.map((f) => (
-          <button
-            key={f.id}
-            type="button"
-            onClick={() =>
-              setSearch({
-                q: debounced || undefined,
-                category: categorySlug,
-                access,
-                sort: f.id,
-                device,
-              })
-            }
-            className={cn(
-              "h-9 shrink-0 rounded-full px-4 text-sm",
-              sort === f.id ? "bg-fg text-bg" : "bg-elevated text-muted",
-            )}
-          >
-            {f.label}
-          </button>
-        ))}
+        {categories.length > 0 ? (
+          <div className="mt-4 flex min-w-0 flex-nowrap gap-2 overflow-x-auto pb-1 [-ms-overflow-style:none] [scrollbar-width:none] lg:mt-0 lg:pb-0 [&::-webkit-scrollbar]:hidden">
+            {categories.map((c) => (
+              <button
+                key={c.id}
+                type="button"
+                onClick={() =>
+                  setSearch({
+                    q: debounced || undefined,
+                    category: c.slug === categorySlug ? undefined : c.slug,
+                    access,
+                    sort,
+                    device,
+                  })
+                }
+                className={cn(
+                  "h-9 shrink-0 rounded-full px-4 text-sm transition-colors duration-150 ease-out",
+                  categorySlug === c.slug ? "bg-fg text-bg" : "bg-elevated text-muted",
+                )}
+              >
+                {c.name}
+              </button>
+            ))}
+          </div>
+        ) : <div />}
+
+        <div className="mt-3 flex flex-nowrap gap-2 overflow-x-auto pb-1 [-ms-overflow-style:none] [scrollbar-width:none] lg:mt-0 lg:justify-end lg:overflow-visible lg:pb-0 [&::-webkit-scrollbar]:hidden">
+          {sortChips.map((f) => (
+            <button
+              key={f.id}
+              type="button"
+              onClick={() =>
+                setSearch({
+                  q: debounced || undefined,
+                  category: categorySlug,
+                  access,
+                  sort: f.id,
+                  device,
+                })
+              }
+              className={cn(
+                "h-9 shrink-0 rounded-full px-4 text-sm",
+                sort === f.id ? "bg-fg text-bg" : "bg-elevated text-muted",
+              )}
+            >
+              {f.label}
+            </button>
+          ))}
+        </div>
       </div>
 
-      <div className={cn("mt-5 transition-opacity duration-200 ease-out", refreshing && items.length > 0 ? "opacity-55" : "opacity-100")}>
+      <div className={cn("mt-5 transition-opacity duration-200 ease-out lg:mt-6", refreshing && items.length > 0 ? "opacity-55" : "opacity-100")}>
         {error ? (
           <ErrorState onRetry={() => load(true)} />
         ) : loading && items.length === 0 ? (

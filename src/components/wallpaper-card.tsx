@@ -58,11 +58,13 @@ export function WallpaperCard({
   onFavorite,
   priority,
   featureLabel,
+  className,
 }: {
   wallpaper: Card;
   onFavorite?: (id: string, next: boolean) => void;
   priority?: boolean;
   featureLabel?: string;
+  className?: string;
 }) {
   const landscape = isLandscape(wallpaper.width, wallpaper.height);
   const badge = deviceBadge(wallpaper.deviceType);
@@ -90,6 +92,7 @@ export function WallpaperCard({
       className={cn(
         "group relative self-start overflow-hidden rounded-[16px] bg-elevated",
         landscape && "col-span-2",
+        className,
       )}
     >
       <a href={href} className="block">

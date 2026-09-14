@@ -44,6 +44,18 @@ function patchFav(list: Card[], id: string, next: boolean): Card[] {
   );
 }
 
+function uniqueCards(pool: Card[], limit: number): Card[] {
+  const seen = new Set<string>();
+  const items: Card[] = [];
+  for (const wallpaper of pool) {
+    if (seen.has(wallpaper.id)) continue;
+    seen.add(wallpaper.id);
+    items.push(wallpaper);
+    if (items.length >= limit) break;
+  }
+  return items;
+}
+
 function HomePage() {
   const initial = Route.useLoaderData();
   const { user, isPending } = useCurrentUserState();
@@ -101,11 +113,17 @@ function HomePage() {
     return thumbs;
   }, [data]);
 
+  const forYouItems = useMemo(() => {
+    if (!data || data.recommended.length === 0) return [];
+    return uniqueCards([...data.recommended, ...data.editors, ...data.fresh], 12);
+  }, [data]);
+
   const freshWithWallpaperOfDay = useMemo(() => {
     if (!data) return [];
-    if (!data.wotd) return data.fresh.slice(0, 8);
-
-    return [data.wotd, ...data.fresh.filter((wallpaper) => wallpaper.id !== data.wotd?.id)].slice(0, 8);
+    const pool = data.wotd
+      ? [data.wotd, ...data.fresh, ...data.editors]
+      : [...data.fresh, ...data.editors];
+    return uniqueCards(pool, 12);
   }, [data]);
 
   function onFavorite(id: string, next: boolean) {
@@ -120,6 +138,7 @@ function HomePage() {
         trending: patchFav(prev.trending, id, next),
         fresh: patchFav(prev.fresh, id, next),
         recommended: patchFav(prev.recommended, id, next),
+        editors: patchFav(prev.editors, id, next),
         tablet: patchFav(prev.tablet ?? [], id, next),
       };
     });
@@ -176,10 +195,10 @@ function HomePage() {
         </div>
       ) : (
         <div className="space-y-11 lg:space-y-14 xl:space-y-16">
-          {data.recommended.length > 0 ? (
+          {forYouItems.length > 0 ? (
             <section>
               <SectionHeader title={t.home.forYou} />
-              <WallpaperGrid items={data.recommended.slice(0, 8)} onFavorite={onFavorite} eager={4} />
+              <WallpaperGrid items={forYouItems} onFavorite={onFavorite} eager={4} mobileLimit={8} />
             </section>
           ) : null}
 
@@ -189,6 +208,7 @@ function HomePage() {
               items={freshWithWallpaperOfDay}
               onFavorite={onFavorite}
               eager={2}
+              mobileLimit={8}
               feature={data.wotd ? { id: data.wotd.id, label: "Wallpaper of the Day" } : undefined}
             />
           </section>
@@ -196,7 +216,7 @@ function HomePage() {
           {(data.tablet ?? []).length > 0 ? (
             <section>
               <SectionHeader title="For iPad & Tablets" to="/app/tablet" />
-              <WallpaperGrid items={(data.tablet ?? []).slice(0, 4)} onFavorite={onFavorite} />
+              <WallpaperGrid items={(data.tablet ?? []).slice(0, 6)} onFavorite={onFavorite} mobileLimit={4} />
             </section>
           ) : null}
 

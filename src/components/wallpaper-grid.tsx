@@ -9,11 +9,13 @@ export function WallpaperGrid({
   onFavorite,
   eager = 0,
   feature,
+  mobileLimit,
 }: {
   items: Card[];
   onFavorite?: (id: string, next: boolean) => void;
   eager?: number;
   feature?: { id: string; label: string };
+  mobileLimit?: number;
 }) {
   return (
     <div className={GRID_CLASSES}>
@@ -24,6 +26,7 @@ export function WallpaperGrid({
           onFavorite={onFavorite}
           priority={i < eager}
           featureLabel={feature?.id === w.id ? feature.label : undefined}
+          className={mobileLimit !== undefined && i >= mobileLimit ? "hidden lg:block" : undefined}
         />
       ))}
     </div>
