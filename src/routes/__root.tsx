@@ -76,8 +76,15 @@ export const Route = createRootRoute({
 const PWA_BOOT_SCRIPT = `
 (function(){
   try {
-    // Do not intercept beforeinstallprompt here. Chrome and Edge should be
-    // free to expose their native Install app affordance on Android/Windows.
+    // Keep the install event available for our in-site Install button without
+    // preventing Chrome/Edge/Brave from showing their own native install UI.
+    window.addEventListener('beforeinstallprompt', function(event) {
+      window.__mrWallpapersInstallPrompt = event;
+    });
+    window.addEventListener('appinstalled', function() {
+      window.__mrWallpapersInstallPrompt = null;
+    });
+
     if ('serviceWorker' in navigator) {
       navigator.serviceWorker.register('/sw.js?v=16', { scope: '/', updateViaCache: 'none' }).catch(function(){});
     }
