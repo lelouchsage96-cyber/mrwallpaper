@@ -76,15 +76,8 @@ export const Route = createRootRoute({
 const PWA_BOOT_SCRIPT = `
 (function(){
   try {
-    if (/Android/i.test(navigator.userAgent)) {
-      window.addEventListener('beforeinstallprompt', function(event) {
-        event.preventDefault();
-        window.__mrWallpapersInstallPrompt = event;
-      });
-      window.addEventListener('appinstalled', function() {
-        window.__mrWallpapersInstallPrompt = null;
-      });
-    }
+    // Do not intercept beforeinstallprompt here. Chrome and Edge should be
+    // free to expose their native Install app affordance on Android/Windows.
     if ('serviceWorker' in navigator) {
       navigator.serviceWorker.register('/sw.js?v=16', { scope: '/', updateViaCache: 'none' }).catch(function(){});
     }
