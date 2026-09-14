@@ -109,6 +109,7 @@ function HomePage() {
         trending: patchFav(prev.trending, id, next),
         fresh: patchFav(prev.fresh, id, next),
         recommended: patchFav(prev.recommended, id, next),
+        tablet: patchFav(prev.tablet ?? [], id, next),
       };
     });
   }
@@ -119,11 +120,18 @@ function HomePage() {
 
   return (
     <div className="mw-enter px-4 pt-5 lg:px-6 lg:pt-8 xl:px-8">
-      <header className="mb-7 flex items-center justify-between gap-3">
-        <div>
+      <header className="mb-7 flex items-center justify-between gap-3 lg:mb-10 lg:items-end">
+        <div className="lg:hidden">
           <p className="text-xs tracking-[0.22em] text-muted uppercase">{brand.tagline}</p>
           <h1 className="font-display text-3xl text-fg">{brand.name}</h1>
           <p className="mt-1 max-w-sm text-sm text-muted">Find it. Preview it. Download it.</p>
+        </div>
+        <div className="hidden lg:block">
+          <p className="text-xs font-medium tracking-[0.2em] text-subtle uppercase">Discover</p>
+          <h1 className="mt-1 font-display text-4xl text-fg xl:text-5xl">Find your next wallpaper</h1>
+          <p className="mt-2 max-w-2xl text-base text-muted">
+            Fresh picks for your phone, iPad and tablet, with more ways to browse on a bigger screen.
+          </p>
         </div>
         <div className="flex items-center gap-1">
           <button
@@ -138,7 +146,7 @@ function HomePage() {
           <Link
             to="/app/notifications"
             aria-label={t.home.notifications}
-            className="relative grid size-11 place-items-center rounded-md text-fg"
+            className="relative grid size-11 place-items-center rounded-md text-fg lg:rounded-full lg:bg-elevated lg:transition-colors lg:hover:bg-surface"
           >
             <Bell className="size-5" strokeWidth={1.75} />
             {data && data.unreadCount > 0 ? (
@@ -152,11 +160,11 @@ function HomePage() {
 
       {!data ? (
         <div className="space-y-8">
-          <Skeleton className="aspect-[4/5] w-full rounded-[24px]" />
+          <Skeleton className="aspect-[4/5] w-full rounded-[24px] lg:aspect-[16/5]" />
           <WallpaperGridSkeleton />
         </div>
       ) : (
-        <div className="space-y-11">
+        <div className="space-y-11 lg:space-y-14 xl:space-y-16">
           {data.recommended.length > 0 ? (
             <section>
               <SectionHeader title={t.home.forYou} />
@@ -165,18 +173,20 @@ function HomePage() {
           ) : null}
 
           <section>
-            <SectionHeader title={t.home.trending} to="/app/trending" />
-            <WallpaperGrid items={data.trending.slice(0, 8)} onFavorite={onFavorite} eager={4} />
-          </section>
-
-          <section>
             <SectionHeader title={t.home.fresh} to="/app/fresh" />
             <WallpaperGrid items={data.fresh.slice(0, 8)} onFavorite={onFavorite} eager={2} />
           </section>
 
+          {(data.tablet ?? []).length > 0 ? (
+            <section>
+              <SectionHeader title="For iPad & Tablets" to="/app/tablet" />
+              <WallpaperGrid items={(data.tablet ?? []).slice(0, 4)} onFavorite={onFavorite} />
+            </section>
+          ) : null}
+
           <section>
             <SectionHeader title={t.home.categories} />
-            <div className="flex gap-3 overflow-x-auto pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+            <div className="flex gap-3 overflow-x-auto pb-1 [-ms-overflow-style:none] [scrollbar-width:none] lg:grid lg:grid-cols-4 lg:gap-4 lg:overflow-visible lg:pb-0 [&::-webkit-scrollbar]:hidden">
               {data.categories.slice(0, 8).map((category) => {
                 const preview =
                   category.coverUrl || categoryThumbs.get(category.id) || categoryPreview(category.slug);
@@ -186,15 +196,15 @@ function HomePage() {
                     key={category.id}
                     to="/wallpapers/$slug"
                     params={{ slug: category.slug }}
-                    className="relative h-28 w-36 shrink-0 overflow-hidden rounded-[16px] bg-elevated"
+                    className="group relative h-28 w-36 shrink-0 overflow-hidden rounded-[16px] bg-elevated lg:h-36 lg:w-auto lg:rounded-[20px]"
                   >
                     <LazyImage
                       src={preview}
                       alt={`${category.name} wallpaper preview`}
                       fallback={categoryPreviewFallback(category.slug)}
-                      className="size-full object-cover"
+                      className="size-full object-cover transition-transform duration-300 lg:group-hover:scale-[1.03]"
                     />
-                    <span className="absolute inset-x-0 bottom-0 bg-bg/55 px-2.5 py-2 text-sm font-medium text-fg backdrop-blur-sm">
+                    <span className="absolute inset-x-0 bottom-0 bg-bg/55 px-2.5 py-2 text-sm font-medium text-fg backdrop-blur-sm lg:px-4 lg:py-3 lg:text-base">
                       {category.name}
                     </span>
                   </Link>
@@ -203,7 +213,7 @@ function HomePage() {
             </div>
             <Link
               to="/app/explore"
-              className="mt-3 inline-flex min-h-11 items-center text-sm font-medium text-muted hover:text-fg"
+              className="mt-3 inline-flex min-h-11 items-center text-sm font-medium text-muted hover:text-fg lg:mt-5 lg:rounded-full lg:bg-elevated lg:px-4 lg:transition-colors lg:hover:bg-surface"
             >
               Browse everything
             </Link>

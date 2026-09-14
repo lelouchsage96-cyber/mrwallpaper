@@ -28,16 +28,16 @@ export function DesktopNav() {
   return (
     <nav
       aria-label="Main"
-      className="sticky top-0 z-40 hidden border-b border-border bg-bg/90 backdrop-blur-md lg:block"
+      className="sticky top-0 z-40 hidden border-b border-border/80 bg-bg/90 shadow-[0_1px_0_rgba(255,255,255,0.02)] backdrop-blur-xl lg:block"
     >
-      <div className="mx-auto flex max-w-[1440px] items-center gap-4 px-6 py-3 xl:px-8">
-        <Link to="/app" className="shrink-0 font-display text-xl text-fg">
+      <div className="mx-auto flex h-16 max-w-[1440px] items-center gap-6 px-6 xl:px-8">
+        <Link to="/app" className="shrink-0 font-display text-2xl text-fg">
           {brand.name}
         </Link>
-        <div className="min-w-0 flex-1">
+        <div className="mx-auto min-w-0 max-w-2xl flex-1">
           <DesktopSearch />
         </div>
-        <ul className="flex shrink-0 items-center gap-1">
+        <ul className="flex shrink-0 items-center gap-1.5">
           {items.map((item) => {
             const active = isActivePath(pathname, item);
             const Icon = item.icon;
@@ -48,7 +48,9 @@ export function DesktopNav() {
                   aria-current={active ? "page" : undefined}
                   className={cn(
                     "flex h-10 items-center gap-2 rounded-full px-4 text-sm font-medium transition-colors duration-150 ease-out",
-                    active ? "bg-elevated text-fg" : "text-muted hover:bg-elevated/70 hover:text-fg",
+                    active
+                      ? "bg-fg text-bg"
+                      : "text-muted hover:bg-elevated hover:text-fg",
                   )}
                 >
                   <Icon className="size-4" strokeWidth={active ? 2 : 1.7} />
