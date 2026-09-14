@@ -1,9 +1,4 @@
-import {
-  createRootRoute,
-  HeadContent,
-  Outlet,
-  Scripts,
-} from "@tanstack/react-router";
+import { createRootRoute, HeadContent, Outlet, Scripts } from "@tanstack/react-router";
 import { AnalyticsRouteTracker } from "@/lib/analytics";
 import { AuthProvider } from "@/lib/auth/provider";
 import { ActionToastViewport } from "@/components/action-toast";
@@ -35,18 +30,11 @@ export const Route = createRootRoute({
       { name: "msapplication-TileColor", content: "#0a0a0b" },
       { name: "msapplication-TileImage", content: "/icons/v11/icon-192.png?v=11" },
     ] as Array<Record<string, string>>;
-    if (seo.gscVerification) {
-      meta.push({ name: "google-site-verification", content: seo.gscVerification });
-    }
+    if (seo.gscVerification) meta.push({ name: "google-site-verification", content: seo.gscVerification });
     const scripts: Array<Record<string, string>> = [];
     if (seo.gaId) {
-      scripts.push({
-        async: "true",
-        src: `https://www.googletagmanager.com/gtag/js?id=${encodeURIComponent(seo.gaId)}`,
-      });
-      scripts.push({
-        children: `window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}window.gtag=gtag;gtag('js',new Date());gtag('config','${seo.gaId}',{anonymize_ip:true,send_page_view:false});`,
-      });
+      scripts.push({ async: "true", src: `https://www.googletagmanager.com/gtag/js?id=${encodeURIComponent(seo.gaId)}` });
+      scripts.push({ children: `window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}window.gtag=gtag;gtag('js',new Date());gtag('config','${seo.gaId}',{anonymize_ip:true,send_page_view:false});` });
     }
     return {
       meta,
@@ -61,10 +49,7 @@ export const Route = createRootRoute({
         { rel: "sitemap", type: "application/xml", href: "/sitemap.xml" },
         { rel: "preconnect", href: "https://fonts.googleapis.com" },
         { rel: "preconnect", href: "https://fonts.gstatic.com", crossOrigin: "anonymous" },
-        {
-          rel: "stylesheet",
-          href: "https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Outfit:wght@300;400;500;600&display=optional",
-        },
+        { rel: "stylesheet", href: "https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Outfit:wght@300;400;500;600&display=optional" },
       ],
     };
   },
@@ -74,37 +59,18 @@ export const Route = createRootRoute({
 const PWA_BOOT_SCRIPT = `
 (function(){
   try {
-    // Keep the install event available for our in-site Install button without
-    // preventing Chrome/Edge/Brave from showing their own native install UI.
-    window.addEventListener('beforeinstallprompt', function(event) {
-      window.__mrWallpapersInstallPrompt = event;
-    });
-    window.addEventListener('appinstalled', function() {
-      window.__mrWallpapersInstallPrompt = null;
-    });
-
-    if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.register('/sw.js?v=16', { scope: '/', updateViaCache: 'none' }).catch(function(){});
-    }
+    window.addEventListener('beforeinstallprompt', function(event) { window.__mrWallpapersInstallPrompt = event; });
+    window.addEventListener('appinstalled', function() { window.__mrWallpapersInstallPrompt = null; });
+    if ('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js?v=17', { scope: '/', updateViaCache: 'none' }).catch(function(){});
   } catch (error) {}
 })();`;
 
 function RootDocument() {
   return (
     <html lang="en" className="dark antialiased" suppressHydrationWarning>
-      <head>
-        <script dangerouslySetInnerHTML={{ __html: PWA_BOOT_SCRIPT }} />
-        <script dangerouslySetInnerHTML={{ __html: BOOT_SCRIPT }} />
-        <HeadContent />
-      </head>
+      <head><script dangerouslySetInnerHTML={{ __html: PWA_BOOT_SCRIPT }} /><script dangerouslySetInnerHTML={{ __html: BOOT_SCRIPT }} /><HeadContent /></head>
       <body className="min-h-dvh bg-bg text-fg">
-        <AuthProvider>
-          <ThemeProvider>
-            <AnalyticsRouteTracker />
-            <Outlet />
-            <ActionToastViewport />
-          </ThemeProvider>
-        </AuthProvider>
+        <AuthProvider><ThemeProvider><AnalyticsRouteTracker /><Outlet /><ActionToastViewport /></ThemeProvider></AuthProvider>
         <Scripts />
       </body>
     </html>
