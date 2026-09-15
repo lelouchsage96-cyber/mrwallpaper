@@ -21,6 +21,9 @@ export const brand = {
     tiktok: "https://www.tiktok.com/@mr.wallpaper__",
     pinterest: "https://www.pinterest.com/mrwallpaper_/",
   },
+  support: {
+    patreon: "https://www.patreon.com/mrwallpaper_/posts/support-mr-169595909",
+  },
   deepLinkScheme: "mrwallpapers",
   shareBaseUrl: "https://mrwallpaper.org",
 } as const;
