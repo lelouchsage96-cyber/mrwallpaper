@@ -6,6 +6,7 @@ import {
   Image,
   LayoutDashboard,
   SlidersHorizontal,
+  Smartphone,
   Upload,
   Users,
 } from "lucide-react";
@@ -32,6 +33,7 @@ type NavItem = {
     | "/ops/analytics"
     | "/ops/wallpapers"
     | "/ops/upload"
+    | "/ops/mockup"
     | "/ops/import-r2"
     | "/ops/reports"
     | "/ops/users"
@@ -70,6 +72,7 @@ function OpsShell() {
     ...(session?.canAdmin
       ? [
           { to: "/ops/upload" as const, label: "Add wallpaper", icon: <Upload className="size-4" /> },
+          { to: "/ops/mockup" as const, label: "Mockup Studio", icon: <Smartphone className="size-4" /> },
           {
             to: "/ops/import-r2" as const,
             label: "Import from R2",
