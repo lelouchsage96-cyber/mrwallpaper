@@ -3,6 +3,7 @@ import { useNavigate } from "@tanstack/react-router";
 import { showActionToast } from "@/components/action-toast";
 import { Button } from "@/components/ui/button";
 import { trackEvent } from "@/lib/analytics";
+import { brand } from "@/lib/brand";
 import { t } from "@/lib/i18n/en";
 import { injectLiveJpeg, injectLiveMov, liveAssetId, zipStore } from "@/lib/live-photo";
 import { createAdSession, requestDownload } from "@/lib/server/api";
@@ -260,6 +261,7 @@ export function DownloadSheet({
 
   const preparing = !isLive && (phase === "idle" || phase === "saving");
   const ios = isIOSDevice();
+  const showSupport = phase === "ready" || phase === "guide";
 
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center sm:items-center">
@@ -347,6 +349,20 @@ export function DownloadSheet({
             </Button>
           </div>
         )}
+
+        {showSupport ? (
+          <p className="mt-4 border-t border-border pt-4 text-center text-xs text-subtle">
+            Enjoying Mr Wallpapers?{" "}
+            <a
+              href={brand.support.patreon}
+              target="_blank"
+              rel="noreferrer"
+              className="font-medium text-muted transition-colors hover:text-fg"
+            >
+              Support us on Patreon · from $3
+            </a>
+          </p>
+        ) : null}
       </div>
     </div>
   );
