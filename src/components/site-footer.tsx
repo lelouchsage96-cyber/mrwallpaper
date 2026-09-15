@@ -47,6 +47,14 @@ export function SiteFooter() {
           <a href="/contact" className="transition-colors hover:text-fg">
             Contact Us
           </a>
+          <a
+            href={brand.support.patreon}
+            target="_blank"
+            rel="noreferrer"
+            className="transition-colors hover:text-fg"
+          >
+            Support Us
+          </a>
           <a href={brand.legal.copyright} className="transition-colors hover:text-fg">
             Copyright Complaint
           </a>
