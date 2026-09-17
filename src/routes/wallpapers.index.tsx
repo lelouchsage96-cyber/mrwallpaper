@@ -2,10 +2,19 @@ import { createFileRoute } from "@tanstack/react-router";
 import { Breadcrumbs } from "@/components/breadcrumbs";
 import { WallpaperGrid } from "@/components/wallpaper-grid";
 import { brand } from "@/lib/brand";
-import { itemListJsonLd, pageHead, PAGE_SIZE, wallpaperPath } from "@/lib/seo";
+import {
+  breadcrumbJsonLd,
+  collectionPageJsonLd,
+  itemListJsonLd,
+  pageHead,
+  PAGE_SIZE,
+  wallpaperPath,
+} from "@/lib/seo";
 import { getExploreMeta, searchWallpapers } from "@/lib/server/api";
 
 type Search = { q?: string; page?: number };
+
+const CATALOG_DESCRIPTION = `Browse every ${brand.name} collection — motivational, Bible verse, minimal, nature, iPhone, Android, iPad and tablet wallpapers.`;
 
 export const Route = createFileRoute("/wallpapers/")({
   validateSearch: (s: Record<string, unknown>): Search => ({
@@ -28,25 +37,43 @@ export const Route = createFileRoute("/wallpapers/")({
     const q = loaderData?.q;
     const page = loaderData?.page ?? 1;
     const pageBit = page > 1 ? ` – Page ${page}` : "";
+    const path = page > 1 ? `/wallpapers?page=${page}` : "/wallpapers";
+    const items = (loaderData?.items ?? []).slice(0, 16).map((w) => ({
+      name: w.title,
+      path: wallpaperPath(w.slug || w.id),
+    }));
     return pageHead({
       title: q
         ? `${q} wallpapers | ${brand.name}${pageBit}`
         : `All Wallpaper Collections | ${brand.name}${pageBit}`,
-      description: `Browse every ${brand.name} collection — motivational, Bible verse, minimal, nature, iPhone, Android, iPad and tablet wallpapers.`,
-      path: page > 1 ? `/wallpapers?page=${page}` : "/wallpapers",
+      description: CATALOG_DESCRIPTION,
+      path,
       noindex: Boolean(q),
       prev: !q && page > 1 ? (page === 2 ? "/wallpapers" : `/wallpapers?page=${page - 1}`) : undefined,
       next: !q && loaderData?.hasMore ? `/wallpapers?page=${page + 1}` : undefined,
-      jsonLd: [
-        itemListJsonLd({
-          name: "Wallpaper collections",
-          path: "/wallpapers",
-          items: (loaderData?.items ?? []).slice(0, 16).map((w) => ({
-            name: w.title,
-            path: wallpaperPath(w.slug || w.id),
-          })),
-        }),
-      ],
+      jsonLd: q
+        ? [
+            breadcrumbJsonLd([
+              { name: "Home", path: "/" },
+              { name: "Wallpapers", path: "/wallpapers" },
+            ]),
+          ]
+        : [
+            breadcrumbJsonLd([
+              { name: "Home", path: "/" },
+              { name: "Wallpapers", path },
+            ]),
+            collectionPageJsonLd({
+              name: page > 1 ? `Wallpaper collections – Page ${page}` : "Wallpaper collections",
+              description: CATALOG_DESCRIPTION,
+              path,
+            }),
+            itemListJsonLd({
+              name: page > 1 ? `Wallpaper collections – Page ${page}` : "Wallpaper collections",
+              path,
+              items,
+            }),
+          ],
     });
   },
   component: WallpapersIndex,
@@ -63,7 +90,7 @@ function WallpapersIndex() {
   }
   return (
     <main className="mx-auto max-w-7xl px-4 pb-20 pt-6">
-      <Breadcrumbs items={[{ name: "Home", href: "/app" }, { name: "Wallpapers" }]} />
+      <Breadcrumbs items={[{ name: "Home", href: "/" }, { name: "Wallpapers" }]} />
       <h1 className="mt-6 font-display text-4xl text-fg">
         {q ? `${q} wallpapers` : "Wallpaper collections"}
       </h1>
