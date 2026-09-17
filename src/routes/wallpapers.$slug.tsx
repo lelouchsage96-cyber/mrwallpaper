@@ -16,6 +16,15 @@ import { getCategoryPage, getSeoRedirect } from "@/lib/server/api";
 
 type Search = { page?: number };
 
+const PRIORITY_CATEGORY_HEADINGS: Record<string, string> = {
+  motivational: "HD & 4K Motivational Wallpapers for iPhone & Android",
+  "bible-verse": "HD & 4K Bible Verse Wallpapers for iPhone & Android",
+};
+
+function categoryHeading(slug: string, name: string): string {
+  return PRIORITY_CATEGORY_HEADINGS[slug] || `${name} wallpapers`;
+}
+
 export const Route = createFileRoute("/wallpapers/$slug")({
   validateSearch: (s: Record<string, unknown>): Search => ({
     page: typeof s.page === "number" && s.page > 1 ? Math.floor(s.page) : undefined,
@@ -51,6 +60,7 @@ export const Route = createFileRoute("/wallpapers/$slug")({
         ? `${categoryPath(params.slug)}?page=${page}`
         : loaderData?.category?.canonicalPath || categoryPath(params.slug);
     const hasMore = Boolean(loaderData?.hasMore);
+    const collectionName = categoryHeading(params.slug, name);
     return pageHead({
       title: meta.title,
       description: meta.description,
@@ -65,12 +75,12 @@ export const Route = createFileRoute("/wallpapers/$slug")({
           { name, path },
         ]),
         collectionPageJsonLd({
-          name: `${name} wallpapers${pageBit}`,
+          name: `${collectionName}${pageBit}`,
           description: meta.description,
           path,
         }),
         itemListJsonLd({
-          name: `${name} wallpapers${pageBit}`,
+          name: `${collectionName}${pageBit}`,
           path,
           items: (loaderData?.items ?? []).map((w) => ({
             name: w.title,
@@ -90,7 +100,8 @@ function HubPage() {
   const page = search.page ?? 1;
   const name = data.category?.name ?? data.hub?.name ?? slug;
   const editorial = data.category ? CATEGORY_EDITORIAL[slug] : undefined;
-  const intro = editorial?.intro || data.category?.intro || data.category?.description || data.hub?.intro || "";
+  const heading = categoryHeading(slug, name);
+  const intro = data.category?.intro || editorial?.intro || data.category?.description || data.hub?.intro || "";
   const next = data.hasMore ? page + 1 : null;
   const prev = page > 1 ? page - 1 : null;
 
@@ -103,7 +114,7 @@ function HubPage() {
           { name },
         ]}
       />
-      <h1 className="mt-6 font-display text-4xl text-fg">{name} wallpapers</h1>
+      <h1 className="mt-6 font-display text-4xl text-fg">{heading}</h1>
       {intro ? <p className="mt-3 max-w-2xl text-sm leading-relaxed text-muted sm:text-base">{intro}</p> : null}
 
       {data.items.length === 0 ? (
