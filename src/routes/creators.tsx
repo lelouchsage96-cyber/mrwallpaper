@@ -3,18 +3,32 @@ import { CreatorCard } from "@/components/creator-card";
 import { EmptyState } from "@/components/empty-state";
 import { brand } from "@/lib/brand";
 import { t } from "@/lib/i18n/en";
-import { pageHead } from "@/lib/seo";
+import { breadcrumbJsonLd, collectionPageJsonLd, pageHead } from "@/lib/seo";
 import { listCreators } from "@/lib/server/studio";
+
+const DESCRIPTION = `Original wallpaper artists on ${brand.name}. Browse creator studios and download HD plates for phone and tablet.`;
 
 export const Route = createFileRoute("/creators")({
   loader: () => listCreators(),
   staleTime: 30_000,
-  head: () =>
-    pageHead({
+  head: ({ loaderData }) => {
+    const indexable = Boolean(loaderData?.marketplaceOn && loaderData.items.length > 0);
+    return pageHead({
       title: `Wallpaper Creators | ${brand.name}`,
-      description: `Original wallpaper artists on ${brand.name}. Browse creator studios and download HD plates for phone and tablet.`,
+      description: DESCRIPTION,
       path: "/creators",
-    }),
+      noindex: !indexable,
+      jsonLd: indexable
+        ? [
+            breadcrumbJsonLd([
+              { name: "Home", path: "/" },
+              { name: "Creators", path: "/creators" },
+            ]),
+            collectionPageJsonLd({ name: "Wallpaper creators", description: DESCRIPTION, path: "/creators" }),
+          ]
+        : [],
+    });
+  },
   component: CreatorsPage,
 });
 
