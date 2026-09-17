@@ -220,8 +220,14 @@ export const generateWallpaperSeo = createServerFn({ method: "POST" })
         if (response.status === 429) return { ok: false as const, code: "rate_limit" as const, error: "OpenAI quota or rate limit reached. Try again shortly or check API billing." };
         return { ok: false as const, code: "api_error" as const, error: "OpenAI could not generate SEO. Please try again." };
       }
-      const body = (await response.json()) as { output_text?: string; usage?: { input_tokens?: number; output_tokens?: number } };
-      const parsed = JSON.parse(body.output_text || "{}") as GeneratedWallpaperSeo;
+      const body = (await response.json()) as { output?: unknown; usage?: { input_tokens?: number; output_tokens?: number } };
+      // Raw Responses API text lives in message content, not the SDK's output_text helper.
+      const outputText = (Array.isArray(body.output) ? body.output : [])
+        .flatMap((item) => item?.type === "message" && Array.isArray(item.content) ? item.content : [])
+        .filter((part) => part?.type === "output_text" && typeof part.text === "string")
+        .map((part) => part.text)
+        .join("");
+      const parsed = JSON.parse(outputText || "{}") as GeneratedWallpaperSeo;
       const categoryId = categories.some((category) => category.id === parsed.categoryId)
         ? parsed.categoryId
         : categories[0].id;
