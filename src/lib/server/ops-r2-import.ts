@@ -7,12 +7,17 @@ import { mediaUrl, sniffImage } from "@/lib/media";
 import { slugify } from "@/lib/seo";
 import type { Category } from "@/lib/types";
 import { MAX_ORIGINAL_BYTES } from "@/lib/upload-limit";
+import {
+  cleanWallpaperDescription,
+  cleanWallpaperTitle,
+  normalizeWallpaperTags,
+  slugifyWallpaperTag,
+} from "@/lib/wallpaper-metadata";
 import { sha256Buffer } from "./dupes";
 import { fetchCategories, uniqueWallpaperSlug } from "./queries";
 import { r2Config, r2Get, r2PublicUrlFor } from "./r2";
 import { listR2Objects, type R2ListedObject } from "./r2-list";
 
-const MAX_TAGS = 8;
 const IMAGE_EXT = /\.(?:jpe?g|png|webp)$/i;
 const DERIVED_PREFIX = /^(?:tmp|health|previews|thumbs)\//i;
 
@@ -35,38 +40,14 @@ async function requireAdmin(userId: string): Promise<Sql> {
   return sql;
 }
 
-function slugifyTag(name: string): string {
-  return name
-    .toLowerCase()
-    .trim()
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-+|-+$/g, "")
-    .slice(0, 32);
-}
-
-function parseTags(raw: string): string[] {
-  const out: string[] = [];
-  const seen = new Set<string>();
-  for (const value of raw.split(",")) {
-    const name = value.trim().toLowerCase().replace(/\s+/g, " ").slice(0, 24);
-    if (name.length < 2) continue;
-    const slug = slugifyTag(name);
-    if (!slug || seen.has(slug)) continue;
-    seen.add(slug);
-    out.push(name);
-    if (out.length >= MAX_TAGS) break;
-  }
-  return out;
-}
-
 async function attachTags(sql: Sql, wallpaperId: string, names: string[]) {
   for (const name of names) {
-    const slug = slugifyTag(name);
+    const slug = slugifyWallpaperTag(name);
     if (!slug) continue;
-    const id = `tag-${slug}`.slice(0, 40);
+    const id = `tag-${slug}`;
     await sql.query(
       `insert into tags (id, slug, name) values ($1, $2, $3)
-       on conflict (slug) do nothing`,
+       on conflict (slug) do update set name = excluded.name`,
       [id, slug, name],
     );
     const rows = await sql.query<{ id: string }>(`select id from tags where slug = $1 limit 1`, [slug]);
@@ -94,7 +75,7 @@ function deriveTitle(key: string): string {
   const leaf = key.split("/").pop() || "Wallpaper";
   const raw = leaf.replace(/\.[^.]+$/, "").replace(/[-_]+/g, " ").replace(/\s+/g, " ").trim();
   if (!raw) return "Wallpaper";
-  return raw.replace(/\b\w/g, (m) => m.toUpperCase()).slice(0, 60);
+  return cleanWallpaperTitle(raw.replace(/\b\w/g, (m) => m.toUpperCase()));
 }
 
 function deviceFor(raw: string | undefined, width: number, height: number): DeviceType {
@@ -177,7 +158,7 @@ export const importOpsR2Wallpaper = createServerFn({ method: "POST" })
       description: z.string().trim().max(280).optional(),
       categoryId: z.string().min(1),
       deviceType: z.enum(["phone", "tablet", "both"]).optional(),
-      tags: z.string().max(300).optional(),
+      tags: z.string().max(500).optional(),
     }),
   )
   .handler(async ({ context, data }) => {
@@ -189,6 +170,11 @@ export const importOpsR2Wallpaper = createServerFn({ method: "POST" })
     if (!categories.some((c) => c.id === data.categoryId)) {
       return { ok: false as const, error: "category" };
     }
+
+    const title = cleanWallpaperTitle(data.title);
+    if (title.length < 2) return { ok: false as const, error: "title" };
+    const description = cleanWallpaperDescription(data.description ?? "");
+    const tagNames = normalizeWallpaperTags((data.tags ?? "").split(","));
 
     const already = await sql.query<{ id: string }>(
       `select w.id
@@ -216,7 +202,7 @@ export const importOpsR2Wallpaper = createServerFn({ method: "POST" })
     if (hashHit[0]) return { ok: false as const, error: "duplicate" };
 
     const wallpaperId = `r${crypto.randomUUID().replaceAll("-", "").slice(0, 12)}`;
-    const slug = await uniqueWallpaperSlug(slugify(data.title));
+    const slug = await uniqueWallpaperSlug(slugify(title));
     const cfg = await r2Config();
     const directUrl = r2PublicUrlFor(data.key, cfg);
     const originalMediaId = `${wallpaperId}-r2-orig`;
@@ -257,8 +243,8 @@ export const importOpsR2Wallpaper = createServerFn({ method: "POST" })
           $11, $11, now(), $12, $13, 'index')`,
       [
         wallpaperId,
-        data.title,
-        data.description ?? "",
+        title,
+        description,
         data.categoryId,
         meta.width,
         meta.height,
@@ -268,7 +254,7 @@ export const importOpsR2Wallpaper = createServerFn({ method: "POST" })
         deviceFor(data.deviceType, meta.width, meta.height),
         fileSha,
         slug,
-        data.title,
+        title,
       ],
     );
 
@@ -294,6 +280,6 @@ export const importOpsR2Wallpaper = createServerFn({ method: "POST" })
       ],
     );
 
-    await attachTags(sql, wallpaperId, parseTags(data.tags ?? ""));
+    await attachTags(sql, wallpaperId, tagNames);
     return { ok: true as const, id: wallpaperId, slug };
   });
