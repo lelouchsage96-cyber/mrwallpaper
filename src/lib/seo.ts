@@ -4,6 +4,10 @@ import type { DeviceType } from "@/lib/device";
 export const SITE_URL = brand.shareBaseUrl.replace(/\/$/, "");
 export const PAGE_SIZE = 24;
 
+const INDEX_ROBOTS = "index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1";
+const WEBSITE_ID = `${SITE_URL}/#website`;
+const ORGANIZATION_ID = `${SITE_URL}/#organization`;
+
 export type SeoPage = {
   title: string;
   description: string;
@@ -123,7 +127,7 @@ export function wallpaperMeta(opts: {
       : opts.deviceType === "both"
         ? "phone and tablet wallpaper"
         : "phone wallpaper";
-  const cleanTitle = normalizeMetaText(opts.title);
+  const cleanTitle = normalizeMetaText(opts.title).replace(/^title\s*:\s*/i, "");
   const title = opts.seoTitle?.trim()
     ? normalizeMetaText(opts.seoTitle)
     : firstTitleThatFits([
@@ -224,7 +228,7 @@ export function pageHead(page: SeoPage) {
     ? "noindex, nofollow"
     : page.robots === "noindex" || isAppRoute
       ? "noindex, follow"
-      : "index, follow";
+      : INDEX_ROBOTS;
   const jsonLd = page.jsonLd ?? [];
   const links: Array<Record<string, string>> = [{ rel: "canonical", href: url }];
   if (page.prev) links.push({ rel: "prev", href: absUrl(canonicalPath(page.prev)) });
@@ -242,7 +246,7 @@ export function pageHead(page: SeoPage) {
       { name: "robots", content: robots },
       { name: "googlebot", content: robots },
       { property: "og:site_name", content: brand.name },
-      { property: "og:type", content: page.path.startsWith("/wallpaper/") ? "article" : "website" },
+      { property: "og:type", content: "website" },
       { property: "og:title", content: page.title },
       { property: "og:description", content: page.description },
       { property: "og:url", content: url },
@@ -277,14 +281,11 @@ export function websiteJsonLd() {
   return {
     "@context": "https://schema.org",
     "@type": "WebSite",
+    "@id": WEBSITE_ID,
     name: brand.name,
-    url: SITE_URL,
+    url: `${SITE_URL}/`,
     description: HOME_DESCRIPTION,
-    potentialAction: {
-      "@type": "SearchAction",
-      target: `${SITE_URL}/wallpapers?q={search_term_string}`,
-      "query-input": "required name=search_term_string",
-    },
+    publisher: { "@id": ORGANIZATION_ID },
   };
 }
 
@@ -292,9 +293,16 @@ export function organizationJsonLd() {
   return {
     "@context": "https://schema.org",
     "@type": "Organization",
+    "@id": ORGANIZATION_ID,
     name: brand.name,
-    url: SITE_URL,
-    logo: absUrl("/icons/v11/icon-512.png?v=11"),
+    url: `${SITE_URL}/`,
+    logo: {
+      "@type": "ImageObject",
+      url: absUrl("/icons/v11/icon-512.png?v=11"),
+      width: 512,
+      height: 512,
+    },
+    sameAs: Object.values(brand.social),
   };
 }
 
@@ -311,6 +319,18 @@ export function breadcrumbJsonLd(items: { name: string; path: string }[]) {
   };
 }
 
+export function collectionPageJsonLd(opts: { name: string; description: string; path: string }) {
+  return {
+    "@context": "https://schema.org",
+    "@type": "CollectionPage",
+    "@id": `${absUrl(opts.path)}#collection`,
+    name: opts.name,
+    description: opts.description,
+    url: absUrl(opts.path),
+    isPartOf: { "@id": WEBSITE_ID },
+  };
+}
+
 export function imageObjectJsonLd(opts: {
   title: string;
   description: string;
@@ -319,13 +339,18 @@ export function imageObjectJsonLd(opts: {
   width?: number;
   height?: number;
 }) {
+  const pageUrl = absUrl(opts.path);
   return {
     "@context": "https://schema.org",
     "@type": "ImageObject",
+    "@id": `${pageUrl}#primaryimage`,
     name: opts.title,
+    caption: opts.title,
     description: opts.description,
     contentUrl: absUrl(opts.image),
-    url: absUrl(opts.path),
+    url: pageUrl,
+    mainEntityOfPage: pageUrl,
+    representativeOfPage: true,
     ...(opts.width ? { width: opts.width } : {}),
     ...(opts.height ? { height: opts.height } : {}),
   };
@@ -341,7 +366,7 @@ export function itemListJsonLd(opts: { name: string; path: string; items: { name
       "@type": "ListItem",
       position: index + 1,
       name: item.name,
-      url: absUrl(item.path),
+      item: absUrl(item.path),
     })),
   };
 }
