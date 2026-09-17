@@ -6,6 +6,12 @@ import { SHA256 } from "@/lib/hash";
 import { sniffImage } from "@/lib/media";
 import { slugify } from "@/lib/seo";
 import type { Category } from "@/lib/types";
+import {
+  cleanWallpaperDescription,
+  cleanWallpaperTitle,
+  normalizeWallpaperTags,
+  slugifyWallpaperTag,
+} from "@/lib/wallpaper-metadata";
 import { sha256Buffer } from "./dupes";
 import { fetchCategories, uniqueWallpaperSlug } from "./queries";
 import { persistPlateMedia } from "./storage";
@@ -13,7 +19,6 @@ import { MAX_ORIGINAL_BYTES } from "@/lib/upload-limit";
 
 const MAX_PREVIEW = MAX_ORIGINAL_BYTES;
 const MAX_THUMB = 800_000;
-const MAX_TAGS = 8;
 
 class ForbiddenError extends Error {
   readonly status = 403;
@@ -68,40 +73,14 @@ function aspectLabel(w: number, h: number): string {
   return hit ? hit[1] : `${w}:${h}`;
 }
 
-function slugifyTag(name: string): string {
-  return name
-    .toLowerCase()
-    .trim()
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-+|-+$/g, "")
-    .slice(0, 32);
-}
-
-function parseTags(form: FormData): string[] {
-  const raw = formString(form, "tags");
-  const values = raw.split(",");
-  const out: string[] = [];
-  const seen = new Set<string>();
-  for (const value of values) {
-    const name = value.trim().toLowerCase().replace(/\s+/g, " ").slice(0, 24);
-    if (name.length < 2) continue;
-    const slug = slugifyTag(name);
-    if (!slug || seen.has(slug)) continue;
-    seen.add(slug);
-    out.push(name);
-    if (out.length >= MAX_TAGS) break;
-  }
-  return out;
-}
-
 async function attachTags(sql: Sql, wallpaperId: string, names: string[]) {
   for (const name of names) {
-    const slug = slugifyTag(name);
+    const slug = slugifyWallpaperTag(name);
     if (!slug) continue;
-    const id = `tag-${slug}`.slice(0, 40);
+    const id = `tag-${slug}`;
     await sql.query(
       `insert into tags (id, slug, name) values ($1, $2, $3)
-       on conflict (slug) do nothing`,
+       on conflict (slug) do update set name = excluded.name`,
       [id, slug, name],
     );
     const rows = await sql.query<{ id: string }>(`select id from tags where slug = $1 limit 1`, [slug]);
@@ -129,11 +108,11 @@ export const uploadOpsWallpaper = createServerFn({ method: "POST" })
   })
   .handler(async ({ context, data }) => {
     const sql = await requireAdmin(context.userId);
-    const title = formString(data, "title");
-    const description = formString(data, "description").slice(0, 280);
+    const title = cleanWallpaperTitle(formString(data, "title"));
+    const description = cleanWallpaperDescription(formString(data, "description"));
     const categoryId = formString(data, "categoryId");
-    const tagNames = parseTags(data);
-    if (title.length < 2 || title.length > 60) return { ok: false as const, error: "title" };
+    const tagNames = normalizeWallpaperTags(formString(data, "tags").split(","));
+    if (title.length < 2) return { ok: false as const, error: "title" };
 
     const cats = await fetchCategories();
     if (!cats.some((c) => c.id === categoryId)) return { ok: false as const, error: "category" };
