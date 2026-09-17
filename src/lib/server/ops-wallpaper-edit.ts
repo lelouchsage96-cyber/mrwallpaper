@@ -7,7 +7,7 @@ import { resolveOwnedThumb } from "@/lib/media";
 import { fetchCategories } from "./queries";
 import type { Category } from "@/lib/types";
 
-const MAX_TAGS = 8;
+const MAX_TAGS = 18;
 
 class ForbiddenError extends Error {
   readonly status = 403;
@@ -84,6 +84,8 @@ export type OpsWallpaperEditData = {
   tags: string[];
   altText: string;
   primaryKeyword: string;
+  width: number;
+  height: number;
 };
 
 export const getOpsWallpaperEdit = createServerFn({ method: "GET" })
@@ -103,10 +105,12 @@ export const getOpsWallpaperEdit = createServerFn({ method: "GET" })
       thumbnail_url: string | null;
       alt_text: string | null;
       primary_keyword: string | null;
+      width: number;
+      height: number;
     }>(
       `select w.id, w.title, w.description, w.category_id, c.name as category_name,
               w.device_type, w.status, w.slug,
-              w.alt_text, w.primary_keyword,
+              w.alt_text, w.primary_keyword, w.width, w.height,
               (select a.path from wallpaper_assets a
                 where a.wallpaper_id = w.id and a.kind = 'thumbnail' limit 1) as thumbnail_url
        from wallpapers w
@@ -144,6 +148,8 @@ export const getOpsWallpaperEdit = createServerFn({ method: "GET" })
         tags: tagRows.map((t) => t.name),
         altText: row.alt_text || "",
         primaryKeyword: row.primary_keyword || "",
+        width: row.width,
+        height: row.height,
       },
     };
   });

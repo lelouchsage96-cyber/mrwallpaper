@@ -21,8 +21,13 @@ export type GeneratedWallpaperSeo = {
   description: string;
   tags: string[];
   altText: string;
+  primaryKeyword: string;
   categoryId: string;
 };
+
+export type SeoField = "all" | "title" | "description" | "tags" | "altText" | "primaryKeyword";
+
+export type SeoConflict = { kind: "keyword" | "title"; message: string; wallpaperId: string };
 
 class ForbiddenError extends Error {
   readonly status = 403;
@@ -138,15 +143,17 @@ export const generateWallpaperSeo = createServerFn({ method: "POST" })
     description?: string;
     tags?: string;
     altText?: string;
+    primaryKeyword?: string;
     categoryId?: string;
     deviceType?: DeviceType;
     width: number;
     height: number;
+    field?: SeoField;
   }) => input)
   .handler(async ({ context, data }) => {
     await requireAdmin(context.userId);
-    const apiKey = process.env.XAI_API_KEY;
-    if (!apiKey) return { ok: false as const, error: "SEO generation is unavailable right now." };
+    const apiKey = process.env.OPENAI_API_KEY?.trim();
+    if (!apiKey) return { ok: false as const, code: "missing_key" as const, error: "Add OPENAI_API_KEY in Vercel to enable SEO generation." };
     if (!data.imageDataUrl.startsWith("data:image/") || data.imageDataUrl.length > MAX_SEO_IMAGE_DATA_URL) {
       return { ok: false as const, error: "This image preview could not be analyzed." };
     }
@@ -155,37 +162,39 @@ export const generateWallpaperSeo = createServerFn({ method: "POST" })
     if (categories.length === 0) return { ok: false as const, error: "No categories are available." };
     const categoryOptions = categories.map((category) => `${category.id}: ${category.name}`).join("\n");
     const supports4k = Math.max(data.width, data.height) >= 3840 && Math.min(data.width, data.height) >= 2160;
+    const field = data.field || "all";
 
     try {
-      const response = await fetch("https://api.x.ai/v1/chat/completions", {
+      const response = await fetch("https://api.openai.com/v1/responses", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${apiKey}`,
         },
         body: JSON.stringify({
-          model: "grok-4.6",
-          reasoning_effort: "low",
-          max_completion_tokens: 900,
-          messages: [
+          model: "gpt-5.6-luna",
+          reasoning: { effort: "none" },
+          max_output_tokens: field === "all" ? 700 : 300,
+          store: false,
+          input: [
             {
-              role: "system",
-              content: `You create accurate SEO metadata for MrWallpaper.org. Analyze only what is actually visible in the supplied wallpaper. Never invent a person, character, brand, location, quote, Bible verse, object, or meaning. Preserve visible text accurately; if text is unclear, do not guess it. Use natural long-tail search phrasing without keyword stuffing. Produce a concise title of 4-10 words, a natural 1-2 sentence description, descriptive alt text, and 12-18 distinct useful tags. Tags must be short, lowercase, and must not repeat the same phrase. Choose exactly one category ID from the supplied category list. Internally derive one specific primary keyword to guide the metadata. ${supports4k ? "The supplied resolution supports mentioning 4K only when it reads naturally." : "Do not use or imply 4K anywhere."}`,
+              role: "developer",
+              content: [{ type: "input_text", text: `Create accurate SEO metadata for MrWallpaper.org. Analyze only what is actually visible. Never invent people, characters, brands, locations, objects, meanings, quotes, or Bible references. Preserve visible wording exactly when legible; otherwise do not guess. Use natural long-tail phrasing without stuffing. Title: 4-10 words. Description: 1-2 natural sentences. Tags: 12-18 distinct useful lowercase phrases without hashtags. Alt text: one natural sentence about the actual image and useful visible text. Primary keyword: one realistic specific search phrase. Category must be one supplied ID. ${supports4k ? "Mention 4K only if useful and accurate." : "Never claim or imply 4K."} Generate ${field === "all" ? "all fields" : `only the ${field} field; copy the supplied values for all other fields`}.` }],
             },
             {
               role: "user",
               content: [
                 {
-                  type: "text",
-                  text: `Image resolution: ${data.width} × ${data.height}.\nDevice target: ${data.deviceType || "unknown"}\nExisting title: ${data.title?.trim() || "none"}\nExisting description: ${data.description?.trim() || "none"}\nExisting tags: ${data.tags?.trim() || "none"}\nExisting alt text: ${data.altText?.trim() || "none"}\nExisting category ID: ${data.categoryId || "none"}\n\nAvailable categories (return the ID before the colon):\n${categoryOptions}`,
+                  type: "input_text",
+                  text: `Resolution: ${data.width} × ${data.height}.\nDevice: ${data.deviceType || "unknown"}\nTitle: ${data.title?.trim() || ""}\nDescription: ${data.description?.trim() || ""}\nTags: ${data.tags?.trim() || ""}\nAlt text: ${data.altText?.trim() || ""}\nPrimary keyword: ${data.primaryKeyword?.trim() || ""}\nCategory ID: ${data.categoryId || ""}\n\nAllowed categories:\n${categoryOptions}`,
                 },
-                { type: "image_url", image_url: { url: data.imageDataUrl, detail: "high" } },
+                { type: "input_image", image_url: data.imageDataUrl, detail: "high" },
               ],
             },
           ],
-          response_format: {
-            type: "json_schema",
-            json_schema: {
+          text: {
+            format: {
+              type: "json_schema",
               name: "wallpaper_seo",
               strict: true,
               schema: {
@@ -206,13 +215,13 @@ export const generateWallpaperSeo = createServerFn({ method: "POST" })
         }),
       });
       if (!response.ok) {
-        console.error("[ops-upload] SEO API", response.status, await response.text());
-        return { ok: false as const, error: "SEO generation failed. Please try again." };
+        const detail = await response.text();
+        console.error("[ops-upload] OpenAI SEO", response.status, detail.slice(0, 500));
+        if (response.status === 429) return { ok: false as const, code: "rate_limit" as const, error: "OpenAI quota or rate limit reached. Try again shortly or check API billing." };
+        return { ok: false as const, code: "api_error" as const, error: "OpenAI could not generate SEO. Please try again." };
       }
-      const body = (await response.json()) as { choices?: { message?: { content?: string } }[] };
-      const parsed = JSON.parse(body.choices?.[0]?.message?.content || "{}") as GeneratedWallpaperSeo & {
-        primaryKeyword?: string;
-      };
+      const body = (await response.json()) as { output_text?: string; usage?: { input_tokens?: number; output_tokens?: number } };
+      const parsed = JSON.parse(body.output_text || "{}") as GeneratedWallpaperSeo;
       const categoryId = categories.some((category) => category.id === parsed.categoryId)
         ? parsed.categoryId
         : categories[0].id;
@@ -223,10 +232,12 @@ export const generateWallpaperSeo = createServerFn({ method: "POST" })
         typeof parsed.title !== "string" ||
         typeof parsed.description !== "string" ||
         typeof parsed.altText !== "string" ||
+        typeof parsed.primaryKeyword !== "string" ||
         cleanTags.length < 12
       ) {
-        return { ok: false as const, error: "SEO generation returned incomplete details. Please try again." };
+        return { ok: false as const, code: "malformed_output" as const, error: "OpenAI returned incomplete details. Please try again." };
       }
+      console.info("[ops-upload] OpenAI SEO usage", { model: "gpt-5.6-luna", field, ...body.usage });
       return {
         ok: true as const,
         seo: {
@@ -234,13 +245,45 @@ export const generateWallpaperSeo = createServerFn({ method: "POST" })
           description: parsed.description.trim().slice(0, 280),
           tags: cleanTags,
           altText: parsed.altText.trim().slice(0, 180),
+          primaryKeyword: parsed.primaryKeyword.trim().slice(0, 80),
           categoryId,
         } satisfies GeneratedWallpaperSeo,
       };
     } catch (error) {
       console.error("[ops-upload] SEO generation", error);
-      return { ok: false as const, error: "SEO generation failed. Please try again." };
+      return { ok: false as const, code: "malformed_output" as const, error: "SEO generation failed. Please try again." };
     }
+  });
+
+function normalizedWords(value: string): Set<string> {
+  return new Set(value.toLowerCase().replace(/[^a-z0-9 ]/g, " ").split(/\s+/).filter((word) => word.length > 2));
+}
+
+function wordSimilarity(a: string, b: string): number {
+  const left = normalizedWords(a);
+  const right = normalizedWords(b);
+  if (!left.size || !right.size) return 0;
+  let shared = 0;
+  for (const word of left) if (right.has(word)) shared += 1;
+  return (2 * shared) / (left.size + right.size);
+}
+
+export const checkWallpaperSeoConflicts = createServerFn({ method: "POST" })
+  .middleware([authMiddleware])
+  .validator((input: { title: string; primaryKeyword: string; excludeWallpaperId?: string }) => input)
+  .handler(async ({ context, data }): Promise<{ conflicts: SeoConflict[] }> => {
+    const sql = await requireAdmin(context.userId);
+    const rows = await sql.query<{ id: string; title: string; primary_keyword: string | null }>(
+      `select id, title, primary_keyword from wallpapers where ($1 = '' or id <> $1)`,
+      [data.excludeWallpaperId || ""],
+    );
+    const conflicts: SeoConflict[] = [];
+    const keyword = data.primaryKeyword.trim();
+    const keywordMatch = keyword ? rows.find((row) => row.primary_keyword && wordSimilarity(keyword, row.primary_keyword) >= 0.8) : undefined;
+    if (keywordMatch) conflicts.push({ kind: "keyword", wallpaperId: keywordMatch.id, message: `Primary keyword is very similar to “${keywordMatch.primary_keyword}”.` });
+    const titleMatch = data.title.trim() ? rows.find((row) => wordSimilarity(data.title, row.title) >= 0.8) : undefined;
+    if (titleMatch) conflicts.push({ kind: "title", wallpaperId: titleMatch.id, message: `Title is very similar to “${titleMatch.title}”.` });
+    return { conflicts };
   });
 
 export const uploadOpsWallpaper = createServerFn({ method: "POST" })
