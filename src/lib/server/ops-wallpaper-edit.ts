@@ -4,10 +4,16 @@ import { getSql, type Sql } from "@/lib/db";
 import { authMiddleware } from "@/lib/auth/middleware";
 import { parseDeviceType, type DeviceType } from "@/lib/device";
 import { resolveOwnedThumb } from "@/lib/media";
-import { fetchCategories } from "./queries";
+import { slugify } from "@/lib/seo";
 import type { Category } from "@/lib/types";
-
-const MAX_TAGS = 8;
+import {
+  MAX_WALLPAPER_TAGS,
+  cleanWallpaperDescription,
+  cleanWallpaperTitle,
+  normalizeWallpaperTags,
+  slugifyWallpaperTag,
+} from "@/lib/wallpaper-metadata";
+import { fetchCategories } from "./queries";
 
 class ForbiddenError extends Error {
   readonly status = 403;
@@ -28,36 +34,12 @@ async function requireAdmin(userId: string): Promise<Sql> {
   return sql;
 }
 
-function slugifyTag(name: string): string {
-  return name
-    .toLowerCase()
-    .trim()
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-+|-+$/g, "")
-    .slice(0, 32);
-}
-
-function normalizeTags(values: string[]): string[] {
-  const out: string[] = [];
-  const seen = new Set<string>();
-  for (const value of values) {
-    const name = value.trim().toLowerCase().replace(/\s+/g, " ").slice(0, 24);
-    if (name.length < 2) continue;
-    const slug = slugifyTag(name);
-    if (!slug || seen.has(slug)) continue;
-    seen.add(slug);
-    out.push(name);
-    if (out.length >= MAX_TAGS) break;
-  }
-  return out;
-}
-
 async function replaceTags(sql: Sql, wallpaperId: string, names: string[]) {
   await sql.query(`delete from wallpaper_tags where wallpaper_id = $1`, [wallpaperId]);
   for (const name of names) {
-    const slug = slugifyTag(name);
+    const slug = slugifyWallpaperTag(name);
     if (!slug) continue;
-    const id = `tag-${slug}`.slice(0, 40);
+    const id = `tag-${slug}`;
     await sql.query(
       `insert into tags (id, slug, name) values ($1, $2, $3)
        on conflict (slug) do update set name = excluded.name`,
@@ -82,6 +64,11 @@ export type OpsWallpaperEditData = {
   status: "draft" | "pending" | "approved" | "rejected" | "removed";
   thumbnailUrl: string | null;
   tags: string[];
+  slug: string;
+  seoTitle: string;
+  seoDescription: string;
+  altText: string;
+  robots: "index" | "noindex";
 };
 
 export const getOpsWallpaperEdit = createServerFn({ method: "GET" })
@@ -99,9 +86,14 @@ export const getOpsWallpaperEdit = createServerFn({ method: "GET" })
       status: string;
       slug: string | null;
       thumbnail_url: string | null;
+      seo_title: string | null;
+      seo_description: string | null;
+      alt_text: string | null;
+      robots: string | null;
     }>(
       `select w.id, w.title, w.description, w.category_id, c.name as category_name,
-              w.device_type, w.status, w.slug,
+              w.device_type, w.status, w.slug, w.seo_title, w.seo_description,
+              w.alt_text, w.robots,
               (select a.path from wallpaper_assets a
                 where a.wallpaper_id = w.id and a.kind = 'thumbnail' limit 1) as thumbnail_url
        from wallpapers w
@@ -137,6 +129,11 @@ export const getOpsWallpaperEdit = createServerFn({ method: "GET" })
         status,
         thumbnailUrl: resolveOwnedThumb(row.id, row.thumbnail_url, row.slug),
         tags: tagRows.map((t) => t.name),
+        slug: row.slug || row.id,
+        seoTitle: row.seo_title || "",
+        seoDescription: row.seo_description || "",
+        altText: row.alt_text || row.title,
+        robots: row.robots === "noindex" ? "noindex" : "index",
       },
     };
   });
@@ -151,7 +148,12 @@ export const updateOpsWallpaperMetadata = createServerFn({ method: "POST" })
       categoryId: z.string().min(1),
       deviceType: z.enum(["phone", "tablet", "both"]),
       status: z.enum(["draft", "pending", "approved", "rejected", "removed"]),
-      tags: z.array(z.string()).max(MAX_TAGS),
+      tags: z.array(z.string()).max(MAX_WALLPAPER_TAGS),
+      slug: z.string().trim().min(2).max(96),
+      seoTitle: z.string().trim().max(75),
+      seoDescription: z.string().trim().max(180),
+      altText: z.string().trim().max(180),
+      robots: z.enum(["index", "noindex"]),
     }),
   )
   .handler(async ({ context, data }) => {
@@ -160,7 +162,34 @@ export const updateOpsWallpaperMetadata = createServerFn({ method: "POST" })
     if (!cats.some((c) => c.id === data.categoryId)) {
       return { ok: false as const, error: "category" as const };
     }
-    const tags = normalizeTags(data.tags);
+
+    const currentRows = await sql.query<{ slug: string | null }>(
+      `select slug from wallpapers where id = $1 limit 1`,
+      [data.wallpaperId],
+    );
+    const current = currentRows[0];
+    if (!current) return { ok: false as const, error: "missing" as const };
+
+    const title = cleanWallpaperTitle(data.title);
+    if (title.length < 2) return { ok: false as const, error: "title" as const };
+    const description = cleanWallpaperDescription(data.description);
+    const desiredSlug = slugify(data.slug || title);
+    if (!desiredSlug) return { ok: false as const, error: "slug" as const };
+
+    const slugHit = await sql.query<{ id: string }>(
+      `select id from wallpapers where slug = $1 and id <> $2 limit 1`,
+      [desiredSlug, data.wallpaperId],
+    );
+    if (slugHit[0]) return { ok: false as const, error: "slug" as const };
+
+    const oldSlug = current.slug || data.wallpaperId;
+    const oldPath = `/wallpaper/${oldSlug}`;
+    const newPath = `/wallpaper/${desiredSlug}`;
+    const tags = normalizeWallpaperTags(data.tags);
+    const altText = cleanWallpaperTitle(data.altText) || title;
+    const seoTitle = data.seoTitle.trim() || null;
+    const seoDescription = data.seoDescription.trim() || null;
+
     await sql.query(
       `update wallpapers
        set title = $1,
@@ -168,10 +197,49 @@ export const updateOpsWallpaperMetadata = createServerFn({ method: "POST" })
            category_id = $3,
            device_type = $4,
            status = $5,
+           slug = $6,
+           seo_title = $7,
+           seo_description = $8,
+           alt_text = $9,
+           robots = $10,
+           canonical_path = case
+             when canonical_path is null or canonical_path = '' or canonical_path = $11 then null
+             else canonical_path
+           end,
            updated_at = now()
-       where id = $6`,
-      [data.title.trim(), data.description.trim(), data.categoryId, data.deviceType, data.status, data.wallpaperId],
+       where id = $12`,
+      [
+        title,
+        description,
+        data.categoryId,
+        data.deviceType,
+        data.status,
+        desiredSlug,
+        seoTitle,
+        seoDescription,
+        altText,
+        data.robots,
+        oldPath,
+        data.wallpaperId,
+      ],
     );
+
+    if (oldPath !== newPath) {
+      await sql.query(
+        `insert into seo_redirects (from_path, to_path, status)
+         values ($1, $2, 301)
+         on conflict (from_path)
+         do update set to_path = excluded.to_path, status = 301`,
+        [oldPath, newPath],
+      );
+      await sql.query(
+        `update seo_redirects
+         set to_path = $1
+         where to_path = $2 and from_path <> $1`,
+        [newPath, oldPath],
+      );
+    }
+
     await replaceTags(sql, data.wallpaperId, tags);
-    return { ok: true as const };
+    return { ok: true as const, slug: desiredSlug };
   });
