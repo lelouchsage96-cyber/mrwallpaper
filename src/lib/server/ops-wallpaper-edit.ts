@@ -8,6 +8,7 @@ import { slugify } from "@/lib/seo";
 import type { Category } from "@/lib/types";
 import {
   MAX_WALLPAPER_TAGS,
+  cleanWallpaperAltText,
   cleanWallpaperDescription,
   cleanWallpaperTitle,
   normalizeWallpaperTags,
@@ -186,7 +187,7 @@ export const updateOpsWallpaperMetadata = createServerFn({ method: "POST" })
     const oldPath = `/wallpaper/${oldSlug}`;
     const newPath = `/wallpaper/${desiredSlug}`;
     const tags = normalizeWallpaperTags(data.tags);
-    const altText = cleanWallpaperTitle(data.altText) || title;
+    const altText = cleanWallpaperAltText(data.altText) || title;
     const seoTitle = data.seoTitle.trim() || null;
     const seoDescription = data.seoDescription.trim() || null;
 
