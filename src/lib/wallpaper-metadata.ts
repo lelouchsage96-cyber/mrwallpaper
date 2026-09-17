@@ -2,6 +2,7 @@ export const MAX_WALLPAPER_TAGS = 8;
 export const MAX_WALLPAPER_TAG_LENGTH = 48;
 export const MAX_WALLPAPER_TAG_SLUG_LENGTH = 64;
 export const MAX_WALLPAPER_TITLE_LENGTH = 60;
+export const MAX_WALLPAPER_ALT_LENGTH = 180;
 
 function normalizeSpaces(input: string): string {
   return input.replace(/\s+/g, " ").trim();
@@ -25,6 +26,10 @@ export function cleanWallpaperTitle(input: string): string {
 
 export function cleanWallpaperDescription(input: string): string {
   return normalizeSpaces(input).slice(0, 280).trim();
+}
+
+export function cleanWallpaperAltText(input: string): string {
+  return truncateAtWord(normalizeSpaces(input).replace(/^title\s*:\s*/i, ""), MAX_WALLPAPER_ALT_LENGTH);
 }
 
 export function slugifyWallpaperTag(input: string): string {
