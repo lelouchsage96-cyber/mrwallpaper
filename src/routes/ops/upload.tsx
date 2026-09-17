@@ -1,5 +1,5 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { Cloud, Upload } from "lucide-react";
+import { Check, Cloud, Sparkles, Upload } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -7,7 +7,7 @@ import { encodePlate } from "@/lib/encode-plate";
 import { getBearerToken } from "@/lib/auth/client";
 import { sha256Blob } from "@/lib/hash";
 import { inferDeviceType, type DeviceType } from "@/lib/device";
-import { getOpsUploadMeta, uploadOpsWallpaper } from "@/lib/server/ops-upload";
+import { generateWallpaperSeo, getOpsUploadMeta, uploadOpsWallpaper } from "@/lib/server/ops-upload";
 import type { Category } from "@/lib/types";
 
 export const Route = createFileRoute("/ops/upload")({ component: OpsUploadPage });
@@ -51,8 +51,11 @@ function OpsUploadPage() {
   const [description, setDescription] = useState("");
   const [categoryId, setCategoryId] = useState("");
   const [tags, setTags] = useState("");
+  const [altText, setAltText] = useState("");
   const [deviceType, setDeviceType] = useState<DeviceType>("phone");
   const [busy, setBusy] = useState(false);
+  const [generatingSeo, setGeneratingSeo] = useState(false);
+  const [seoPreview, setSeoPreview] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
 
   useEffect(() => {
@@ -92,6 +95,46 @@ function OpsUploadPage() {
     }
   }
 
+  async function generateSeo() {
+    if (!encoded?.ok) {
+      setMessage("Choose a wallpaper before generating SEO.");
+      return;
+    }
+    setGeneratingSeo(true);
+    setSeoPreview(false);
+    setMessage(null);
+    try {
+      const result = await generateWallpaperSeo({
+        data: {
+          imageDataUrl: encoded.plate.previewDataUrl,
+          title,
+          description,
+          tags,
+          altText,
+          categoryId,
+          deviceType,
+          width: encoded.plate.width,
+          height: encoded.plate.height,
+        },
+      });
+      if (!result.ok) {
+        setMessage(result.error);
+        return;
+      }
+      setTitle(result.seo.title);
+      setDescription(result.seo.description);
+      setTags(result.seo.tags.join(", "));
+      setAltText(result.seo.altText);
+      setCategoryId(result.seo.categoryId);
+      setSeoPreview(true);
+    } catch (err) {
+      console.error("[ops-upload] generate SEO", err);
+      setMessage("SEO generation failed. Please try again.");
+    } finally {
+      setGeneratingSeo(false);
+    }
+  }
+
   async function submit() {
     if (!encoded?.ok || !sourceFile) {
       setMessage("Choose a wallpaper first.");
@@ -117,6 +160,7 @@ function OpsUploadPage() {
       fd.set("description", description.trim());
       fd.set("categoryId", categoryId);
       fd.set("tags", tags);
+      fd.set("altText", altText.trim());
       fd.set("deviceType", deviceType);
       fd.set("originalKey", originalKey);
       fd.set("preview", plate.previewBlob, "preview.jpg");
@@ -184,6 +228,39 @@ function OpsUploadPage() {
         )}
       </button>
 
+      <section className="rounded-2xl bg-elevated p-4 shadow-[var(--shadow-border)] sm:p-5">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <h2 className="flex items-center gap-2 text-lg font-medium text-fg">
+              <Sparkles className="size-4" aria-hidden="true" />
+              Generate SEO
+            </h2>
+            <p className="mt-1 text-sm text-muted">Analyze the wallpaper and fill the practical publishing fields below.</p>
+          </div>
+          <Button
+            type="button"
+            className="w-full sm:w-auto"
+            disabled={!encoded?.ok || busy || generatingSeo}
+            onClick={() => void generateSeo()}
+          >
+            <Sparkles className="size-4" />
+            {generatingSeo ? "Analyzing wallpaper…" : "Generate SEO"}
+          </Button>
+        </div>
+
+        {seoPreview ? (
+          <div className="mt-4 rounded-xl bg-surface p-4" aria-live="polite">
+            <p className="flex items-center gap-2 text-sm font-medium text-fg">
+              <Check className="size-4 text-success" aria-hidden="true" />
+              SEO Preview
+            </p>
+            <p className="mt-2 text-base font-medium text-fg">{title}</p>
+            <p className="mt-1 text-sm leading-6 text-muted">{description}</p>
+            <p className="mt-3 text-xs text-subtle">{tags}</p>
+          </div>
+        ) : null}
+      </section>
+
       <div className="grid gap-4 sm:grid-cols-2">
         <label className="text-sm text-muted sm:col-span-2">
           Title
@@ -226,6 +303,17 @@ function OpsUploadPage() {
             value={description}
             onChange={(e) => setDescription(e.target.value)}
             maxLength={280}
+          />
+        </label>
+
+        <label className="text-sm text-muted sm:col-span-2">
+          Alt text
+          <textarea
+            className="mt-1 min-h-20 w-full rounded-md bg-surface p-3 text-sm text-fg shadow-[var(--shadow-border)]"
+            value={altText}
+            onChange={(e) => setAltText(e.target.value)}
+            maxLength={180}
+            placeholder="Describe only what is visible in the wallpaper"
           />
         </label>
       </div>

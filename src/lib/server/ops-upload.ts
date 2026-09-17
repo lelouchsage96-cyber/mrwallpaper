@@ -13,7 +13,16 @@ import { MAX_ORIGINAL_BYTES } from "@/lib/upload-limit";
 
 const MAX_PREVIEW = MAX_ORIGINAL_BYTES;
 const MAX_THUMB = 800_000;
-const MAX_TAGS = 8;
+const MAX_TAGS = 18;
+const MAX_SEO_IMAGE_DATA_URL = 2_750_000;
+
+export type GeneratedWallpaperSeo = {
+  title: string;
+  description: string;
+  tags: string[];
+  altText: string;
+  categoryId: string;
+};
 
 class ForbiddenError extends Error {
   readonly status = 403;
@@ -121,6 +130,119 @@ export const getOpsUploadMeta = createServerFn({ method: "GET" })
     return { categories: await fetchCategories() };
   });
 
+export const generateWallpaperSeo = createServerFn({ method: "POST" })
+  .middleware([authMiddleware])
+  .validator((input: {
+    imageDataUrl: string;
+    title?: string;
+    description?: string;
+    tags?: string;
+    altText?: string;
+    categoryId?: string;
+    deviceType?: DeviceType;
+    width: number;
+    height: number;
+  }) => input)
+  .handler(async ({ context, data }) => {
+    await requireAdmin(context.userId);
+    const apiKey = process.env.XAI_API_KEY;
+    if (!apiKey) return { ok: false as const, error: "SEO generation is unavailable right now." };
+    if (!data.imageDataUrl.startsWith("data:image/") || data.imageDataUrl.length > MAX_SEO_IMAGE_DATA_URL) {
+      return { ok: false as const, error: "This image preview could not be analyzed." };
+    }
+
+    const categories = await fetchCategories();
+    if (categories.length === 0) return { ok: false as const, error: "No categories are available." };
+    const categoryOptions = categories.map((category) => `${category.id}: ${category.name}`).join("\n");
+    const supports4k = Math.max(data.width, data.height) >= 3840 && Math.min(data.width, data.height) >= 2160;
+
+    try {
+      const response = await fetch("https://api.x.ai/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${apiKey}`,
+        },
+        body: JSON.stringify({
+          model: "grok-4.6",
+          reasoning_effort: "low",
+          max_completion_tokens: 900,
+          messages: [
+            {
+              role: "system",
+              content: `You create accurate SEO metadata for MrWallpaper.org. Analyze only what is actually visible in the supplied wallpaper. Never invent a person, character, brand, location, quote, Bible verse, object, or meaning. Preserve visible text accurately; if text is unclear, do not guess it. Use natural long-tail search phrasing without keyword stuffing. Produce a concise title of 4-10 words, a natural 1-2 sentence description, descriptive alt text, and 12-18 distinct useful tags. Tags must be short, lowercase, and must not repeat the same phrase. Choose exactly one category ID from the supplied category list. Internally derive one specific primary keyword to guide the metadata. ${supports4k ? "The supplied resolution supports mentioning 4K only when it reads naturally." : "Do not use or imply 4K anywhere."}`,
+            },
+            {
+              role: "user",
+              content: [
+                {
+                  type: "text",
+                  text: `Image resolution: ${data.width} × ${data.height}.\nDevice target: ${data.deviceType || "unknown"}\nExisting title: ${data.title?.trim() || "none"}\nExisting description: ${data.description?.trim() || "none"}\nExisting tags: ${data.tags?.trim() || "none"}\nExisting alt text: ${data.altText?.trim() || "none"}\nExisting category ID: ${data.categoryId || "none"}\n\nAvailable categories (return the ID before the colon):\n${categoryOptions}`,
+                },
+                { type: "image_url", image_url: { url: data.imageDataUrl, detail: "high" } },
+              ],
+            },
+          ],
+          response_format: {
+            type: "json_schema",
+            json_schema: {
+              name: "wallpaper_seo",
+              strict: true,
+              schema: {
+                type: "object",
+                properties: {
+                  primaryKeyword: { type: "string" },
+                  title: { type: "string" },
+                  description: { type: "string" },
+                  tags: { type: "array", items: { type: "string" }, minItems: 12, maxItems: 18 },
+                  altText: { type: "string" },
+                  categoryId: { type: "string", enum: categories.map((category) => category.id) },
+                },
+                required: ["primaryKeyword", "title", "description", "tags", "altText", "categoryId"],
+                additionalProperties: false,
+              },
+            },
+          },
+        }),
+      });
+      if (!response.ok) {
+        console.error("[ops-upload] SEO API", response.status, await response.text());
+        return { ok: false as const, error: "SEO generation failed. Please try again." };
+      }
+      const body = (await response.json()) as { choices?: { message?: { content?: string } }[] };
+      const parsed = JSON.parse(body.choices?.[0]?.message?.content || "{}") as GeneratedWallpaperSeo & {
+        primaryKeyword?: string;
+      };
+      const categoryId = categories.some((category) => category.id === parsed.categoryId)
+        ? parsed.categoryId
+        : categories[0].id;
+      const cleanTags = Array.from(
+        new Set((parsed.tags || []).map((tag) => tag.trim().toLowerCase()).filter((tag) => tag.length >= 2)),
+      ).slice(0, MAX_TAGS);
+      if (
+        typeof parsed.title !== "string" ||
+        typeof parsed.description !== "string" ||
+        typeof parsed.altText !== "string" ||
+        cleanTags.length < 12
+      ) {
+        return { ok: false as const, error: "SEO generation returned incomplete details. Please try again." };
+      }
+      return {
+        ok: true as const,
+        seo: {
+          title: parsed.title.trim().slice(0, 60),
+          description: parsed.description.trim().slice(0, 280),
+          tags: cleanTags,
+          altText: parsed.altText.trim().slice(0, 180),
+          categoryId,
+        } satisfies GeneratedWallpaperSeo,
+      };
+    } catch (error) {
+      console.error("[ops-upload] SEO generation", error);
+      return { ok: false as const, error: "SEO generation failed. Please try again." };
+    }
+  });
+
 export const uploadOpsWallpaper = createServerFn({ method: "POST" })
   .middleware([authMiddleware])
   .validator((input: unknown) => {
@@ -131,6 +253,7 @@ export const uploadOpsWallpaper = createServerFn({ method: "POST" })
     const sql = await requireAdmin(context.userId);
     const title = formString(data, "title");
     const description = formString(data, "description").slice(0, 280);
+    const altText = formString(data, "altText").slice(0, 180) || title;
     const categoryId = formString(data, "categoryId");
     const tagNames = parseTags(data);
     if (title.length < 2 || title.length > 60) return { ok: false as const, error: "title" };
@@ -193,7 +316,7 @@ export const uploadOpsWallpaper = createServerFn({ method: "POST" })
       [
         wallpaperId, title, description, categoryId, width, height, originalBytes,
         format, aspectLabel(width, height), formDevice(data, width, height), fileSha,
-        sourceSha, slug, title,
+        sourceSha, slug, altText,
       ],
     );
 
