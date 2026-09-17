@@ -1,5 +1,5 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { Check, Cloud, Sparkles, Upload } from "lucide-react";
+import { AlertTriangle, Check, Cloud, RotateCcw, Sparkles, Upload } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -7,7 +7,7 @@ import { encodePlate } from "@/lib/encode-plate";
 import { getBearerToken } from "@/lib/auth/client";
 import { sha256Blob } from "@/lib/hash";
 import { inferDeviceType, type DeviceType } from "@/lib/device";
-import { generateWallpaperSeo, getOpsUploadMeta, uploadOpsWallpaper } from "@/lib/server/ops-upload";
+import { checkWallpaperSeoConflicts, generateWallpaperSeo, getOpsUploadMeta, uploadOpsWallpaper, type SeoConflict, type SeoField } from "@/lib/server/ops-upload";
 import type { Category } from "@/lib/types";
 
 export const Route = createFileRoute("/ops/upload")({ component: OpsUploadPage });
@@ -58,6 +58,8 @@ function OpsUploadPage() {
   const [generatingSeo, setGeneratingSeo] = useState(false);
   const [seoPreview, setSeoPreview] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
+  const [conflicts, setConflicts] = useState<SeoConflict[]>([]);
+  const [confirmedConflicts, setConfirmedConflicts] = useState(false);
 
   useEffect(() => {
     void getOpsUploadMeta()
@@ -96,7 +98,7 @@ function OpsUploadPage() {
     }
   }
 
-  async function generateSeo() {
+  async function generateSeo(field: SeoField = "all") {
     if (!encoded?.ok) {
       setMessage("Choose a wallpaper before generating SEO.");
       return;
@@ -112,22 +114,27 @@ function OpsUploadPage() {
           description,
           tags,
           altText,
+          primaryKeyword,
           categoryId,
           deviceType,
           width: encoded.plate.width,
           height: encoded.plate.height,
+          field,
         },
       });
       if (!result.ok) {
         setMessage(result.error);
         return;
       }
-      setTitle(result.seo.title);
-      setDescription(result.seo.description);
-      setTags(result.seo.tags.join(", "));
-      setAltText(result.seo.altText);
-      setCategoryId(result.seo.categoryId);
+      if (field === "all" || field === "title") setTitle(result.seo.title);
+      if (field === "all" || field === "description") setDescription(result.seo.description);
+      if (field === "all" || field === "tags") setTags(result.seo.tags.join(", "));
+      if (field === "all" || field === "altText") setAltText(result.seo.altText);
+      if (field === "all" || field === "primaryKeyword") setPrimaryKeyword(result.seo.primaryKeyword);
+      if (field === "all") setCategoryId(result.seo.categoryId);
       setSeoPreview(true);
+      setConflicts([]);
+      setConfirmedConflicts(false);
     } catch (err) {
       console.error("[ops-upload] generate SEO", err);
       setMessage("SEO generation failed. Please try again.");
@@ -144,6 +151,16 @@ function OpsUploadPage() {
     if (title.trim().length < 2 || !categoryId) {
       setMessage("Add a title and category.");
       return;
+    }
+
+    if (!confirmedConflicts) {
+      const check = await checkWallpaperSeoConflicts({ data: { title, primaryKeyword } });
+      setConflicts(check.conflicts);
+      if (check.conflicts.length) {
+        setMessage("Review the possible duplicate SEO below, then publish again if it is intentional.");
+        setConfirmedConflicts(true);
+        return;
+      }
     }
 
     setBusy(true);
@@ -243,7 +260,7 @@ function OpsUploadPage() {
             type="button"
             className="w-full sm:w-auto"
             disabled={!encoded?.ok || busy || generatingSeo}
-            onClick={() => void generateSeo()}
+            onClick={() => void generateSeo("all")}
           >
             <Sparkles className="size-4" />
             {generatingSeo ? "Analyzing wallpaper…" : "Generate SEO"}
@@ -265,8 +282,9 @@ function OpsUploadPage() {
 
       <div className="grid gap-4 sm:grid-cols-2">
         <label className="text-sm text-muted sm:col-span-2">
-          Title
-          <Input className="mt-1" value={title} onChange={(e) => setTitle(e.target.value)} maxLength={60} />
+          <span className="flex items-center justify-between">Title <button type="button" className="inline-flex items-center gap-1 text-xs text-subtle hover:text-fg" disabled={generatingSeo || !encoded?.ok} onClick={() => void generateSeo("title")}><RotateCcw className="size-3" /> Regenerate</button></span>
+          <Input className="mt-1" value={title} onChange={(e) => { setTitle(e.target.value); setConfirmedConflicts(false); setConflicts([]); }} maxLength={60} />
+          <span className="mt-1 block text-xs text-subtle">{title.length}/60 · Aim for 4–10 descriptive words.</span>
         </label>
 
         <label className="text-sm text-muted">
@@ -294,22 +312,23 @@ function OpsUploadPage() {
         </label>
 
         <label className="text-sm text-muted sm:col-span-2">
-          Tags <span className="text-subtle">(comma separated)</span>
+          <span className="flex items-center justify-between">Tags <button type="button" className="inline-flex items-center gap-1 text-xs text-subtle hover:text-fg" disabled={generatingSeo || !encoded?.ok} onClick={() => void generateSeo("tags")}><RotateCcw className="size-3" /> Regenerate</button></span>
           <Input className="mt-1" value={tags} onChange={(e) => setTags(e.target.value)} placeholder="minimal, dark, motivational" />
         </label>
 
         <label className="text-sm text-muted sm:col-span-2">
-          Description
+          <span className="flex items-center justify-between">Description <button type="button" className="inline-flex items-center gap-1 text-xs text-subtle hover:text-fg" disabled={generatingSeo || !encoded?.ok} onClick={() => void generateSeo("description")}><RotateCcw className="size-3" /> Regenerate</button></span>
           <textarea
             className="mt-1 min-h-24 w-full rounded-md bg-surface p-3 text-sm text-fg shadow-[var(--shadow-border)]"
             value={description}
             onChange={(e) => setDescription(e.target.value)}
             maxLength={280}
           />
+          <span className="mt-1 block text-xs text-subtle">{description.length}/280 · One or two natural sentences.</span>
         </label>
 
         <label className="text-sm text-muted sm:col-span-2">
-          Alt Text
+          <span className="flex items-center justify-between">Alt Text <button type="button" className="inline-flex items-center gap-1 text-xs text-subtle hover:text-fg" disabled={generatingSeo || !encoded?.ok} onClick={() => void generateSeo("altText")}><RotateCcw className="size-3" /> Regenerate</button></span>
           <textarea
             className="mt-1 min-h-20 w-full rounded-md bg-surface p-3 text-sm text-fg shadow-[var(--shadow-border)]"
             value={altText}
@@ -320,16 +339,23 @@ function OpsUploadPage() {
         </label>
 
         <label className="text-sm text-muted sm:col-span-2">
-          Primary Keyword
+          <span className="flex items-center justify-between">Primary Keyword <button type="button" className="inline-flex items-center gap-1 text-xs text-subtle hover:text-fg" disabled={generatingSeo || !encoded?.ok} onClick={() => void generateSeo("primaryKeyword")}><RotateCcw className="size-3" /> Regenerate</button></span>
           <Input
             className="mt-1"
             value={primaryKeyword}
-            onChange={(e) => setPrimaryKeyword(e.target.value)}
+            onChange={(e) => { setPrimaryKeyword(e.target.value); setConfirmedConflicts(false); setConflicts([]); }}
             maxLength={80}
             placeholder="e.g. minimalist mountain wallpaper"
           />
         </label>
       </div>
+
+      <div className="rounded-xl bg-elevated p-4 text-sm">
+        <p className="font-medium text-fg">SEO quality: {title.trim() && description.trim() && altText.trim() && primaryKeyword.trim() && tags.split(",").filter(Boolean).length >= 8 ? "Good" : "Needs Review"}</p>
+        <p className="mt-1 text-muted">Complete, relevant metadata is enough—no artificial word count or keyword repetition is required.</p>
+      </div>
+
+      {conflicts.length ? <div className="rounded-xl border border-amber-500/40 bg-amber-500/10 p-4" role="alert"><p className="flex items-center gap-2 font-medium text-fg"><AlertTriangle className="size-4" /> Possible duplicate SEO</p>{conflicts.map((conflict) => <p key={`${conflict.kind}-${conflict.wallpaperId}`} className="mt-2 text-sm text-muted">{conflict.message}</p>)}</div> : null}
 
       {message ? <p className="text-sm text-muted">{message}</p> : null}
 

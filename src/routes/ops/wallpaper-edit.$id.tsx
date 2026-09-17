@@ -1,5 +1,6 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
+import { AlertTriangle, RotateCcw, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -8,6 +9,7 @@ import {
   type OpsWallpaperEditData,
 } from "@/lib/server/ops-wallpaper-edit";
 import type { Category } from "@/lib/types";
+import { checkWallpaperSeoConflicts, generateWallpaperSeo, type SeoConflict, type SeoField } from "@/lib/server/ops-upload";
 
 export const Route = createFileRoute("/ops/wallpaper-edit/$id")({ component: EditWallpaperPage });
 
@@ -29,6 +31,9 @@ function EditWallpaperPage() {
   const [tags, setTags] = useState("");
   const [altText, setAltText] = useState("");
   const [primaryKeyword, setPrimaryKeyword] = useState("");
+  const [generatingSeo, setGeneratingSeo] = useState(false);
+  const [conflicts, setConflicts] = useState<SeoConflict[]>([]);
+  const [confirmedConflicts, setConfirmedConflicts] = useState(false);
 
   useEffect(() => {
     setLoading(true);
@@ -73,7 +78,16 @@ function EditWallpaperPage() {
       .split(",")
       .map((tag) => tag.trim())
       .filter(Boolean)
-      .slice(0, 8);
+      .slice(0, 18);
+    if (!confirmedConflicts) {
+      const check = await checkWallpaperSeoConflicts({ data: { title, primaryKeyword, excludeWallpaperId: id } });
+      setConflicts(check.conflicts);
+      if (check.conflicts.length) {
+        setMessage("Review the possible duplicate SEO, then save again if it is intentional.");
+        setConfirmedConflicts(true);
+        return;
+      }
+    }
     setSaving(true);
     setMessage("");
     try {
@@ -114,6 +128,43 @@ function EditWallpaperPage() {
     }
   }
 
+  async function imageDataUrl(): Promise<string> {
+    if (!wallpaper?.thumbnailUrl) throw new Error("No image is available for analysis.");
+    const response = await fetch(wallpaper.thumbnailUrl);
+    if (!response.ok) throw new Error("The wallpaper image could not be loaded.");
+    const blob = await response.blob();
+    return await new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(String(reader.result));
+      reader.onerror = () => reject(reader.error);
+      reader.readAsDataURL(blob);
+    });
+  }
+
+  async function generateSeo(field: SeoField = "all") {
+    if (!wallpaper) return;
+    setGeneratingSeo(true);
+    setMessage("");
+    try {
+      const result = await generateWallpaperSeo({ data: {
+        imageDataUrl: await imageDataUrl(), title, description, tags, altText, primaryKeyword,
+        categoryId, deviceType, width: wallpaper.width, height: wallpaper.height, field,
+      } });
+      if (!result.ok) { setMessage(result.error); return; }
+      if (field === "all" || field === "title") setTitle(result.seo.title);
+      if (field === "all" || field === "description") setDescription(result.seo.description);
+      if (field === "all" || field === "tags") setTags(result.seo.tags.join(", "));
+      if (field === "all" || field === "altText") setAltText(result.seo.altText);
+      if (field === "all" || field === "primaryKeyword") setPrimaryKeyword(result.seo.primaryKeyword);
+      if (field === "all") setCategoryId(result.seo.categoryId);
+      setConflicts([]);
+      setConfirmedConflicts(false);
+      setMessage(field === "all" ? "SEO fields generated. Review and save when ready." : "Field regenerated. Review and save when ready.");
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "SEO generation failed. Please try again.");
+    } finally { setGeneratingSeo(false); }
+  }
+
   return (
     <div className="mx-auto max-w-3xl space-y-6">
       <div className="flex flex-wrap items-start justify-between gap-3">
@@ -142,12 +193,13 @@ function EditWallpaperPage() {
         </div>
 
         <div className="space-y-4">
+          <Button type="button" className="w-full" disabled={generatingSeo || !wallpaper.thumbnailUrl} onClick={() => void generateSeo("all")}><Sparkles className="size-4" />{generatingSeo ? "Analyzing wallpaper…" : "Generate SEO"}</Button>
           <label className="block text-sm text-muted">
-            Title
+            <span className="flex items-center justify-between">Title <button type="button" disabled={generatingSeo} onClick={() => void generateSeo("title")} className="inline-flex items-center gap-1 text-xs text-subtle hover:text-fg"><RotateCcw className="size-3" /> Regenerate</button></span>
             <Input
               className="mt-1 bg-surface"
               value={title}
-              onChange={(e) => setTitle(e.target.value)}
+              onChange={(e) => { setTitle(e.target.value); setConfirmedConflicts(false); setConflicts([]); }}
               maxLength={60}
               required
             />
@@ -155,7 +207,7 @@ function EditWallpaperPage() {
           </label>
 
           <label className="block text-sm text-muted">
-            Description
+            <span className="flex items-center justify-between">Description <button type="button" disabled={generatingSeo} onClick={() => void generateSeo("description")} className="inline-flex items-center gap-1 text-xs text-subtle hover:text-fg"><RotateCcw className="size-3" /> Regenerate</button></span>
             <textarea
               className="mt-1 min-h-28 w-full resize-y rounded-[12px] bg-surface px-4 py-3 text-sm text-fg shadow-[var(--shadow-border)] outline-none placeholder:text-subtle focus-visible:ring-2 focus-visible:ring-ring"
               value={description}
@@ -197,7 +249,7 @@ function EditWallpaperPage() {
           </div>
 
           <label className="block text-sm text-muted">
-            Alt Text
+            <span className="flex items-center justify-between">Alt Text <button type="button" disabled={generatingSeo} onClick={() => void generateSeo("altText")} className="inline-flex items-center gap-1 text-xs text-subtle hover:text-fg"><RotateCcw className="size-3" /> Regenerate</button></span>
             <textarea
               className="mt-1 min-h-20 w-full resize-y rounded-[12px] bg-surface px-4 py-3 text-sm text-fg shadow-[var(--shadow-border)] outline-none placeholder:text-subtle focus-visible:ring-2 focus-visible:ring-ring"
               value={altText}
@@ -209,11 +261,11 @@ function EditWallpaperPage() {
           </label>
 
           <label className="block text-sm text-muted">
-            Primary Keyword
+            <span className="flex items-center justify-between">Primary Keyword <button type="button" disabled={generatingSeo} onClick={() => void generateSeo("primaryKeyword")} className="inline-flex items-center gap-1 text-xs text-subtle hover:text-fg"><RotateCcw className="size-3" /> Regenerate</button></span>
             <Input
               className="mt-1 bg-surface"
               value={primaryKeyword}
-              onChange={(e) => setPrimaryKeyword(e.target.value)}
+              onChange={(e) => { setPrimaryKeyword(e.target.value); setConfirmedConflicts(false); setConflicts([]); }}
               maxLength={80}
               placeholder="e.g. minimalist mountain wallpaper"
             />
@@ -237,16 +289,19 @@ function EditWallpaperPage() {
             </label>
 
             <label className="block text-sm text-muted">
-              Tags
+              <span className="flex items-center justify-between">Tags <button type="button" disabled={generatingSeo} onClick={() => void generateSeo("tags")} className="inline-flex items-center gap-1 text-xs text-subtle hover:text-fg"><RotateCcw className="size-3" /> Regenerate</button></span>
               <Input
                 className="mt-1 bg-surface"
                 value={tags}
                 onChange={(e) => setTags(e.target.value)}
                 placeholder="minimal, blue, quote"
               />
-              <span className="mt-1 block text-xs text-subtle">Up to 8 tags, separated by commas.</span>
+              <span className="mt-1 block text-xs text-subtle">Up to 18 tags, separated by commas.</span>
             </label>
           </div>
+
+          <div className="rounded-xl bg-surface p-4 text-sm"><p className="font-medium text-fg">SEO quality: {title.trim() && description.trim() && altText.trim() && primaryKeyword.trim() && tags.split(",").filter(Boolean).length >= 8 ? "Good" : "Needs Review"}</p><p className="mt-1 text-muted">Use accurate, complete metadata; keyword repetition is not required.</p></div>
+          {conflicts.length ? <div className="rounded-xl border border-amber-500/40 bg-amber-500/10 p-4" role="alert"><p className="flex items-center gap-2 font-medium text-fg"><AlertTriangle className="size-4" /> Possible duplicate SEO</p>{conflicts.map((conflict) => <p key={`${conflict.kind}-${conflict.wallpaperId}`} className="mt-2 text-sm text-muted">{conflict.message}</p>)}</div> : null}
 
           <div className="flex flex-wrap items-center gap-3 pt-2">
             <Button onClick={() => void save()} disabled={saving || title.trim().length < 2 || !categoryId}>
