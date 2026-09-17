@@ -3,7 +3,15 @@ import { Breadcrumbs } from "@/components/breadcrumbs";
 import { WallpaperGrid } from "@/components/wallpaper-grid";
 import { CATEGORY_EDITORIAL } from "@/lib/category-content";
 import { t } from "@/lib/i18n/en";
-import { breadcrumbJsonLd, categoryMeta, categoryPath, itemListJsonLd, pageHead, wallpaperPath } from "@/lib/seo";
+import {
+  breadcrumbJsonLd,
+  categoryMeta,
+  categoryPath,
+  collectionPageJsonLd,
+  itemListJsonLd,
+  pageHead,
+  wallpaperPath,
+} from "@/lib/seo";
 import { getCategoryPage, getSeoRedirect } from "@/lib/server/api";
 
 type Search = { page?: number };
@@ -54,11 +62,16 @@ export const Route = createFileRoute("/wallpapers/$slug")({
         breadcrumbJsonLd([
           { name: "Home", path: "/" },
           { name: "Wallpapers", path: "/wallpapers" },
-          { name, path: categoryPath(params.slug) },
+          { name, path },
         ]),
+        collectionPageJsonLd({
+          name: `${name} wallpapers${pageBit}`,
+          description: meta.description,
+          path,
+        }),
         itemListJsonLd({
-          name: `${name} wallpapers`,
-          path: categoryPath(params.slug),
+          name: `${name} wallpapers${pageBit}`,
+          path,
           items: (loaderData?.items ?? []).map((w) => ({
             name: w.title,
             path: wallpaperPath(w.slug || w.id),
