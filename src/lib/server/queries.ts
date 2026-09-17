@@ -41,6 +41,7 @@ type DetailRow = CardRow & {
   creator_slug: string | null;
   seo_title?: string | null;
   seo_description?: string | null;
+  primary_keyword?: string | null;
   canonical_path?: string | null;
   robots?: string | null;
 };
@@ -200,7 +201,7 @@ export async function fetchDetail(id: string, userId: string | null): Promise<Wa
   const rows = await sql.query<DetailRow>(
     `select ${CARD_SELECT}, ${fav},
             w.description, w.width, w.height, w.file_size_bytes, w.format, w.creator_id,
-            w.seo_title, w.seo_description, w.canonical_path, w.robots,
+            w.seo_title, w.seo_description, w.primary_keyword, w.canonical_path, w.robots,
             (select a.path from wallpaper_assets a
               where a.wallpaper_id = w.id and a.kind = 'preview' limit 1) as preview_url,
             (select a.path from wallpaper_assets a
@@ -238,6 +239,7 @@ export async function fetchDetail(id: string, userId: string | null): Promise<Wa
     videoUrl: null,
     seoTitle: row.seo_title ?? null,
     seoDescription: row.seo_description ?? null,
+    primaryKeyword: row.primary_keyword ?? null,
     canonicalPath: row.canonical_path ?? null,
     robots: row.robots === "noindex" ? "noindex" : "index",
   };

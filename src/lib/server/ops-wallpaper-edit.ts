@@ -82,6 +82,8 @@ export type OpsWallpaperEditData = {
   status: "draft" | "pending" | "approved" | "rejected" | "removed";
   thumbnailUrl: string | null;
   tags: string[];
+  altText: string;
+  primaryKeyword: string;
 };
 
 export const getOpsWallpaperEdit = createServerFn({ method: "GET" })
@@ -99,9 +101,12 @@ export const getOpsWallpaperEdit = createServerFn({ method: "GET" })
       status: string;
       slug: string | null;
       thumbnail_url: string | null;
+      alt_text: string | null;
+      primary_keyword: string | null;
     }>(
       `select w.id, w.title, w.description, w.category_id, c.name as category_name,
               w.device_type, w.status, w.slug,
+              w.alt_text, w.primary_keyword,
               (select a.path from wallpaper_assets a
                 where a.wallpaper_id = w.id and a.kind = 'thumbnail' limit 1) as thumbnail_url
        from wallpapers w
@@ -137,6 +142,8 @@ export const getOpsWallpaperEdit = createServerFn({ method: "GET" })
         status,
         thumbnailUrl: resolveOwnedThumb(row.id, row.thumbnail_url, row.slug),
         tags: tagRows.map((t) => t.name),
+        altText: row.alt_text || "",
+        primaryKeyword: row.primary_keyword || "",
       },
     };
   });
@@ -152,6 +159,8 @@ export const updateOpsWallpaperMetadata = createServerFn({ method: "POST" })
       deviceType: z.enum(["phone", "tablet", "both"]),
       status: z.enum(["draft", "pending", "approved", "rejected", "removed"]),
       tags: z.array(z.string()).max(MAX_TAGS),
+      altText: z.string().trim().max(180),
+      primaryKeyword: z.string().trim().max(80),
     }),
   )
   .handler(async ({ context, data }) => {
@@ -168,9 +177,20 @@ export const updateOpsWallpaperMetadata = createServerFn({ method: "POST" })
            category_id = $3,
            device_type = $4,
            status = $5,
+           alt_text = $6,
+           primary_keyword = $7,
            updated_at = now()
-       where id = $6`,
-      [data.title.trim(), data.description.trim(), data.categoryId, data.deviceType, data.status, data.wallpaperId],
+       where id = $8`,
+      [
+        data.title.trim(),
+        data.description.trim(),
+        data.categoryId,
+        data.deviceType,
+        data.status,
+        data.altText.trim(),
+        data.primaryKeyword.trim(),
+        data.wallpaperId,
+      ],
     );
     await replaceTags(sql, data.wallpaperId, tags);
     return { ok: true as const };

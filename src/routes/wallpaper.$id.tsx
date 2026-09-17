@@ -62,6 +62,7 @@ export const Route = createFileRoute("/wallpaper/$id")({
       description: w.description,
       seoTitle: w.seoTitle,
       seoDescription: w.seoDescription,
+      primaryKeyword: w.primaryKeyword,
     });
     const path = w.canonicalPath || wallpaperPath(w.slug);
     return pageHead({

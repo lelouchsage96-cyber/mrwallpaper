@@ -27,6 +27,8 @@ function EditWallpaperPage() {
   const [deviceType, setDeviceType] = useState<"phone" | "tablet" | "both">("phone");
   const [status, setStatus] = useState<(typeof statuses)[number]>("approved");
   const [tags, setTags] = useState("");
+  const [altText, setAltText] = useState("");
+  const [primaryKeyword, setPrimaryKeyword] = useState("");
 
   useEffect(() => {
     setLoading(true);
@@ -42,6 +44,8 @@ function EditWallpaperPage() {
           setDeviceType(result.wallpaper.deviceType);
           setStatus(result.wallpaper.status);
           setTags(result.wallpaper.tags.join(", "));
+          setAltText(result.wallpaper.altText);
+          setPrimaryKeyword(result.wallpaper.primaryKeyword);
         }
       })
       .catch(() => setMessage("Could not load this wallpaper."))
@@ -82,6 +86,8 @@ function EditWallpaperPage() {
           deviceType,
           status,
           tags: cleanTags,
+          altText,
+          primaryKeyword,
         },
       });
       if (!result.ok) {
@@ -97,6 +103,8 @@ function EditWallpaperPage() {
         deviceType,
         status,
         tags: cleanTags,
+        altText: altText.trim(),
+        primaryKeyword: primaryKeyword.trim(),
       } : current);
       setMessage("Saved successfully.");
     } catch {
@@ -124,7 +132,7 @@ function EditWallpaperPage() {
           {wallpaper.thumbnailUrl ? (
             <img
               src={wallpaper.thumbnailUrl}
-              alt={title || wallpaper.title}
+              alt={altText || title || wallpaper.title}
               className="aspect-[9/16] w-full rounded-xl object-cover"
             />
           ) : (
@@ -187,6 +195,30 @@ function EditWallpaperPage() {
               </select>
             </label>
           </div>
+
+          <label className="block text-sm text-muted">
+            Alt Text
+            <textarea
+              className="mt-1 min-h-20 w-full resize-y rounded-[12px] bg-surface px-4 py-3 text-sm text-fg shadow-[var(--shadow-border)] outline-none placeholder:text-subtle focus-visible:ring-2 focus-visible:ring-ring"
+              value={altText}
+              onChange={(e) => setAltText(e.target.value)}
+              maxLength={180}
+              placeholder="Describe only what is visible in the wallpaper"
+            />
+            <span className="mt-1 block text-xs text-subtle">{altText.length}/180</span>
+          </label>
+
+          <label className="block text-sm text-muted">
+            Primary Keyword
+            <Input
+              className="mt-1 bg-surface"
+              value={primaryKeyword}
+              onChange={(e) => setPrimaryKeyword(e.target.value)}
+              maxLength={80}
+              placeholder="e.g. minimalist mountain wallpaper"
+            />
+            <span className="mt-1 block text-xs text-subtle">{primaryKeyword.length}/80</span>
+          </label>
 
           <div className="grid gap-4 sm:grid-cols-2">
             <label className="block text-sm text-muted">

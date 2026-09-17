@@ -254,6 +254,7 @@ export const uploadOpsWallpaper = createServerFn({ method: "POST" })
     const title = formString(data, "title");
     const description = formString(data, "description").slice(0, 280);
     const altText = formString(data, "altText").slice(0, 180) || title;
+    const primaryKeyword = formString(data, "primaryKeyword").slice(0, 80);
     const categoryId = formString(data, "categoryId");
     const tagNames = parseTags(data);
     if (title.length < 2 || title.length > 60) return { ok: false as const, error: "title" };
@@ -309,14 +310,14 @@ export const uploadOpsWallpaper = createServerFn({ method: "POST" })
       `insert into wallpapers
          (id, title, description, category_id, creator_id, access_type, status,
           width, height, file_size_bytes, format, aspect_ratio, device_type,
-          sha256, source_sha256, published_at, slug, alt_text, robots)
+          sha256, source_sha256, published_at, slug, alt_text, primary_keyword, robots)
        values
          ($1, $2, $3, $4, null, 'free', 'approved', $5, $6, $7, $8, $9, $10,
-          $11, $12, now(), $13, $14, 'index')`,
+          $11, $12, now(), $13, $14, $15, 'index')`,
       [
         wallpaperId, title, description, categoryId, width, height, originalBytes,
         format, aspectLabel(width, height), formDevice(data, width, height), fileSha,
-        sourceSha, slug, altText,
+        sourceSha, slug, altText, primaryKeyword,
       ],
     );
 

@@ -22,6 +22,7 @@ import { Route as ResetPasswordRouteImport } from './routes/reset-password'
 import { Route as RobotsDottxtRouteImport } from './routes/robots[.]txt'
 import { Route as SitemapDotxmlRouteImport } from './routes/sitemap[.]xml'
 import { Route as StudioRouteImport } from './routes/studio'
+import { Route as ApiAnalyticsRouteImport } from './routes/api/analytics'
 import { Route as ApiOpsOriginalRouteImport } from './routes/api/ops-original'
 import { Route as ApiStudioOriginalRouteImport } from './routes/api/studio-original'
 import { Route as AppIndexRouteImport } from './routes/app/index'
@@ -42,6 +43,7 @@ import { Route as CreatorSlugRouteImport } from './routes/creator.$slug'
 import { Route as LegalSlugRouteImport } from './routes/legal.$slug'
 import { Route as MediaSplatRouteImport } from './routes/media.$'
 import { Route as OpsIndexRouteImport } from './routes/ops/index'
+import { Route as OpsAnalyticsRouteImport } from './routes/ops/analytics'
 import { Route as OpsCreatorsRouteImport } from './routes/ops/creators'
 import { Route as OpsImportR2RouteImport } from './routes/ops/import-r2'
 import { Route as OpsReportsRouteImport } from './routes/ops/reports'
@@ -123,6 +125,11 @@ const SitemapDotxmlRoute = SitemapDotxmlRouteImport.update({
 const StudioRoute = StudioRouteImport.update({
   id: '/studio',
   path: '/studio',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiAnalyticsRoute = ApiAnalyticsRouteImport.update({
+  id: '/api/analytics',
+  path: '/api/analytics',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ApiOpsOriginalRoute = ApiOpsOriginalRouteImport.update({
@@ -225,6 +232,11 @@ const OpsIndexRoute = OpsIndexRouteImport.update({
   path: '/',
   getParentRoute: () => OpsRoute,
 } as any)
+const OpsAnalyticsRoute = OpsAnalyticsRouteImport.update({
+  id: '/analytics',
+  path: '/analytics',
+  getParentRoute: () => OpsRoute,
+} as any)
 const OpsCreatorsRoute = OpsCreatorsRouteImport.update({
   id: '/creators',
   path: '/creators',
@@ -325,6 +337,7 @@ export interface FileRoutesByFullPath {
   '/robots.txt': typeof RobotsDottxtRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/studio': typeof StudioRouteWithChildren
+  '/api/analytics': typeof ApiAnalyticsRoute
   '/api/ops-original': typeof ApiOpsOriginalRoute
   '/api/studio-original': typeof ApiStudioOriginalRoute
   '/app/creators': typeof AppCreatorsRoute
@@ -343,6 +356,7 @@ export interface FileRoutesByFullPath {
   '/creator/$slug': typeof CreatorSlugRoute
   '/legal/$slug': typeof LegalSlugRoute
   '/media/$': typeof MediaSplatRoute
+  '/ops/analytics': typeof OpsAnalyticsRoute
   '/ops/creators': typeof OpsCreatorsRoute
   '/ops/import-r2': typeof OpsImportR2Route
   '/ops/reports': typeof OpsReportsRoute
@@ -374,6 +388,7 @@ export interface FileRoutesByTo {
   '/reset-password': typeof ResetPasswordRoute
   '/robots.txt': typeof RobotsDottxtRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
+  '/api/analytics': typeof ApiAnalyticsRoute
   '/api/ops-original': typeof ApiOpsOriginalRoute
   '/api/studio-original': typeof ApiStudioOriginalRoute
   '/app/creators': typeof AppCreatorsRoute
@@ -392,6 +407,7 @@ export interface FileRoutesByTo {
   '/creator/$slug': typeof CreatorSlugRoute
   '/legal/$slug': typeof LegalSlugRoute
   '/media/$': typeof MediaSplatRoute
+  '/ops/analytics': typeof OpsAnalyticsRoute
   '/ops/creators': typeof OpsCreatorsRoute
   '/ops/import-r2': typeof OpsImportR2Route
   '/ops/reports': typeof OpsReportsRoute
@@ -427,6 +443,7 @@ export interface FileRoutesById {
   '/robots.txt': typeof RobotsDottxtRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/studio': typeof StudioRouteWithChildren
+  '/api/analytics': typeof ApiAnalyticsRoute
   '/api/ops-original': typeof ApiOpsOriginalRoute
   '/api/studio-original': typeof ApiStudioOriginalRoute
   '/app/creators': typeof AppCreatorsRoute
@@ -445,6 +462,7 @@ export interface FileRoutesById {
   '/creator/$slug': typeof CreatorSlugRoute
   '/legal/$slug': typeof LegalSlugRoute
   '/media/$': typeof MediaSplatRoute
+  '/ops/analytics': typeof OpsAnalyticsRoute
   '/ops/creators': typeof OpsCreatorsRoute
   '/ops/import-r2': typeof OpsImportR2Route
   '/ops/reports': typeof OpsReportsRoute
@@ -481,6 +499,7 @@ export interface FileRouteTypes {
     | '/robots.txt'
     | '/sitemap.xml'
     | '/studio'
+    | '/api/analytics'
     | '/api/ops-original'
     | '/api/studio-original'
     | '/app/creators'
@@ -499,6 +518,7 @@ export interface FileRouteTypes {
     | '/creator/$slug'
     | '/legal/$slug'
     | '/media/$'
+    | '/ops/analytics'
     | '/ops/creators'
     | '/ops/import-r2'
     | '/ops/reports'
@@ -530,6 +550,7 @@ export interface FileRouteTypes {
     | '/reset-password'
     | '/robots.txt'
     | '/sitemap.xml'
+    | '/api/analytics'
     | '/api/ops-original'
     | '/api/studio-original'
     | '/app/creators'
@@ -548,6 +569,7 @@ export interface FileRouteTypes {
     | '/creator/$slug'
     | '/legal/$slug'
     | '/media/$'
+    | '/ops/analytics'
     | '/ops/creators'
     | '/ops/import-r2'
     | '/ops/reports'
@@ -582,6 +604,7 @@ export interface FileRouteTypes {
     | '/robots.txt'
     | '/sitemap.xml'
     | '/studio'
+    | '/api/analytics'
     | '/api/ops-original'
     | '/api/studio-original'
     | '/app/creators'
@@ -600,6 +623,7 @@ export interface FileRouteTypes {
     | '/creator/$slug'
     | '/legal/$slug'
     | '/media/$'
+    | '/ops/analytics'
     | '/ops/creators'
     | '/ops/import-r2'
     | '/ops/reports'
@@ -635,6 +659,7 @@ export interface RootRouteChildren {
   RobotsDottxtRoute: typeof RobotsDottxtRoute
   SitemapDotxmlRoute: typeof SitemapDotxmlRoute
   StudioRoute: typeof StudioRouteWithChildren
+  ApiAnalyticsRoute: typeof ApiAnalyticsRoute
   ApiOpsOriginalRoute: typeof ApiOpsOriginalRoute
   ApiStudioOriginalRoute: typeof ApiStudioOriginalRoute
   CategorySlugRoute: typeof CategorySlugRoute
@@ -741,6 +766,13 @@ declare module '@tanstack/react-router' {
       path: '/studio'
       fullPath: '/studio'
       preLoaderRoute: typeof StudioRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/analytics': {
+      id: '/api/analytics'
+      path: '/api/analytics'
+      fullPath: '/api/analytics'
+      preLoaderRoute: typeof ApiAnalyticsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/ops-original': {
@@ -881,6 +913,13 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/ops/'
       preLoaderRoute: typeof OpsIndexRouteImport
+      parentRoute: typeof OpsRoute
+    }
+    '/ops/analytics': {
+      id: '/ops/analytics'
+      path: '/analytics'
+      fullPath: '/ops/analytics'
+      preLoaderRoute: typeof OpsAnalyticsRouteImport
       parentRoute: typeof OpsRoute
     }
     '/ops/creators': {
@@ -1038,6 +1077,7 @@ const AppRouteChildren: AppRouteChildren = {
 const AppRouteWithChildren = AppRoute._addFileChildren(AppRouteChildren)
 
 interface OpsRouteChildren {
+  OpsAnalyticsRoute: typeof OpsAnalyticsRoute
   OpsCreatorsRoute: typeof OpsCreatorsRoute
   OpsImportR2Route: typeof OpsImportR2Route
   OpsReportsRoute: typeof OpsReportsRoute
@@ -1050,6 +1090,7 @@ interface OpsRouteChildren {
 }
 
 const OpsRouteChildren: OpsRouteChildren = {
+  OpsAnalyticsRoute: OpsAnalyticsRoute,
   OpsCreatorsRoute: OpsCreatorsRoute,
   OpsImportR2Route: OpsImportR2Route,
   OpsReportsRoute: OpsReportsRoute,
@@ -1092,6 +1133,7 @@ const rootRouteChildren: RootRouteChildren = {
   RobotsDottxtRoute: RobotsDottxtRoute,
   SitemapDotxmlRoute: SitemapDotxmlRoute,
   StudioRoute: StudioRouteWithChildren,
+  ApiAnalyticsRoute: ApiAnalyticsRoute,
   ApiOpsOriginalRoute: ApiOpsOriginalRoute,
   ApiStudioOriginalRoute: ApiStudioOriginalRoute,
   CategorySlugRoute: CategorySlugRoute,

@@ -120,6 +120,7 @@ export function wallpaperMeta(opts: {
   description?: string | null;
   seoTitle?: string | null;
   seoDescription?: string | null;
+  primaryKeyword?: string | null;
 }): { title: string; description: string } {
   const device =
     opts.deviceType === "tablet"
@@ -128,9 +129,14 @@ export function wallpaperMeta(opts: {
         ? "phone and tablet wallpaper"
         : "phone wallpaper";
   const cleanTitle = normalizeMetaText(opts.title).replace(/^title\s*:\s*/i, "");
+  const primaryKeyword = opts.primaryKeyword ? normalizeMetaText(opts.primaryKeyword) : "";
+  const keywordTitle = primaryKeyword && !cleanTitle.toLowerCase().includes(primaryKeyword.toLowerCase())
+    ? `${cleanTitle} – ${primaryKeyword}`
+    : cleanTitle;
   const title = opts.seoTitle?.trim()
     ? normalizeMetaText(opts.seoTitle)
     : firstTitleThatFits([
+        `${keywordTitle} | ${brand.name}`,
         `${cleanTitle} – ${opts.categoryName} ${device} | ${brand.name}`,
         `${cleanTitle} ${device} | ${brand.name}`,
         `${cleanTitle} | ${brand.name}`,
@@ -141,7 +147,9 @@ export function wallpaperMeta(opts: {
     ? normalizeMetaText(opts.seoDescription)
     : extra
       ? normalizeMetaText(extra)
-      : `Download ${cleanTitle}, a free HD ${opts.categoryName.toLowerCase()} ${device} for iPhone, Android and iPad from ${brand.name}.`;
+      : primaryKeyword
+        ? `Download ${cleanTitle}, a ${primaryKeyword} for iPhone, Android and iPad from ${brand.name}.`
+        : `Download ${cleanTitle}, a free HD ${opts.categoryName.toLowerCase()} ${device} for iPhone, Android and iPad from ${brand.name}.`;
   return { title, description };
 }
 

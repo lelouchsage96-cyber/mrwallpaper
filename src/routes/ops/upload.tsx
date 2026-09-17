@@ -52,6 +52,7 @@ function OpsUploadPage() {
   const [categoryId, setCategoryId] = useState("");
   const [tags, setTags] = useState("");
   const [altText, setAltText] = useState("");
+  const [primaryKeyword, setPrimaryKeyword] = useState("");
   const [deviceType, setDeviceType] = useState<DeviceType>("phone");
   const [busy, setBusy] = useState(false);
   const [generatingSeo, setGeneratingSeo] = useState(false);
@@ -161,6 +162,7 @@ function OpsUploadPage() {
       fd.set("categoryId", categoryId);
       fd.set("tags", tags);
       fd.set("altText", altText.trim());
+      fd.set("primaryKeyword", primaryKeyword.trim());
       fd.set("deviceType", deviceType);
       fd.set("originalKey", originalKey);
       fd.set("preview", plate.previewBlob, "preview.jpg");
@@ -307,13 +309,24 @@ function OpsUploadPage() {
         </label>
 
         <label className="text-sm text-muted sm:col-span-2">
-          Alt text
+          Alt Text
           <textarea
             className="mt-1 min-h-20 w-full rounded-md bg-surface p-3 text-sm text-fg shadow-[var(--shadow-border)]"
             value={altText}
             onChange={(e) => setAltText(e.target.value)}
             maxLength={180}
             placeholder="Describe only what is visible in the wallpaper"
+          />
+        </label>
+
+        <label className="text-sm text-muted sm:col-span-2">
+          Primary Keyword
+          <Input
+            className="mt-1"
+            value={primaryKeyword}
+            onChange={(e) => setPrimaryKeyword(e.target.value)}
+            maxLength={80}
+            placeholder="e.g. minimalist mountain wallpaper"
           />
         </label>
       </div>

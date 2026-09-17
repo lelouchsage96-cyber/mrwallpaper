@@ -34,6 +34,7 @@ export type WallpaperDetail = WallpaperCard & {
   videoUrl: string | null;
   seoTitle: string | null;
   seoDescription: string | null;
+  primaryKeyword: string | null;
   canonicalPath: string | null;
   robots: string;
 };
