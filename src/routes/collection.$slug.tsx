@@ -4,7 +4,7 @@ import { Breadcrumbs } from "@/components/breadcrumbs";
 import { WallpaperGrid } from "@/components/wallpaper-grid";
 import { brand } from "@/lib/brand";
 import { t } from "@/lib/i18n/en";
-import { breadcrumbJsonLd, itemListJsonLd, pageHead, wallpaperPath } from "@/lib/seo";
+import { breadcrumbJsonLd, collectionPageJsonLd, itemListJsonLd, pageHead, wallpaperPath } from "@/lib/seo";
 import { getCollectionPage } from "@/lib/server/api";
 
 export const Route = createFileRoute("/collection/$slug")({
@@ -17,11 +17,12 @@ export const Route = createFileRoute("/collection/$slug")({
   head: ({ loaderData, params }) => {
     const name = loaderData?.collection?.name;
     const path = `/collection/${params.slug}`;
+    const description = name
+      ? `${loaderData?.collection?.description || name} — HD wallpapers from ${brand.name} for iPhone, Android, and iPad.`
+      : brand.positioning;
     return pageHead({
       title: name ? `${name} Wallpaper Collection | ${brand.name}` : brand.name,
-      description: name
-        ? `${loaderData?.collection?.description || name} — HD wallpapers from ${brand.name} for iPhone, Android, and iPad.`
-        : brand.positioning,
+      description,
       path,
       noindex: !name,
       jsonLd: name
@@ -31,6 +32,7 @@ export const Route = createFileRoute("/collection/$slug")({
               { name: "Wallpapers", path: "/wallpapers" },
               { name, path },
             ]),
+            collectionPageJsonLd({ name: `${name} wallpaper collection`, description, path }),
             itemListJsonLd({
               name: `${name} collection`,
               path,
@@ -51,13 +53,13 @@ function CollectionPage() {
   if (!collection) return null;
   return (
     <main className="mx-auto max-w-5xl px-4 pb-16 pt-4">
-      <a href="/app" className="mb-4 flex min-h-11 items-center gap-1 text-sm text-muted">
+      <a href="/" className="mb-4 flex min-h-11 items-center gap-1 text-sm text-muted">
         <ChevronLeft className="size-4" />
         {t.nav.home}
       </a>
       <Breadcrumbs
         items={[
-          { name: "Home", href: "/app" },
+          { name: "Home", href: "/" },
           { name: "Wallpapers", href: "/wallpapers" },
           { name: collection.name },
         ]}
