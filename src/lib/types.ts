@@ -26,6 +26,8 @@ export type WallpaperCard = {
 export type WallpaperDetail = WallpaperCard & {
   description: string;
   previewUrl: string;
+  previewWidth: number;
+  previewHeight: number;
   fileSizeBytes: number;
   format: string;
   tags: string[];
@@ -399,3 +401,4 @@ export type OpsSubmissionRow = {
   accessType: AccessType;
   createdAt: string;
 };
+

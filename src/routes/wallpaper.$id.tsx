@@ -83,8 +83,8 @@ export const Route = createFileRoute("/wallpaper/$id")({
           description: meta.description,
           image: w.previewUrl,
           path,
-          width: w.width,
-          height: w.height,
+          width: w.previewWidth,
+          height: w.previewHeight,
         }),
       ],
     });
@@ -359,3 +359,4 @@ function DetailsPage() {
     </div>
   );
 }
+

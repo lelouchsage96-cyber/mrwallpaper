@@ -10,6 +10,7 @@ import { sha256Buffer } from "./dupes";
 import { fetchCategories, uniqueWallpaperSlug } from "./queries";
 import { persistPlateMedia } from "./storage";
 import { MAX_ORIGINAL_BYTES } from "@/lib/upload-limit";
+import { buildWallpaperSeoFields, normalizeTag, trimAtWord } from "@/lib/wallpaper-seo";
 
 const MAX_PREVIEW = MAX_ORIGINAL_BYTES;
 const MAX_THUMB = 800_000;
@@ -97,7 +98,7 @@ function parseTags(form: FormData): string[] {
   const out: string[] = [];
   const seen = new Set<string>();
   for (const value of values) {
-    const name = value.trim().toLowerCase().replace(/\s+/g, " ").slice(0, 24);
+    const name = normalizeTag(value);
     if (name.length < 2) continue;
     const slug = slugifyTag(name);
     if (!slug || seen.has(slug)) continue;
@@ -179,7 +180,7 @@ export const generateWallpaperSeo = createServerFn({ method: "POST" })
           input: [
             {
               role: "developer",
-              content: [{ type: "input_text", text: `Create accurate SEO metadata for MrWallpaper.org. Analyze only what is actually visible. Never invent people, characters, brands, locations, objects, meanings, quotes, or Bible references. Preserve visible wording exactly when legible; otherwise do not guess. Use natural long-tail phrasing without stuffing. Title: 4-10 words. Description: 1-2 natural sentences. Tags: 12-18 distinct useful lowercase phrases without hashtags. Alt text: one natural sentence about the actual image and useful visible text. Primary keyword: one realistic specific search phrase. Category must be one supplied ID. ${supports4k ? "Mention 4K only if useful and accurate." : "Never claim or imply 4K."} Generate ${field === "all" ? "all fields" : `only the ${field} field; copy the supplied values for all other fields`}.` }],
+              content: [{ type: "input_text", text: `Create accurate SEO metadata for MrWallpaper.org. Analyze only what is actually visible. Never invent people, characters, brands, locations, objects, meanings, quotes, or Bible references. Preserve visible wording exactly when legible; otherwise do not guess. Use natural long-tail phrasing without stuffing. Title: 4-10 words. Description: 1-2 natural sentences. Tags: 12-18 distinct useful lowercase phrases without hashtags; every tag must be a complete phrase of 40 characters or fewer. Alt text: one natural sentence about the actual image and useful visible text. Primary keyword: one realistic specific search phrase. The title and description must naturally align with that keyword. Never repeat wallpaper wording, such as \"wallpaper phone wallpaper\". Category must be one supplied ID. ${supports4k ? "Mention 4K only if useful and accurate." : "Never claim or imply 4K."} Generate ${field === "all" ? "all fields" : `only the ${field} field; copy the supplied values for all other fields`}.` }],
             },
             {
               role: "user",
@@ -232,7 +233,7 @@ export const generateWallpaperSeo = createServerFn({ method: "POST" })
         ? parsed.categoryId
         : categories[0].id;
       const cleanTags = Array.from(
-        new Set((parsed.tags || []).map((tag) => tag.trim().toLowerCase()).filter((tag) => tag.length >= 2)),
+        new Set((parsed.tags || []).map(normalizeTag).filter((tag) => tag.length >= 2)),
       ).slice(0, MAX_TAGS);
       if (
         typeof parsed.title !== "string" ||
@@ -247,11 +248,11 @@ export const generateWallpaperSeo = createServerFn({ method: "POST" })
       return {
         ok: true as const,
         seo: {
-          title: parsed.title.trim().slice(0, 60),
-          description: parsed.description.trim().slice(0, 280),
+          title: trimAtWord(parsed.title, 60),
+          description: trimAtWord(parsed.description, 280),
           tags: cleanTags,
-          altText: parsed.altText.trim().slice(0, 180),
-          primaryKeyword: parsed.primaryKeyword.trim().slice(0, 80),
+          altText: trimAtWord(parsed.altText, 180),
+          primaryKeyword: buildWallpaperSeoFields({ title: parsed.title, description: parsed.description, primaryKeyword: parsed.primaryKeyword }).primaryKeyword,
           categoryId,
         } satisfies GeneratedWallpaperSeo,
       };
@@ -303,7 +304,7 @@ export const uploadOpsWallpaper = createServerFn({ method: "POST" })
     const title = formString(data, "title");
     const description = formString(data, "description").slice(0, 280);
     const altText = formString(data, "altText").slice(0, 180) || title;
-    const primaryKeyword = formString(data, "primaryKeyword").slice(0, 80);
+    const seo = buildWallpaperSeoFields({ title, description, primaryKeyword: formString(data, "primaryKeyword") });
     const categoryId = formString(data, "categoryId");
     const tagNames = parseTags(data);
     if (title.length < 2 || title.length > 60) return { ok: false as const, error: "title" };
@@ -359,14 +360,14 @@ export const uploadOpsWallpaper = createServerFn({ method: "POST" })
       `insert into wallpapers
          (id, title, description, category_id, creator_id, access_type, status,
           width, height, file_size_bytes, format, aspect_ratio, device_type,
-          sha256, source_sha256, published_at, slug, alt_text, primary_keyword, robots)
+          sha256, source_sha256, published_at, slug, alt_text, primary_keyword, seo_title, seo_description, robots)
        values
          ($1, $2, $3, $4, null, 'free', 'approved', $5, $6, $7, $8, $9, $10,
-          $11, $12, now(), $13, $14, $15, 'index')`,
+          $11, $12, now(), $13, $14, $15, $16, $17, 'index')`,
       [
         wallpaperId, title, description, categoryId, width, height, originalBytes,
         format, aspectLabel(width, height), formDevice(data, width, height), fileSha,
-        sourceSha, slug, altText, primaryKeyword,
+        sourceSha, slug, altText, seo.primaryKeyword, seo.seoTitle, seo.seoDescription,
       ],
     );
 
@@ -388,3 +389,4 @@ export const uploadOpsWallpaper = createServerFn({ method: "POST" })
     await attachTags(sql, wallpaperId, tagNames);
     return { ok: true as const, id: wallpaperId, slug };
   });
+

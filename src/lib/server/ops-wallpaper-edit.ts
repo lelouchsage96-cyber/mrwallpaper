@@ -6,6 +6,7 @@ import { parseDeviceType, type DeviceType } from "@/lib/device";
 import { resolveOwnedThumb } from "@/lib/media";
 import { fetchCategories } from "./queries";
 import type { Category } from "@/lib/types";
+import { buildWallpaperSeoFields, normalizeTag } from "@/lib/wallpaper-seo";
 
 const MAX_TAGS = 18;
 
@@ -41,7 +42,7 @@ function normalizeTags(values: string[]): string[] {
   const out: string[] = [];
   const seen = new Set<string>();
   for (const value of values) {
-    const name = value.trim().toLowerCase().replace(/\s+/g, " ").slice(0, 24);
+    const name = normalizeTag(value);
     if (name.length < 2) continue;
     const slug = slugifyTag(name);
     if (!slug || seen.has(slug)) continue;
@@ -176,6 +177,7 @@ export const updateOpsWallpaperMetadata = createServerFn({ method: "POST" })
       return { ok: false as const, error: "category" as const };
     }
     const tags = normalizeTags(data.tags);
+    const seo = buildWallpaperSeoFields({ title: data.title, description: data.description, primaryKeyword: data.primaryKeyword });
     await sql.query(
       `update wallpapers
        set title = $1,
@@ -185,8 +187,10 @@ export const updateOpsWallpaperMetadata = createServerFn({ method: "POST" })
            status = $5,
            alt_text = $6,
            primary_keyword = $7,
+           seo_title = $8,
+           seo_description = $9,
            updated_at = now()
-       where id = $8`,
+       where id = $10`,
       [
         data.title.trim(),
         data.description.trim(),
@@ -194,10 +198,13 @@ export const updateOpsWallpaperMetadata = createServerFn({ method: "POST" })
         data.deviceType,
         data.status,
         data.altText.trim(),
-        data.primaryKeyword.trim(),
+        seo.primaryKeyword,
+        seo.seoTitle,
+        seo.seoDescription,
         data.wallpaperId,
       ],
     );
     await replaceTags(sql, data.wallpaperId, tags);
     return { ok: true as const };
   });
+

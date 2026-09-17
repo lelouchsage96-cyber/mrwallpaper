@@ -21,6 +21,7 @@ import type {
   StudioDashboard,
   StudioPieceDetail,
 } from "@/lib/types";
+import { normalizeTag } from "@/lib/wallpaper-seo";
 
 const SLUG = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 const NOTIONAL_PER_DOWNLOAD = 0.04;
@@ -82,11 +83,7 @@ function parseTagNames(form: FormData): string[] {
   const out: string[] = [];
   const seen = new Set<string>();
   for (const item of items) {
-    const name = String(item ?? "")
-      .trim()
-      .toLowerCase()
-      .replace(/\s+/g, " ")
-      .slice(0, 24);
+    const name = normalizeTag(String(item ?? ""));
     if (name.length < 2) continue;
     const slug = slugifyTag(name);
     if (!slug || seen.has(slug)) continue;
@@ -745,3 +742,4 @@ export const updateStudioPlate = createServerFn({ method: "POST" })
   });
 
 export { notify, NOTIONAL_PER_DOWNLOAD };
+

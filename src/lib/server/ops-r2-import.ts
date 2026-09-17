@@ -7,6 +7,7 @@ import { mediaUrl, sniffImage } from "@/lib/media";
 import { slugify } from "@/lib/seo";
 import type { Category } from "@/lib/types";
 import { MAX_ORIGINAL_BYTES } from "@/lib/upload-limit";
+import { normalizeTag } from "@/lib/wallpaper-seo";
 import { sha256Buffer } from "./dupes";
 import { fetchCategories, uniqueWallpaperSlug } from "./queries";
 import { r2Config, r2Get, r2PublicUrlFor } from "./r2";
@@ -48,7 +49,7 @@ function parseTags(raw: string): string[] {
   const out: string[] = [];
   const seen = new Set<string>();
   for (const value of raw.split(",")) {
-    const name = value.trim().toLowerCase().replace(/\s+/g, " ").slice(0, 24);
+    const name = normalizeTag(value);
     if (name.length < 2) continue;
     const slug = slugifyTag(name);
     if (!slug || seen.has(slug)) continue;
@@ -297,3 +298,4 @@ export const importOpsR2Wallpaper = createServerFn({ method: "POST" })
     await attachTags(sql, wallpaperId, parseTags(data.tags ?? ""));
     return { ok: true as const, id: wallpaperId, slug };
   });
+

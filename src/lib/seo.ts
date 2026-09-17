@@ -1,5 +1,6 @@
 import { brand } from "@/lib/brand";
 import type { DeviceType } from "@/lib/device";
+import { buildWallpaperSeoFields } from "@/lib/wallpaper-seo";
 
 export const SITE_URL = brand.shareBaseUrl.replace(/\/$/, "");
 export const PAGE_SIZE = 24;
@@ -130,13 +131,11 @@ export function wallpaperMeta(opts: {
         : "phone wallpaper";
   const cleanTitle = normalizeMetaText(opts.title).replace(/^title\s*:\s*/i, "");
   const primaryKeyword = opts.primaryKeyword ? normalizeMetaText(opts.primaryKeyword) : "";
-  const keywordTitle = primaryKeyword && !cleanTitle.toLowerCase().includes(primaryKeyword.toLowerCase())
-    ? `${cleanTitle} – ${primaryKeyword}`
-    : cleanTitle;
+  const generated = buildWallpaperSeoFields({ title: cleanTitle, description: opts.description || "", primaryKeyword, brandName: brand.name });
   const title = opts.seoTitle?.trim()
     ? normalizeMetaText(opts.seoTitle)
     : firstTitleThatFits([
-        `${keywordTitle} | ${brand.name}`,
+        generated.seoTitle,
         `${cleanTitle} – ${opts.categoryName} ${device} | ${brand.name}`,
         `${cleanTitle} ${device} | ${brand.name}`,
         `${cleanTitle} | ${brand.name}`,
@@ -378,3 +377,4 @@ export function itemListJsonLd(opts: { name: string; path: string; items: { name
     })),
   };
 }
+

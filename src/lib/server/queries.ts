@@ -36,6 +36,8 @@ type DetailRow = CardRow & {
   file_size_bytes: number | string;
   creator_id: string | null;
   preview_url?: string | null;
+  preview_width?: number | string | null;
+  preview_height?: number | string | null;
   original_url?: string | null;
   creator_name: string | null;
   creator_slug: string | null;
@@ -204,6 +206,10 @@ export async function fetchDetail(id: string, userId: string | null): Promise<Wa
             w.seo_title, w.seo_description, w.primary_keyword, w.canonical_path, w.robots,
             (select a.path from wallpaper_assets a
               where a.wallpaper_id = w.id and a.kind = 'preview' limit 1) as preview_url,
+            (select a.width from wallpaper_assets a
+              where a.wallpaper_id = w.id and a.kind = 'preview' limit 1) as preview_width,
+            (select a.height from wallpaper_assets a
+              where a.wallpaper_id = w.id and a.kind = 'preview' limit 1) as preview_height,
             (select a.path from wallpaper_assets a
               where a.wallpaper_id = w.id and a.kind = 'original' limit 1) as original_url,
             cp.display_name as creator_name, cp.slug as creator_slug
@@ -229,6 +235,8 @@ export async function fetchDetail(id: string, userId: string | null): Promise<Wa
     ...mapCard(row, premiumOn),
     description: row.description,
     previewUrl: resolvePreview(row.id, row.preview_url, row.slug),
+    previewWidth: Number(row.preview_width) || Number(row.width),
+    previewHeight: Number(row.preview_height) || Number(row.height),
     width: Number(row.width),
     height: Number(row.height),
     fileSizeBytes: Number(row.file_size_bytes) || 0,
@@ -719,3 +727,4 @@ export async function loadPublicPlate(filename: string): Promise<{
     downloadName: `${slug}-${kind}.${ext}`,
   };
 }
+
