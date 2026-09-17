@@ -24,12 +24,12 @@ export const Route = createFileRoute("/pair/$slug")({
         : brand.positioning,
       path: `/pair/${params.slug}`,
       image: pair ? resolveHero(pair.lock.id, pair.lock.thumbnailUrl) : undefined,
-      imageAlt: pair?.lock.title,
+      imageAlt: pair?.lock.altText || pair?.lock.title,
       jsonLd: pair
         ? [
             breadcrumbJsonLd([
               { name: "Home", path: "/" },
-              { name: "Lock & Home", path: "/wallpapers" },
+              { name: "Wallpapers", path: "/wallpapers" },
               { name: pair.name, path: `/pair/${params.slug}` },
             ]),
             itemListJsonLd({
@@ -54,13 +54,13 @@ function PairPage() {
   if (!pair) return null;
   return (
     <main className="mx-auto max-w-5xl px-4 pb-16 pt-4">
-      <a href="/app" className="mb-4 flex min-h-11 items-center gap-1 text-sm text-muted">
+      <a href="/" className="mb-4 flex min-h-11 items-center gap-1 text-sm text-muted">
         <ChevronLeft className="size-4" />
         {t.nav.home}
       </a>
       <Breadcrumbs
         items={[
-          { name: "Home", href: "/app" },
+          { name: "Home", href: "/" },
           { name: "Wallpapers", href: "/wallpapers" },
           { name: pair.name },
         ]}
@@ -71,7 +71,12 @@ function PairPage() {
       <div className="mt-8 grid gap-10 sm:grid-cols-2">
         <div>
           <p className="mb-3 text-center text-xs tracking-widest text-subtle uppercase">{t.pairs.lock}</p>
-          <DevicePreview src={resolveHero(pair.lock.id, pair.lock.thumbnailUrl)} alt={pair.lock.title} mode="lock" hideToggle />
+          <DevicePreview
+            src={resolveHero(pair.lock.id, pair.lock.thumbnailUrl)}
+            alt={pair.lock.altText || pair.lock.title}
+            mode="lock"
+            hideToggle
+          />
           <a
             href={wallpaperPath(pair.lock.slug || pair.lock.id)}
             className="mt-4 flex h-11 items-center justify-center rounded-full bg-elevated text-sm text-fg"
@@ -81,7 +86,12 @@ function PairPage() {
         </div>
         <div>
           <p className="mb-3 text-center text-xs tracking-widest text-subtle uppercase">{t.pairs.home}</p>
-          <DevicePreview src={resolveHero(pair.home.id, pair.home.thumbnailUrl)} alt={pair.home.title} mode="home" hideToggle />
+          <DevicePreview
+            src={resolveHero(pair.home.id, pair.home.thumbnailUrl)}
+            alt={pair.home.altText || pair.home.title}
+            mode="home"
+            hideToggle
+          />
           <a
             href={wallpaperPath(pair.home.slug || pair.home.id)}
             className="mt-4 flex h-11 items-center justify-center rounded-full bg-elevated text-sm text-fg"
