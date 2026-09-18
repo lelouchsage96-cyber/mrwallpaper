@@ -338,6 +338,187 @@ export const checkWallpaperSeoConflicts = createServerFn({ method: "POST" })
     return { conflicts };
   });
 
+
+export const listMyWallpaperSubmissions = createServerFn({ method: "GET" })
+  .middleware([authMiddleware])
+  .handler(async ({ context }) => {
+    const { sql } = await requireActiveUser(context.userId);
+    const rows = await sql.query<{
+      id: string;
+      title: string;
+      status: string;
+      thumbnail_path: string;
+      published_wallpaper_id: string | null;
+      review_note: string | null;
+      created_at: string;
+    }>(
+      `select id, title, status, thumbnail_path, published_wallpaper_id, review_note,
+              created_at::text as created_at
+       from wallpaper_submissions
+       where user_id = $1
+       order by created_at desc
+       limit 30`,
+      [context.userId],
+    );
+    return {
+      items: rows.map((row) => ({
+        id: row.id,
+        title: row.title,
+        status: row.status,
+        thumbnailUrl: row.thumbnail_path,
+        publishedWallpaperId: row.published_wallpaper_id,
+        reviewNote: row.review_note,
+        createdAt: row.created_at,
+      })),
+    };
+  });
+
+export const checkCommunityWallpaperDuplicate = createServerFn({ method: "POST" })
+  .middleware([authMiddleware])
+  .validator((input: { fileSha256: string; sourceSha256: string }) => input)
+  .handler(async ({ context, data }) => {
+    const { sql } = await requireActiveUser(context.userId);
+    if (!SHA256.test(data.fileSha256) || !SHA256.test(data.sourceSha256)) {
+      return { duplicate: false as const };
+    }
+    const existing = await sql.query<{ id: string }>(
+      `select id from wallpapers
+       where sha256 = $1 or source_sha256 = $2
+       limit 1`,
+      [data.fileSha256, data.sourceSha256],
+    );
+    if (existing[0]) return { duplicate: true as const };
+    const pending = await sql.query<{ id: string }>(
+      `select id from wallpaper_submissions
+       where (sha256 = $1 or source_sha256 = $2)
+         and status in ('pending', 'approved')
+       limit 1`,
+      [data.fileSha256, data.sourceSha256],
+    );
+    return { duplicate: Boolean(pending[0]) };
+  });
+
+export const uploadCommunityWallpaperSubmission = createServerFn({ method: "POST" })
+  .middleware([authMiddleware])
+  .validator((input: unknown) => {
+    if (typeof FormData !== "undefined" && input instanceof FormData) return input;
+    throw new Error("Expected FormData");
+  })
+  .handler(async ({ context, data }) => {
+    const { sql } = await requireActiveUser(context.userId);
+    const rightsConfirmed = formString(data, "rightsConfirmed") === "true";
+    if (!rightsConfirmed) return { ok: false as const, error: "rights" as const };
+
+    const title = formString(data, "title");
+    const description = formString(data, "description").slice(0, 280);
+    const altText = formString(data, "altText").slice(0, 180) || title;
+    const primaryKeyword = formString(data, "primaryKeyword").slice(0, 80);
+    const categoryId = formString(data, "categoryId");
+    const tagNames = parseTags(data);
+    if (title.length < 2 || title.length > 60) return { ok: false as const, error: "title" as const };
+
+    const categories = await fetchCategories();
+    if (!categories.some((category) => category.id === categoryId)) {
+      return { ok: false as const, error: "category" as const };
+    }
+
+    const originalKey = formString(data, "originalKey");
+    if (!originalKey) return { ok: false as const, error: "image" as const };
+    const preview = await formBuffer(data, "preview", MAX_PREVIEW);
+    const thumb = await formBuffer(data, "thumb", MAX_THUMB);
+    if (!preview || !thumb) return { ok: false as const, error: "image" as const };
+
+    const width = Number(formString(data, "width")) || 0;
+    const height = Number(formString(data, "height")) || 0;
+    const originalBytes = Number(formString(data, "bytes")) || 0;
+    const mime = formString(data, "mime") || "image/jpeg";
+    const format = (formString(data, "format") || "jpg") as "jpg" | "png" | "webp";
+    const previewMeta = sniffImage(preview);
+    const thumbMeta = sniffImage(thumb);
+    if (width < 8 || height < 8 || !previewMeta || !thumbMeta) {
+      return { ok: false as const, error: "image" as const };
+    }
+
+    const fileSha = formHex(data, "fileSha256") ?? sha256Buffer(preview);
+    const sourceSha = formHex(data, "sourceSha256") ?? fileSha;
+    const existing = await sql.query<{ id: string }>(
+      `select id from wallpapers where sha256 = $1 or source_sha256 = $2 limit 1`,
+      [fileSha, sourceSha],
+    );
+    const existingSubmission = await sql.query<{ id: string }>(
+      `select id from wallpaper_submissions
+       where (sha256 = $1 or source_sha256 = $2)
+         and status in ('pending', 'approved')
+       limit 1`,
+      [fileSha, sourceSha],
+    );
+    if (existing[0] || existingSubmission[0]) {
+      return { ok: false as const, error: "duplicate" as const };
+    }
+
+    const submissionId = "s" + crypto.randomUUID().replaceAll("-", "").slice(0, 12);
+    const stored = await persistPlateMedia(sql, {
+      wallpaperId: submissionId,
+      original: Buffer.alloc(0),
+      originalKey,
+      originalBytes,
+      preview,
+      thumb,
+      mime,
+      format,
+      width,
+      height,
+      previewWidth: previewMeta.width,
+      previewHeight: previewMeta.height,
+      thumbWidth: thumbMeta.width,
+      thumbHeight: thumbMeta.height,
+    });
+
+    await sql.query(
+      `insert into wallpaper_submissions
+         (id, user_id, title, description, category_id, tags, alt_text, primary_keyword,
+          device_type, width, height, file_size_bytes, format, mime, sha256, source_sha256,
+          original_path, preview_path, thumbnail_path, preview_width, preview_height,
+          preview_bytes, thumbnail_width, thumbnail_height, thumbnail_bytes,
+          rights_confirmed, ai_generated, status, created_at, updated_at)
+       values
+         ($1, $2, $3, $4, $5, $6::jsonb, $7, $8, $9, $10, $11, $12, $13, $14,
+          $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25, $26, $27,
+          'pending', now(), now())`,
+      [
+        submissionId,
+        context.userId,
+        title,
+        description,
+        categoryId,
+        JSON.stringify(tagNames),
+        altText,
+        primaryKeyword,
+        formDevice(data, width, height),
+        width,
+        height,
+        originalBytes,
+        format,
+        mime,
+        fileSha,
+        sourceSha,
+        stored.originalPath,
+        stored.previewPath,
+        stored.thumbPath,
+        previewMeta.width,
+        previewMeta.height,
+        preview.length,
+        thumbMeta.width,
+        thumbMeta.height,
+        thumb.length,
+        true,
+        formString(data, "aiGenerated") === "true",
+      ],
+    );
+
+    return { ok: true as const, id: submissionId, status: "pending" as const };
+  });
+
 export const uploadOpsWallpaper = createServerFn({ method: "POST" })
   .middleware([authMiddleware])
   .validator((input: unknown) => {
