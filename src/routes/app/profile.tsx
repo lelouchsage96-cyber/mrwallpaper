@@ -8,7 +8,7 @@ import { MwMark } from "@/components/mw-mark";
 import { useTheme, type Theme } from "@/components/theme-provider";
 import { t } from "@/lib/i18n/en";
 import { brand } from "@/lib/brand";
-import { deleteAccountData, getPremiumStatus, listDownloads, listNotifications, updateNotificationPref } from "@/lib/server/api";
+import { deleteAccountData, listDownloads, listNotifications, updateNotificationPref } from "@/lib/server/api";
 import { getOpsSession } from "@/lib/server/ops";
 import type { DownloadHistoryItem } from "@/lib/types";
 import { cn } from "@/lib/utils";
@@ -25,7 +25,6 @@ function ProfilePage() {
   const [downloads, setDownloads] = useState<DownloadHistoryItem[]>([]);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [notifyOn, setNotifyOn] = useState(true);
-  const [isPremium, setIsPremium] = useState(false);
 
   const userId = user?.id ?? null;
 
@@ -44,9 +43,6 @@ function ProfilePage() {
 
   useEffect(() => {
     if (isPending || !userId) return;
-    void getPremiumStatus()
-      .then((s) => setIsPremium(s.isPremium))
-      .catch(() => undefined);
     void getOpsSession()
       .then((s) => setShowOps(s.canModerate || s.canClaim))
       .catch(() => undefined);
@@ -79,10 +75,7 @@ function ProfilePage() {
               </span>
               <div className="min-w-0">
                 <p className="truncate font-medium text-fg">{user.displayName ?? t.profile.guest}</p>
-                <p className="truncate text-sm text-muted">
-                  {user.primaryEmail}
-                  {isPremium ? ` · ${t.ops.premiumMember}` : ""}
-                </p>
+                <p className="truncate text-sm text-muted">{user.primaryEmail}</p>
               </div>
             </div>
           </div>
@@ -119,6 +112,16 @@ function ProfilePage() {
       {user ? (
         <section className="mt-8 space-y-2">
           <h2 className="font-display text-xl text-fg">{t.profile.settings}</h2>
+          <Link
+            to="/submit"
+            className="flex items-center justify-between rounded-xl bg-elevated px-4 py-4"
+          >
+            <span>
+              <span className="block text-sm font-medium text-fg">Submit a wallpaper</span>
+              <span className="text-xs text-muted">Share a wallpaper for manual review and free publication.</span>
+            </span>
+            <ChevronRight className="size-4 shrink-0 text-subtle" />
+          </Link>
           <Link
             to="/app/taste"
             className="flex items-center justify-between rounded-xl bg-elevated px-4 py-4"
