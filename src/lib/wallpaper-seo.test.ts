@@ -30,6 +30,19 @@ test("SEO title preserves apostrophes instead of producing It'S", () => {
   assert.equal(seo.seoTitle, "It's Never Luck It's Always God Wallpaper | Mr Wallpapers");
 });
 
+
+test("long SEO titles preserve the complete H1 instead of cutting a final word", () => {
+  const seo = buildWallpaperSeoFields({
+    title: "Blindfolded Classical Statue with Golden Sunburst Crown",
+    description: "A monochrome statue wears a blindfold and golden sunburst crown against a cloudy background.",
+    primaryKeyword: "blindfolded classical statue phone wallpaper",
+  });
+  assert.equal(
+    seo.seoTitle,
+    "Blindfolded Classical Statue with Golden Sunburst Crown | Mr Wallpapers",
+  );
+});
+
 test("SEO descriptions never cut a sentence at the preferred length", () => {
   const description =
     "A rubber duck wearing sunglasses floats through a dark stormy ocean filled with sharp fins. The wallpaper includes a motivational quote about staying calm when things get tense.";

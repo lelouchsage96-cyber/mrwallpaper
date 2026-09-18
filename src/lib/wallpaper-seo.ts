@@ -68,11 +68,16 @@ export function buildWallpaperSeoFields(input: {
 
   // Keep the search title anchored to the human-visible page title (H1).
   // This also preserves apostrophes/capitalization instead of turning "It's" into "It'S".
-  const subject = `${title || keyword}${wallpaperDescriptor(title, keyword)}`
+  const subjectWithDescriptor = `${title || keyword}${wallpaperDescriptor(title, keyword)}`
     .replace(/\bwallpaper\s+(?:phone\s+)?wallpaper\b/gi, "phone wallpaper")
     .replace(/\s+/g, " ")
     .trim();
-  const seoTitle = `${trimAtWord(subject, 70 - suffix.length)}${suffix}`;
+  const subject = title
+    ? subjectWithDescriptor.length + suffix.length <= 80
+      ? subjectWithDescriptor
+      : title
+    : trimAtWord(subjectWithDescriptor, 80 - suffix.length);
+  const seoTitle = `${subject}${suffix}`;
   const seoDescription = completeMetaDescription(
     description || `Download ${keyword || title} for phone and tablet.`,
   );
