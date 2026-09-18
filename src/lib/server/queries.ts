@@ -539,11 +539,11 @@ export async function featureFlags(): Promise<{
 }
 
 export async function marketplaceEnabled(): Promise<boolean> {
-  return (await featureFlags()).creator_marketplace_enabled;
+  return false;
 }
 
 export async function premiumEnabled(): Promise<boolean> {
-  return (await featureFlags()).premium_enabled;
+  return false;
 }
 
 export async function lookupWallpaperRef(key: string) {
