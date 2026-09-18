@@ -55,8 +55,6 @@ export function WallpaperCard({ wallpaper, onFavorite, priority, featureLabel, c
         </span>
       ) : badge ? (
         <span className="pointer-events-none absolute left-2.5 top-2.5 rounded-full bg-bg/70 px-2.5 py-1 text-[11px] font-medium tracking-wide text-fg backdrop-blur-sm">{badge}</span>
-      ) : wallpaper.accessType === "premium" ? (
-        <span className="pointer-events-none absolute left-2.5 top-2.5 rounded-full bg-bg/70 px-2.5 py-1 text-[11px] font-medium tracking-wide text-fg backdrop-blur-sm">{t.wallpaper.premiumBadge}</span>
       ) : null}
       <FavoriteButton wallpaperId={wallpaper.id} isFavorite={wallpaper.isFavorite} onChange={(next) => onFavorite?.(wallpaper.id, next)} className="absolute right-1.5 top-1.5 size-10" />
     </article>
