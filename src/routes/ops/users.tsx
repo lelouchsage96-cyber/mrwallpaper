@@ -74,36 +74,12 @@ function OpsUsersPage() {
               </span>
               <span className="min-w-0 flex-1 text-sm text-fg">
                 {u.name || u.email || u.userId}
-                {u.isPremium ? (
-                  <span className="ml-2 text-xs text-muted">{t.ops.premiumMember}</span>
-                ) : null}
                 {u.email ? <span className="mt-0.5 block text-xs text-muted">{u.email}</span> : null}
               </span>
               <div className="flex flex-wrap gap-2">
-                <button
-                  type="button"
-                  className={
-                    u.isPremium
-                      ? "h-11 rounded-md bg-fg px-3 text-sm text-bg"
-                      : "h-11 rounded-md bg-surface px-3 text-sm text-fg"
-                  }
-                  onClick={async () => {
-                    const next = !u.isPremium;
-                    const res = await updateOpsUser({ data: { userId: u.userId, premium: next } });
-                    if (res.ok) {
-                      setUsers((prev) =>
-                        prev ? prev.map((x) => (x.userId === u.userId ? { ...x, isPremium: next } : x)) : prev,
-                      );
-                    } else {
-                      setMsg(res.message ?? t.ops.failed);
-                    }
-                  }}
-                >
-                  {u.isPremium ? t.ops.revokePremium : t.ops.giftPremium}
-                </button>
                 <select
                   aria-label={t.ops.role}
-                  value={u.role}
+                  value={u.role === "creator" ? "user" : u.role}
                   className="h-11 rounded-md bg-surface px-3 text-sm text-fg"
                   onChange={async (e) => {
                     const role = e.target.value as OpsUserRow["role"];
@@ -118,7 +94,6 @@ function OpsUsersPage() {
                   }}
                 >
                   <option value="user">{t.ops.roleLabels.user}</option>
-                  <option value="creator">{t.ops.roleLabels.creator}</option>
                   <option value="moderator">{t.ops.roleLabels.moderator}</option>
                   <option value="admin">{t.ops.roleLabels.admin}</option>
                 </select>
