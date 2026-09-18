@@ -96,6 +96,20 @@ export const savePushSubscription = createServerFn({ method: "POST" })
     return { ok: true as const };
   });
 
+export const hasPushSubscription = createServerFn({ method: "POST" })
+  .middleware([authMiddleware])
+  .validator(z.object({ endpoint: z.string().min(10).max(2048) }))
+  .handler(async ({ context, data }) => {
+    const sql = await getSql();
+    const rows = await sql.query<{ n: number }>(
+      `select count(*)::int as n
+       from push_subscriptions
+       where user_id = $1 and endpoint = $2`,
+      [context.userId, data.endpoint],
+    );
+    return { active: (rows[0]?.n ?? 0) > 0 };
+  });
+
 export const removePushSubscription = createServerFn({ method: "POST" })
   .middleware([authMiddleware])
   .validator(z.object({ endpoint: z.string().min(10).max(2048) }))
