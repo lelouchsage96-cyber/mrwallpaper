@@ -385,7 +385,6 @@ export const updateWallpaperOps = createServerFn({ method: "POST" })
     z.object({
       wallpaperId: z.string(),
       status: z.enum(["draft", "pending", "approved", "rejected", "removed"]).optional(),
-      accessType: z.enum(["free", "premium"]).optional(),
       deviceType: z.enum(["phone", "tablet", "both"]).optional(),
       slug: z.string().max(80).optional(),
       seoTitle: z.string().max(70).optional(),
@@ -416,12 +415,6 @@ export const updateWallpaperOps = createServerFn({ method: "POST" })
           ]);
         }
       }
-    }
-    if (data.accessType) {
-      await sql.query(
-        `update wallpapers set access_type = $1, updated_at = now() where id = $2`,
-        [data.accessType, data.wallpaperId],
-      );
     }
     if (data.deviceType) {
       await sql.query(
@@ -510,7 +503,7 @@ export const setFeaturedSlot = createServerFn({ method: "POST" })
   .validator(
     z.object({
       wallpaperId: z.string(),
-      slot: z.enum(["wotd", "editors_choice", "premium_spotlight"]),
+      slot: z.enum(["wotd", "editors_choice"]),
     }),
   )
   .handler(async ({ context, data }) => {
@@ -610,14 +603,20 @@ export const getOpsSettings = createServerFn({ method: "GET" })
       `select key, value from app_settings`,
     );
     const map = new Map(rows.map((r) => [r.key, r.value]));
-    const flags = parseJson<FeatureFlags>(map.get("feature_flags"), {
+    const storedFlags = parseJson<FeatureFlags>(map.get("feature_flags"), {
       creator_marketplace_enabled: false,
       premium_enabled: false,
       rewarded_downloads_enabled: true,
       notifications_enabled: false,
       recommendations_enabled: true,
-      lifetime_purchase_enabled: true,
+      lifetime_purchase_enabled: false,
     });
+    const flags: FeatureFlags = {
+      ...storedFlags,
+      creator_marketplace_enabled: false,
+      premium_enabled: false,
+      lifetime_purchase_enabled: false,
+    };
     const mode = parseJson<string>(map.get("free_download_mode"), "direct");
     const backend = await storageBackend();
     const r2 = await r2Config();
@@ -665,8 +664,6 @@ export const updateOpsSettings = createServerFn({ method: "POST" })
       adsEnabled: z.boolean().optional(),
       rewardedDownloadsEnabled: z.boolean().optional(),
       dailyDownloadLimit: z.number().int().min(1).max(500).optional(),
-      creatorSharePercent: z.number().int().min(0).max(100).optional(),
-      platformSharePercent: z.number().int().min(0).max(100).optional(),
       featureFlags: z
         .object({
           creator_marketplace_enabled: z.boolean(),
@@ -707,13 +704,6 @@ export const updateOpsSettings = createServerFn({ method: "POST" })
   )
   .handler(async ({ context, data }) => {
     await requireOps(context.userId, true);
-    if (
-      data.creatorSharePercent !== undefined &&
-      data.platformSharePercent !== undefined &&
-      data.creatorSharePercent + data.platformSharePercent !== 100
-    ) {
-      return { ok: false as const, message: "Share percents must add up to 100." };
-    }
     const sql = await getSql();
     async function put(key: string, value: unknown) {
       await sql.query(
@@ -729,11 +719,14 @@ export const updateOpsSettings = createServerFn({ method: "POST" })
       await put("rewarded_downloads_enabled", data.rewardedDownloadsEnabled);
     }
     if (data.dailyDownloadLimit !== undefined) await put("daily_download_limit", data.dailyDownloadLimit);
-    if (data.creatorSharePercent !== undefined) await put("creator_share_percent", data.creatorSharePercent);
-    if (data.platformSharePercent !== undefined) {
-      await put("platform_share_percent", data.platformSharePercent);
+    if (data.featureFlags) {
+      await put("feature_flags", {
+        ...data.featureFlags,
+        creator_marketplace_enabled: false,
+        premium_enabled: false,
+        lifetime_purchase_enabled: false,
+      });
     }
-    if (data.featureFlags) await put("feature_flags", data.featureFlags);
     if (data.adsenseClient !== undefined) await put("adsense_client", data.adsenseClient.trim());
     if (data.adsenseBannerSlot !== undefined) await put("adsense_banner_slot", data.adsenseBannerSlot.trim());
     if (data.adsenseFeedSlot !== undefined) await put("adsense_feed_slot", data.adsenseFeedSlot.trim());
@@ -1024,9 +1017,8 @@ export const updateOpsUser = createServerFn({ method: "POST" })
   .validator(
     z.object({
       userId: z.string(),
-      role: z.enum(["user", "creator", "moderator", "admin"]).optional(),
+      role: z.enum(["user", "moderator", "admin"]).optional(),
       status: z.enum(["active", "suspended"]).optional(),
-      premium: z.boolean().optional(),
     }),
   )
   .handler(async ({ context, data }) => {
@@ -1045,31 +1037,6 @@ export const updateOpsUser = createServerFn({ method: "POST" })
       await sql.query(
         `update profiles set status = $1, updated_at = now() where user_id = $2`,
         [data.status, data.userId],
-      );
-    }
-    if (data.premium === true) {
-      await sql.query(
-        `update subscriptions set status = 'cancelled', expires_at = now()
-         where user_id = $1 and status = 'active'`,
-        [data.userId],
-      );
-      await sql.query(
-        `insert into subscriptions (id, user_id, product_id, status, store)
-         values ($1, $2, 'admin-gift', 'active', 'admin')`,
-        [crypto.randomUUID(), data.userId],
-      );
-      await notify(
-        data.userId,
-        "Premium",
-        "An operator opened premium on your account.",
-        "/app/profile",
-      );
-    }
-    if (data.premium === false) {
-      await sql.query(
-        `update subscriptions set status = 'cancelled', expires_at = now()
-         where user_id = $1 and status = 'active'`,
-        [data.userId],
       );
     }
     return { ok: true as const };
