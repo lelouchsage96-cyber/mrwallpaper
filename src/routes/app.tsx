@@ -22,7 +22,7 @@ function AppShell() {
   return (
     <div className="min-h-dvh bg-bg pt-[env(safe-area-inset-top)]">
       <DesktopNav />
-      <div className="mx-auto max-w-5xl pb-24 lg:max-w-7xl lg:pb-12"><Outlet /><div className="px-4 lg:px-6 xl:px-8"><SiteFooter /></div></div>
+      <div className="mx-auto max-w-5xl pb-24 lg:max-w-7xl lg:pb-12"><Outlet /><div className="px-4 lg:px-6 xl:px-8"><SiteFooter faqHref="/app#faq" /></div></div>
       <AppUpdatePrompt />
       <InstallAppPrompt />
       <BottomNav />

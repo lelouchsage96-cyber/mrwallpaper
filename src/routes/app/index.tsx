@@ -3,6 +3,7 @@ import { Bell, Search } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { ErrorState } from "@/components/empty-state";
 import { MobileSearchOverlay } from "@/components/smart-search";
+import { SiteFaq } from "@/components/site-faq";
 import { SectionHeader } from "@/components/section-header";
 import { Skeleton } from "@/components/ui/skeleton";
 import { WallpaperGrid, WallpaperGridSkeleton } from "@/components/wallpaper-grid";
@@ -163,6 +164,8 @@ function HomePage() {
           </section>
         </div>
       )}
+
+      <SiteFaq />
     </div>
   );
 }
