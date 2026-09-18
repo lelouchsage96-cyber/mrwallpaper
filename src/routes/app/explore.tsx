@@ -31,6 +31,17 @@ const sortChips: { id: Sort; label: string }[] = [
   { id: "favorites", label: t.explore.sort.favorites },
 ];
 
+const colorChips = [
+  { query: "black", label: "Black", swatch: "#111111" },
+  { query: "white", label: "White", swatch: "#f4f4f5" },
+  { query: "blue", label: "Blue", swatch: "#3b82f6" },
+  { query: "green", label: "Green", swatch: "#22c55e" },
+  { query: "red", label: "Red", swatch: "#ef4444" },
+  { query: "purple", label: "Purple", swatch: "#a855f7" },
+  { query: "pink", label: "Pink", swatch: "#ec4899" },
+  { query: "orange", label: "Orange", swatch: "#f97316" },
+] as const;
+
 function fallbackTerms(value: string): string[] {
   return [...new Set(value.toLowerCase().replace(/[^a-z0-9]+/g, " ").split(" ").map((term) => term.trim()).filter((term) => term.length >= 2 && !SEARCH_FILLER.has(term)))]
     .sort((a, b) => b.length - a.length).slice(0, 3);
@@ -180,7 +191,22 @@ function ExplorePage() {
   return (
     <div className="px-4 pt-5 lg:px-6 lg:pt-6 xl:px-8">
       <h1 className="font-display text-3xl text-fg lg:text-4xl">{t.explore.title}</h1>
-      <div className="mt-4 lg:hidden"><Input value={q} onChange={(event) => setQ(event.target.value)} placeholder={t.explore.placeholder} aria-label={t.explore.placeholder} type="search" className="text-base sm:text-sm" /></div>
+
+      <div className="sticky top-[env(safe-area-inset-top)] z-30 -mx-4 mt-4 border-y border-border/80 bg-bg/95 px-4 py-3 backdrop-blur-xl lg:hidden">
+        <Input
+          value={q}
+          onChange={(event) => setQ(event.target.value)}
+          placeholder={t.explore.placeholder}
+          aria-label={t.explore.placeholder}
+          type="search"
+          className="text-base sm:text-sm"
+        />
+        {categories.length > 0 ? (
+          <div className="mt-3 flex flex-nowrap gap-2 overflow-x-auto pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+            {categoryButtons}
+          </div>
+        ) : null}
+      </div>
 
       {!debounced && popular.length > 0 ? (
         <div className="mt-4 lg:hidden">
@@ -189,9 +215,33 @@ function ExplorePage() {
         </div>
       ) : null}
 
+      <div className="mt-5 lg:hidden">
+        <p className="mb-2 text-xs tracking-[0.16em] text-subtle uppercase">Browse by color</p>
+        <div className="flex gap-2 overflow-x-auto pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+          {colorChips.map((color) => (
+            <button
+              key={color.query}
+              type="button"
+              onClick={() => {
+                setQ(color.query);
+                setDebounced(color.query);
+                setSearch({ q: color.query, category: categorySlug, access, sort, device: "all" });
+              }}
+              className="flex h-10 shrink-0 items-center gap-2 rounded-full bg-elevated px-3 text-sm text-muted active:scale-[0.98]"
+            >
+              <span
+                className="size-4 rounded-full border border-white/20 shadow-sm"
+                style={{ backgroundColor: color.swatch }}
+                aria-hidden="true"
+              />
+              {color.label}
+            </button>
+          ))}
+        </div>
+      </div>
+
       <div className="lg:hidden">
         <div className="mt-4 flex flex-nowrap gap-2 overflow-x-auto pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">{deviceButtons}</div>
-        {categories.length > 0 ? <div className="mt-4 flex flex-nowrap gap-2 overflow-x-auto pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">{categoryButtons}</div> : null}
         <div className="mt-3 flex flex-nowrap gap-2 overflow-x-auto pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">{sortButtons}</div>
       </div>
 

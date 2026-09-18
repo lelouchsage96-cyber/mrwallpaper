@@ -1,5 +1,5 @@
 import { createFileRoute, notFound, redirect, useNavigate } from "@tanstack/react-router";
-import { ChevronDown, ChevronLeft, Download, Flag, Share2 } from "lucide-react";
+import { ChevronDown, ChevronLeft, Download, Flag, Maximize2, Share2 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { trackEvent } from "@/lib/analytics";
 import { showActionToast } from "@/components/action-toast";
@@ -9,6 +9,7 @@ import { DownloadSheet } from "@/components/download-sheet";
 import { EmptyState } from "@/components/empty-state";
 import { FavoriteButton } from "@/components/favorite-button";
 import { PairCard } from "@/components/pair-card";
+import { MobileWallpaperViewer } from "@/components/mobile-wallpaper-viewer";
 import { Button } from "@/components/ui/button";
 import { WallpaperGrid } from "@/components/wallpaper-grid";
 import { useCurrentUserState } from "@/lib/auth/use-current-user";
@@ -25,6 +26,7 @@ import {
 } from "@/lib/seo";
 import { getPremiumStatus, getSeoRedirect, getWallpaper, submitReport } from "@/lib/server/api";
 import { formatBytes, formatCount } from "@/lib/utils";
+import { rememberRecentlyViewed } from "@/lib/recently-viewed";
 
 export const Route = createFileRoute("/wallpaper/$id")({
   loader: async ({ params }) => {
@@ -103,6 +105,8 @@ function DetailsPage() {
   const [downloadOpen, setDownloadOpen] = useState(false);
   const [isPremium, setIsPremium] = useState(false);
   const [reportOpen, setReportOpen] = useState(false);
+  const [viewerOpen, setViewerOpen] = useState(false);
+  const [viewerDepth, setViewerDepth] = useState(0);
   const [mode, setMode] = useState<PreviewMode>(
     initial.pair && initial.wallpaper && initial.pair.home.id === initial.wallpaper.id ? "home" : "lock",
   );
@@ -119,6 +123,7 @@ function DetailsPage() {
 
   useEffect(() => {
     if (!initial.wallpaper) return;
+    rememberRecentlyViewed(initial.wallpaper);
     trackEvent("wallpaper_view", {
       wallpaperId: initial.wallpaper.id,
       categorySlug: initial.wallpaper.categorySlug,
@@ -161,7 +166,7 @@ function DetailsPage() {
   if (!wallpaper) return <EmptyState title={t.errors.notFound} />;
 
   return (
-    <div className="mx-auto max-w-7xl pb-16 pt-[env(safe-area-inset-top)]">
+    <div className="mx-auto max-w-7xl pb-32 pt-[env(safe-area-inset-top)] lg:pb-16">
       <div className="px-4 pt-3 lg:px-6 lg:pt-5">
         <div className="flex items-center justify-between">
           <button
@@ -210,6 +215,17 @@ function DetailsPage() {
             variant={wallpaper.deviceType === "tablet" ? "tablet" : "phone"}
             landscape={isLandscape(wallpaper.width, wallpaper.height)}
           />
+          <button
+            type="button"
+            onClick={() => {
+              setViewerDepth(0);
+              setViewerOpen(true);
+            }}
+            className="mx-auto mt-3 flex min-h-11 items-center gap-2 rounded-full bg-elevated px-4 text-sm font-medium text-fg lg:hidden"
+          >
+            <Maximize2 className="size-4" strokeWidth={1.75} />
+            View full screen
+          </button>
         </div>
 
         <div className="pt-6 lg:pt-4">
@@ -229,7 +245,7 @@ function DetailsPage() {
           </p>
           <p className="mt-1 text-sm text-subtle">{designedFor(wallpaper.deviceType)}</p>
 
-          <Button className="mt-5 w-full sm:w-auto sm:min-w-52" onClick={() => setDownloadOpen(true)}>
+          <Button className="mt-5 hidden w-full sm:w-auto sm:min-w-52 lg:inline-flex" onClick={() => setDownloadOpen(true)}>
             <Download className="size-4" />
             Download wallpaper
           </Button>
@@ -347,6 +363,65 @@ function DetailsPage() {
           <WallpaperGrid items={related} eager={2} />
         </section>
       ) : null}
+
+      <MobileWallpaperViewer
+        open={viewerOpen}
+        src={wallpaper.previewUrl}
+        alt={wallpaper.altText || wallpaper.title}
+        title={wallpaper.title}
+        wallpaperId={wallpaper.id}
+        isFavorite={wallpaper.isFavorite}
+        hasNext={related.length > 0}
+        hasPrevious={viewerDepth > 0}
+        onClose={() => {
+          setViewerOpen(false);
+          setViewerDepth(0);
+        }}
+        onNext={() => {
+          const next = related[0];
+          if (!next) return;
+          setViewerDepth((depth) => depth + 1);
+          void navigate({ to: "/wallpaper/$id", params: { id: next.slug || next.id } });
+        }}
+        onPrevious={() => {
+          if (viewerDepth <= 0) return;
+          setViewerDepth((depth) => Math.max(0, depth - 1));
+          window.history.back();
+        }}
+        onDownload={() => setDownloadOpen(true)}
+        onShare={() => void share()}
+        onFavoriteChange={(next) =>
+          setWallpaper((current) => (current ? { ...current, isFavorite: next } : current))
+        }
+      />
+
+      <div className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-bg/92 px-3 pb-[max(0.65rem,env(safe-area-inset-bottom))] pt-2.5 backdrop-blur-xl lg:hidden">
+        <div className="mx-auto flex max-w-md items-center gap-2">
+          <button
+            type="button"
+            onClick={() => {
+              setViewerDepth(0);
+              setViewerOpen(true);
+            }}
+            aria-label="View wallpaper full screen"
+            className="grid size-12 shrink-0 place-items-center rounded-full bg-elevated text-fg active:scale-[0.96]"
+          >
+            <Maximize2 className="size-5" strokeWidth={1.75} />
+          </button>
+          <FavoriteButton
+            wallpaperId={wallpaper.id}
+            isFavorite={wallpaper.isFavorite}
+            onChange={(next) =>
+              setWallpaper((current) => (current ? { ...current, isFavorite: next } : current))
+            }
+            className="size-12 shrink-0 bg-elevated backdrop-blur-none"
+          />
+          <Button className="h-12 min-w-0 flex-1 rounded-full" onClick={() => setDownloadOpen(true)}>
+            <Download className="size-4" />
+            Download 4K
+          </Button>
+        </div>
+      </div>
 
       <DownloadSheet
         open={downloadOpen}

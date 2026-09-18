@@ -1,10 +1,11 @@
+import { Link } from "@tanstack/react-router";
 import { Star } from "lucide-react";
 import { FavoriteButton } from "@/components/favorite-button";
 import { LazyImage } from "@/components/lazy";
 import { deviceBadge, isLandscape } from "@/lib/device";
 import { t } from "@/lib/i18n/en";
 import { cardSource, highQualityPreview } from "@/lib/wallpaper-card-media";
-import { wallpaperAlt, wallpaperPath } from "@/lib/seo";
+import { wallpaperAlt } from "@/lib/seo";
 import type { WallpaperCard as Card } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
@@ -17,7 +18,6 @@ export function WallpaperCard({ wallpaper, onFavorite, priority, featureLabel, c
 }) {
   const landscape = isLandscape(wallpaper.width, wallpaper.height);
   const badge = deviceBadge(wallpaper.deviceType);
-  const href = wallpaperPath(wallpaper.slug || wallpaper.id);
   const alt = wallpaperAlt({ title: wallpaper.title, categoryName: wallpaper.categoryName, deviceType: wallpaper.deviceType, altText: wallpaper.altText });
   const previewRatio = landscape ? "aspect-[16/10]" : wallpaper.deviceType === "tablet" ? "aspect-[3/4]" : "aspect-[9/16]";
   const source = cardSource(wallpaper);
@@ -27,7 +27,7 @@ export function WallpaperCard({ wallpaper, onFavorite, priority, featureLabel, c
 
   return (
     <article className={cn("group relative self-start overflow-hidden rounded-[16px] bg-elevated", landscape && "col-span-2", className)}>
-      <a href={href} className="block">
+      <Link to="/wallpaper/$id" params={{ id: wallpaper.slug || wallpaper.id }} className="block">
         <div className={cn("relative overflow-hidden", previewRatio)}>
           <LazyImage
             src={source}
@@ -47,7 +47,7 @@ export function WallpaperCard({ wallpaper, onFavorite, priority, featureLabel, c
             {wallpaper.categoryName ? <p className="mt-1 truncate text-xs text-white/70">{wallpaper.categoryName}</p> : null}
           </div>
         </div>
-      </a>
+      </Link>
       {featureLabel ? (
         <span className="pointer-events-none absolute left-2 top-2 inline-flex max-w-[calc(100%-3.75rem)] items-center gap-1 rounded-full bg-amber-400 px-2.5 py-1 text-[10px] font-semibold tracking-wide text-black shadow-sm sm:left-2.5 sm:top-2.5 sm:text-[11px]">
           <Star className="size-3 shrink-0" fill="currentColor" strokeWidth={1.7} />

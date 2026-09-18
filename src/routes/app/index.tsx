@@ -16,6 +16,7 @@ import { readLocalTaste } from "@/lib/taste";
 import type { HomePayload, WallpaperCard as Card } from "@/lib/types";
 import { categoryPreview, categoryPreviewFallback } from "@/lib/media";
 import { pageHead } from "@/lib/seo";
+import { readRecentlyViewed } from "@/lib/recently-viewed";
 
 const APP_HOME_TITLE = "Free HD & 4K Wallpapers for Phone & Tablet | Mr Wallpapers";
 const APP_HOME_DESCRIPTION = "Download free HD and 4K wallpapers for iPhone, Android, iPad and tablets. Explore aesthetic, motivational, Bible verse, anime, dark and more wallpapers.";
@@ -42,7 +43,12 @@ function HomePage() {
   const [error, setError] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
   const [searchOpen, setSearchOpen] = useState(false);
+  const [recentlyViewed, setRecentlyViewed] = useState<Card[]>([]);
   const userId = user?.id ?? null;
+
+  useEffect(() => {
+    setRecentlyViewed(readRecentlyViewed());
+  }, []);
 
   useEffect(() => {
     if (isPending) return;
@@ -122,6 +128,19 @@ function HomePage() {
             <SectionHeader title={t.home.fresh} to="/app/fresh" />
             <WallpaperGrid items={homeDisplay.fresh} onFavorite={onFavorite} eager={2} mobileLimit={8} feature={data.wotd ? { id: data.wotd.id, label: "Wallpaper of the Day" } : undefined} />
           </section>
+
+          {recentlyViewed.length > 0 ? (
+            <section>
+              <SectionHeader title="Recently viewed" />
+              <WallpaperGrid
+                items={recentlyViewed}
+                mobileLimit={6}
+                onFavorite={(id, next) =>
+                  setRecentlyViewed((current) => patchFav(current, id, next))
+                }
+              />
+            </section>
+          ) : null}
 
           {homeDisplay.tablet.length > 0 ? (
             <section><SectionHeader title="For iPad & Tablets" to="/app/tablet" /><WallpaperGrid items={homeDisplay.tablet} onFavorite={onFavorite} mobileLimit={4} /></section>
