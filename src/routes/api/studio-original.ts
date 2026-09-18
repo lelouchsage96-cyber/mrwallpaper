@@ -1,7 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { requireUserId } from "@/lib/auth/verify.server";
 import { getSql } from "@/lib/db";
-import { marketplaceEnabled } from "@/lib/server/queries";
 import { storeStudioOriginal, storeStudioPart } from "@/lib/server/storage";
 import { MAX_ORIGINAL_BYTES } from "@/lib/upload-limit";
 
@@ -20,13 +19,18 @@ export const Route = createFileRoute("/api/studio-original")({
         } catch {
           return Response.json({ error: "auth" }, { status: 401 });
         }
-        if (!(await marketplaceEnabled())) return Response.json({ error: "off" }, { status: 403 });
         const sql = await getSql();
-        const profile = await sql.query<{ status: string }>(
-          `select status from creator_profiles where user_id = $1 limit 1`,
+        await sql.query(
+          `insert into profiles (user_id) values ($1) on conflict (user_id) do nothing`,
           [userId],
         );
-        if (profile[0]?.status !== "approved") return Response.json({ error: "forbidden" }, { status: 403 });
+        const profile = await sql.query<{ status: string }>(
+          `select status from profiles where user_id = $1 limit 1`,
+          [userId],
+        );
+        if (profile[0]?.status !== "active") {
+          return Response.json({ error: "forbidden" }, { status: 403 });
+        }
 
         const mimeHeader = (request.headers.get("content-type") || "").split(";")[0].trim();
         const declared = (request.headers.get("x-file-type") || mimeHeader).split(";")[0].trim();
