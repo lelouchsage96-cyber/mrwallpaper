@@ -18,7 +18,7 @@ import type {
   OpsWallpaperRow,
 } from "@/lib/types";
 import { notify } from "./studio";
-import { notifyCollectionDrop, notifyWallpaperOfDay } from "./web-push-delivery";
+import { notifyCollectionDrop, notifyTasteSubscribersForWallpaper, notifyWallpaperOfDay } from "./web-push-delivery";
 import { resolveOwnedThumb } from "@/lib/media";
 import { mergeMediation, type AdNetworkConfig } from "@/lib/ads";
 import { parseDeviceType } from "@/lib/device";
@@ -1144,8 +1144,20 @@ export const reviewOpsSubmission = createServerFn({ method: "POST" })
   .handler(async ({ context, data }) => {
     await requireOps(context.userId);
     const sql = await getSql();
-    const rows = await sql.query<{ creator_id: string; title: string }>(
-      `select creator_id, title from wallpapers where id = $1 limit 1`,
+    const rows = await sql.query<{
+      creator_id: string;
+      title: string;
+      slug: string | null;
+      category_id: string;
+      category_name: string;
+      category_slug: string;
+    }>(
+      `select w.creator_id, w.title, w.slug, w.category_id,
+              c.name as category_name, c.slug as category_slug
+       from wallpapers w
+       join categories c on c.id = w.category_id
+       where w.id = $1
+       limit 1`,
       [data.id],
     );
     const row = rows[0];
@@ -1161,9 +1173,15 @@ export const reviewOpsSubmission = createServerFn({ method: "POST" })
         row.creator_id,
         "Live in the catalog",
         `${row.title} is available to download.`,
-        `/wallpaper/${data.id}`,
+        `/wallpaper/${row.slug || data.id}`,
         data.id,
       );
+      await notifyTasteSubscribersForWallpaper({
+        wallpaperId: data.id,
+        categoryId: row.category_id,
+        categoryName: row.category_name,
+        categorySlug: row.category_slug,
+      }).catch((error) => console.error("[push] approved creator wallpaper", error));
     } else {
       await sql.query(
         `update wallpapers
