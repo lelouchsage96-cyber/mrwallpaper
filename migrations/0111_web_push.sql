@@ -3,6 +3,25 @@
 alter table notifications
   add column if not exists dedupe_key text;
 
+with ranked_wotd as (
+  select
+    id,
+    'wotd:' || wallpaper_id as dedupe_key,
+    row_number() over (
+      partition by user_id, wallpaper_id
+      order by created_at desc, id desc
+    ) as rn
+  from notifications
+  where kind = 'wotd'
+    and wallpaper_id is not null
+    and dedupe_key is null
+)
+update notifications n
+   set dedupe_key = r.dedupe_key
+  from ranked_wotd r
+ where n.id = r.id
+   and r.rn = 1;
+
 create unique index if not exists notifications_user_dedupe_idx
   on notifications (user_id, dedupe_key)
   where dedupe_key is not null;
