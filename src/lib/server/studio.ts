@@ -22,6 +22,7 @@ import type {
   StudioPieceDetail,
 } from "@/lib/types";
 import { normalizeTag } from "@/lib/wallpaper-seo";
+import { sendPushToUser } from "./web-push-delivery";
 
 const SLUG = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 const NOTIONAL_PER_DOWNLOAD = 0.04;
@@ -143,6 +144,12 @@ async function notify(
      values ($1, $2, 'system', $3, $4, $5, $6)`,
     [crypto.randomUUID(), userId, title, body, href, wallpaperId],
   );
+  await sendPushToUser(userId, {
+    title,
+    body,
+    url: href,
+    tag: `system:${wallpaperId || href}:${Date.now()}`,
+  }).catch((error) => console.error("[push] system notification", error));
 }
 
 export const listCreators = createServerFn({ method: "GET" }).handler(

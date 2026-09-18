@@ -1,4 +1,4 @@
-const VERSION = "mrwallpapers-v17";
+const VERSION = "mrwallpapers-v18";
 const SHELL_CACHE = `${VERSION}-shell`;
 const RUNTIME_CACHE = `${VERSION}-runtime`;
 const APP_SHELL = ["/app", "/manifest.webmanifest", "/icon-192.png", "/icon-512.png", "/apple-touch-icon.png", "/favicon.ico"];
@@ -17,6 +17,75 @@ self.addEventListener("activate", (event) => {
     const keys = await caches.keys();
     await Promise.all(keys.filter((key) => key.startsWith("mrwallpapers-") && !key.startsWith(VERSION)).map((key) => caches.delete(key)));
     await self.clients.claim();
+  })());
+});
+
+self.addEventListener("push", (event) => {
+  let data = {};
+  try {
+    data = event.data ? event.data.json() : {};
+  } catch {
+    try {
+      data = { body: event.data ? event.data.text() : "" };
+    } catch {
+      data = {};
+    }
+  }
+
+  const title = data.title || "Mr Wallpapers";
+  const rawUrl = typeof data.url === "string" ? data.url : "/app";
+  let targetUrl = "/app";
+  try {
+    const resolved = new URL(rawUrl, self.location.origin);
+    if (resolved.origin === self.location.origin) {
+      targetUrl = resolved.pathname + resolved.search + resolved.hash;
+    }
+  } catch {}
+
+  const options = {
+    body: data.body || "A new wallpaper is ready.",
+    icon: "/icons/v11/icon-192.png?v=11",
+    badge: "/icons/v11/icon-192.png?v=11",
+    tag: data.tag || "mrwallpapers",
+    renotify: false,
+    data: { url: targetUrl },
+  };
+
+  event.waitUntil((async () => {
+    await self.registration.showNotification(title, options);
+    try {
+      if (self.navigator && typeof self.navigator.setAppBadge === "function") {
+        await self.navigator.setAppBadge(1);
+      }
+    } catch {}
+  })());
+});
+
+self.addEventListener("notificationclick", (event) => {
+  event.notification.close();
+  try {
+    if (self.navigator && typeof self.navigator.clearAppBadge === "function") {
+      void self.navigator.clearAppBadge();
+    }
+  } catch {}
+  const rawUrl = event.notification?.data?.url || "/app";
+  let target = new URL("/app", self.location.origin).href;
+  try {
+    const resolved = new URL(rawUrl, self.location.origin);
+    if (resolved.origin === self.location.origin) target = resolved.href;
+  } catch {}
+
+  event.waitUntil((async () => {
+    const windows = await self.clients.matchAll({ type: "window", includeUncontrolled: true });
+    for (const client of windows) {
+      if (!("focus" in client)) continue;
+      try {
+        if ("navigate" in client) await client.navigate(target);
+      } catch {}
+      await client.focus();
+      return;
+    }
+    if (self.clients.openWindow) await self.clients.openWindow(target);
   })());
 });
 

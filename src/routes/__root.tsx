@@ -61,7 +61,7 @@ const PWA_BOOT_SCRIPT = `
   try {
     window.addEventListener('beforeinstallprompt', function(event) { window.__mrWallpapersInstallPrompt = event; });
     window.addEventListener('appinstalled', function() { window.__mrWallpapersInstallPrompt = null; });
-    if ('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js?v=17', { scope: '/', updateViaCache: 'none' }).catch(function(){});
+    if ('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js?v=18', { scope: '/', updateViaCache: 'none' }).catch(function(){});
   } catch (error) {}
 })();`;
 

@@ -13,6 +13,7 @@ import { getOpsSession } from "@/lib/server/ops";
 import type { DownloadHistoryItem } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { DownloadHistoryList } from "@/components/download-history";
+import { removePushSubscription } from "@/lib/server/web-push-api";
 
 export const Route = createFileRoute("/app/profile")({ component: ProfilePage });
 
@@ -27,6 +28,19 @@ function ProfilePage() {
   const [isPremium, setIsPremium] = useState(false);
 
   const userId = user?.id ?? null;
+
+  async function clearDevicePush() {
+    if (typeof window === "undefined" || !("serviceWorker" in navigator)) return;
+    try {
+      const registration = await navigator.serviceWorker.ready;
+      const subscription = await registration.pushManager?.getSubscription();
+      if (!subscription) return;
+      await removePushSubscription({ data: { endpoint: subscription.endpoint } }).catch(() => undefined);
+      await subscription.unsubscribe().catch(() => undefined);
+    } catch {
+      // Signing out should still succeed if push cleanup is unavailable.
+    }
+  }
 
   useEffect(() => {
     if (isPending || !userId) return;
@@ -192,7 +206,10 @@ function ProfilePage() {
           <Button
             variant="secondary"
             className="w-full"
-            onClick={() => void signOut().catch(() => undefined)}
+            onClick={() => void (async () => {
+              await clearDevicePush();
+              await signOut().catch(() => undefined);
+            })()}
           >
             {t.auth.signOut}
           </Button>
@@ -205,6 +222,7 @@ function ProfilePage() {
                   variant="danger"
                   className="flex-1"
                   onClick={async () => {
+                    await clearDevicePush();
                     await deleteAccountData();
                     await signOut().catch(() => undefined);
                     void navigate({ to: "/app" });
