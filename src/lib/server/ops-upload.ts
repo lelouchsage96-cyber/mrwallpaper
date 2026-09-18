@@ -180,7 +180,7 @@ export const generateWallpaperSeo = createServerFn({ method: "POST" })
           input: [
             {
               role: "developer",
-              content: [{ type: "input_text", text: `Create accurate SEO metadata for MrWallpaper.org. Analyze only what is actually visible. Never invent people, characters, brands, locations, objects, meanings, quotes, or Bible references. Preserve visible wording exactly when legible; otherwise do not guess. Use natural long-tail phrasing without stuffing. Title: 4-10 words. Description: 1-2 natural sentences. Tags: 12-18 distinct useful lowercase phrases without hashtags; every tag must be a complete phrase of 40 characters or fewer. Alt text: one natural sentence about the actual image and useful visible text. Primary keyword: one realistic specific search phrase. The title and description must naturally align with that keyword. Never repeat wallpaper wording, such as \"wallpaper phone wallpaper\". Category must be one supplied ID. ${supports4k ? "Mention 4K only if useful and accurate." : "Never claim or imply 4K."} Generate ${field === "all" ? "all fields" : `only the ${field} field; copy the supplied values for all other fields`}.` }],
+              content: [{ type: "input_text", text: `Create accurate SEO metadata for MrWallpaper.org. Analyze only what is actually visible. Never invent people, characters, brands, locations, objects, meanings, quotes, or Bible references. Preserve visible wording exactly when legible; otherwise do not guess. Use natural long-tail phrasing without stuffing. Title: 4-10 words, human-readable, and closely aligned with the primary keyword so the visible page heading and search title describe the same main subject. If an important visible Bible reference, quote, person, or named subject is central to the search intent, keep it consistent across the title and primary keyword. Description: exactly one complete natural sentence, target 120-160 characters and never exceed 170 characters; it must finish with sentence punctuation and must never end as a fragment. Avoid filler such as "visible" unless it improves clarity. Tags: 12-18 distinct useful lowercase phrases without hashtags; every tag must be a complete phrase of 40 characters or fewer. Alt text: one natural sentence about the actual image and useful visible text. Primary keyword: one realistic specific search phrase that matches the title's main subject. Never repeat wallpaper wording, such as \"wallpaper phone wallpaper\". Category must be one supplied ID. ${supports4k ? "Mention 4K only if useful and accurate." : "Never claim or imply 4K."} Generate ${field === "all" ? "all fields" : `only the ${field} field; copy the supplied values for all other fields`}.` }],
             },
             {
               role: "user",
@@ -249,7 +249,11 @@ export const generateWallpaperSeo = createServerFn({ method: "POST" })
         ok: true as const,
         seo: {
           title: trimAtWord(parsed.title, 60),
-          description: trimAtWord(parsed.description, 280),
+          description: buildWallpaperSeoFields({
+            title: parsed.title,
+            description: parsed.description,
+            primaryKeyword: parsed.primaryKeyword,
+          }).seoDescription,
           tags: cleanTags,
           altText: trimAtWord(parsed.altText, 180),
           primaryKeyword: buildWallpaperSeoFields({ title: parsed.title, description: parsed.description, primaryKeyword: parsed.primaryKeyword }).primaryKeyword,
