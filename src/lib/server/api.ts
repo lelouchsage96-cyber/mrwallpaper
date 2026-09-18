@@ -20,7 +20,6 @@ import {
   fetchSitemapEntries,
   lookupWallpaperRef,
   marketplaceEnabled,
-  premiumEnabled,
   readSeoSettings,
 } from "./queries";
 import { DEVICE_HUBS, PAGE_SIZE } from "@/lib/seo";
@@ -60,11 +59,7 @@ async function settle<T>(label: string, task: Promise<T>, fallback: T): Promise<
   }
 }
 
-const PREMIUM_PLANS: PremiumPlan[] = [
-  { id: "monthly", label: "Monthly", period: "month", displayPrice: "$2.99", productId: "preview.monthly" },
-  { id: "yearly", label: "Yearly", period: "year", displayPrice: "$19.99", productId: "preview.yearly" },
-  { id: "lifetime", label: "Lifetime", period: "lifetime", displayPrice: "$39.99", productId: "preview.lifetime" },
-];
+const PREMIUM_PLANS: PremiumPlan[] = [];
 
 const emptyHome = (): HomePayload => ({
   wotd: null,
@@ -87,16 +82,8 @@ const emptyHome = (): HomePayload => ({
 });
 
 async function isPremiumUser(userId: string | null): Promise<boolean> {
-  if (!userId) return false;
-  const sql = await getSql();
-  const rows = await sql.query<{ ok: number }>(
-    `select 1 as ok from subscriptions
-     where user_id = $1 and status = 'active'
-       and (expires_at is null or expires_at > now())
-     limit 1`,
-    [userId],
-  );
-  return Boolean(rows[0]);
+  void userId;
+  return false;
 }
 
 async function readFlags(): Promise<FeatureFlags> {
@@ -104,14 +91,20 @@ async function readFlags(): Promise<FeatureFlags> {
   const raw = (
     await sql.query<{ value: unknown }>(`select value from app_settings where key = 'feature_flags' limit 1`)
   )[0]?.value;
-  return parseJson<FeatureFlags>(raw, {
+  const stored = parseJson<FeatureFlags>(raw, {
     creator_marketplace_enabled: false,
     premium_enabled: false,
     rewarded_downloads_enabled: false,
     notifications_enabled: true,
     recommendations_enabled: true,
-    lifetime_purchase_enabled: true,
+    lifetime_purchase_enabled: false,
   });
+  return {
+    ...stored,
+    creator_marketplace_enabled: false,
+    premium_enabled: false,
+    lifetime_purchase_enabled: false,
+  };
 }
 
 async function setting<T>(key: string, fallback: T): Promise<T> {
@@ -557,16 +550,7 @@ export const getPremiumStatus = createServerFn({ method: "GET" })
 export const activatePreviewPremium = createServerFn({ method: "POST" })
   .middleware([authMiddleware])
   .validator(z.object({ productId: z.string() }))
-  .handler(async ({ context, data }) => {
-    if (!(await premiumEnabled())) return { ok: false as const };
-    const sql = await getSql();
-    await sql.query(
-      `insert into subscriptions (id, user_id, product_id, status, store)
-       values ($1, $2, $3, 'active', 'preview')`,
-      [crypto.randomUUID(), context.userId, data.productId],
-    );
-    return { ok: true as const };
-  });
+  .handler(async () => ({ ok: false as const }));
 
 export const createAdSession = createServerFn({ method: "POST" })
   .middleware([authMiddleware])
