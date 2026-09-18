@@ -1,6 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { ArrowRight } from "lucide-react";
 import { SiteFooter } from "@/components/site-footer";
+import { SiteFaq } from "@/components/site-faq";
 import { WallpaperGrid } from "@/components/wallpaper-grid";
 import { HomeLibraryShowcase } from "@/components/home-library-showcase";
 import { MwMark } from "@/components/mw-mark";
@@ -284,6 +285,8 @@ function HomePage() {
           </ul>
         </section>
       ) : null}
+
+      <SiteFaq />
 
       <SiteFooter />
     </main>
