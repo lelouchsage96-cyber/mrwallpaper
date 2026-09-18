@@ -1080,36 +1080,9 @@ export const listOpsCreators = createServerFn({ method: "GET" })
 export const reviewOpsCreator = createServerFn({ method: "POST" })
   .middleware([authMiddleware])
   .validator(z.object({ userId: z.string(), status: z.enum(["approved", "rejected", "suspended"]) }))
-  .handler(async ({ context, data }) => {
+  .handler(async ({ context }) => {
     await requireOps(context.userId);
-    const sql = await getSql();
-    await sql.query(
-      `update creator_profiles
-          set status = $1, reviewed_at = now()
-        where user_id = $2`,
-      [data.status, data.userId],
-    );
-    if (data.status === "approved") {
-      await sql.query(
-        `update profiles set role = 'creator', updated_at = now()
-          where user_id = $1 and role = 'user'`,
-        [data.userId],
-      );
-      await notify(
-        data.userId,
-        "Your studio is live",
-        "You can submit plates from Creator Studio.",
-        "/studio",
-      );
-    } else if (data.status === "rejected") {
-      await notify(
-        data.userId,
-        "Studio application",
-        "This application was not approved.",
-        "/studio",
-      );
-    }
-    return { ok: true as const };
+    return { ok: false as const, message: "Creator accounts are no longer supported." };
   });
 
 export const listOpsSubmissions = createServerFn({ method: "GET" })
