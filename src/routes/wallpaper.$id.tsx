@@ -146,6 +146,7 @@ function DetailsPage() {
   }, [viewerOpen, initial.wallpaper?.id, initial.related]);
 
   function openViewer() {
+    if (!wallpaper) return;
     const queue = [wallpaper, ...related].map((item) => ({
       id: item.id,
       slug: item.slug || item.id,
