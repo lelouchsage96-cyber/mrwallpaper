@@ -394,11 +394,14 @@ export type OpsCreatorRow = {
 export type OpsSubmissionRow = {
   id: string;
   title: string;
-  creatorName: string;
-  creatorSlug: string;
+  submitterName: string | null;
+  submitterEmail: string | null;
   thumbnailUrl: string;
   status: string;
-  accessType: AccessType;
   createdAt: string;
+  categoryName: string;
+  primaryKeyword: string;
+  rightsConfirmed: boolean;
+  aiGenerated: boolean;
 };
 
