@@ -4,6 +4,7 @@ import {
   CloudDownload,
   Flag,
   Image,
+  Inbox,
   LayoutDashboard,
   SlidersHorizontal,
   Upload,
@@ -33,6 +34,7 @@ type NavItem = {
     | "/ops/wallpapers"
     | "/ops/upload"
     | "/ops/import-r2"
+    | "/ops/creators"
     | "/ops/reports"
     | "/ops/users"
     | "/ops/settings";
@@ -67,6 +69,7 @@ function OpsShell() {
       ? [{ to: "/ops/analytics" as const, label: "Analytics", icon: <BarChart3 className="size-4" /> }]
       : []),
     { to: "/ops/wallpapers", label: t.ops.wallpapers, icon: <Image className="size-4" /> },
+    { to: "/ops/creators", label: "Submissions", icon: <Inbox className="size-4" /> },
     ...(session?.canAdmin
       ? [
           { to: "/ops/upload" as const, label: "Add wallpaper", icon: <Upload className="size-4" /> },
