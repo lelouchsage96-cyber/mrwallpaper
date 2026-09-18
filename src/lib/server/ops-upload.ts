@@ -11,6 +11,7 @@ import { fetchCategories, uniqueWallpaperSlug } from "./queries";
 import { persistPlateMedia } from "./storage";
 import { MAX_ORIGINAL_BYTES } from "@/lib/upload-limit";
 import { buildWallpaperSeoFields, normalizeTag, trimAtWord } from "@/lib/wallpaper-seo";
+import { notifyTasteSubscribersForWallpaper } from "./web-push-delivery";
 
 const MAX_PREVIEW = MAX_ORIGINAL_BYTES;
 const MAX_THUMB = 800_000;
@@ -391,6 +392,15 @@ export const uploadOpsWallpaper = createServerFn({ method: "POST" })
     );
 
     await attachTags(sql, wallpaperId, tagNames);
+    const category = cats.find((item) => item.id === categoryId);
+    if (category) {
+      await notifyTasteSubscribersForWallpaper({
+        wallpaperId,
+        categoryId,
+        categoryName: category.name,
+        categorySlug: category.slug,
+      }).catch((error) => console.error("[push] new wallpaper", error));
+    }
     return { ok: true as const, id: wallpaperId, slug };
   });
 
