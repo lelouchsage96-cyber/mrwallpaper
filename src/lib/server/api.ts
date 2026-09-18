@@ -134,26 +134,40 @@ async function ensureNotifications(userId: string) {
   const sql = await getSql();
   const flags = await readFlags();
   if (!flags.notifications_enabled) return;
-  const existing = await sql.query<{ n: number }>(
-    `select count(*)::int as n from notifications where user_id = $1`,
-    [userId],
-  );
-  if ((existing[0]?.n ?? 0) > 0) return;
+
   const wotd = await fetchFeaturedIds("wotd");
   if (wotd[0]) {
     await sql.query(
-      `insert into notifications (id, user_id, kind, title, body, wallpaper_id, href)
-       values ($1, $2, 'wotd', 'Wallpaper of the Day', 'A new lock screen is up.', $3, $4)`,
-      [crypto.randomUUID(), userId, wotd[0], `/wallpaper/${wotd[0]}`],
+      `insert into notifications
+         (id, user_id, kind, title, body, wallpaper_id, href, dedupe_key)
+       values ($1, $2, 'wotd', 'Wallpaper of the Day', 'A new lock screen is up.', $3, $4, $5)
+       on conflict do nothing`,
+      [
+        crypto.randomUUID(),
+        userId,
+        wotd[0],
+        `/wallpaper/${wotd[0]}`,
+        `wotd:${wotd[0]}`,
+      ],
     );
   }
+
   const pairs = await fetchHomeDuos(userId);
   const pair = pairs[0];
   if (pair) {
     await sql.query(
-      `insert into notifications (id, user_id, kind, title, body, wallpaper_id, href)
-       values ($1, $2, 'pair', $3, 'A Lock & Home pair, composed to live together.', $4, $5)`,
-      [crypto.randomUUID(), userId, pair.name, pair.lock.id, `/pair/${pair.slug}`],
+      `insert into notifications
+         (id, user_id, kind, title, body, wallpaper_id, href, dedupe_key)
+       values ($1, $2, 'pair', $3, 'A Lock & Home pair, composed to live together.', $4, $5, $6)
+       on conflict do nothing`,
+      [
+        crypto.randomUUID(),
+        userId,
+        pair.name,
+        pair.lock.id,
+        `/pair/${pair.slug}`,
+        `pair:${pair.id}`,
+      ],
     );
   }
 }
@@ -860,6 +874,7 @@ export const deleteAccountData = createServerFn({ method: "POST" })
     const uid = context.userId;
     await sql.query(`delete from favorites where user_id = $1`, [uid]);
     await sql.query(`delete from downloads where user_id = $1`, [uid]);
+    await sql.query(`delete from push_subscriptions where user_id = $1`, [uid]);
     await sql.query(`delete from notifications where user_id = $1`, [uid]);
     await sql.query(`delete from user_tastes where user_id = $1`, [uid]);
     await sql.query(`delete from wallpaper_views where user_id = $1`, [uid]);
