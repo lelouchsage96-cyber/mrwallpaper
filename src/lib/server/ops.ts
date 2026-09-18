@@ -26,6 +26,7 @@ import { storageBackend } from "./storage";
 import { configureR2, pingR2, r2Config, r2Configured } from "./r2";
 import { uniqueWallpaperSlug, readSeoSettings, recordSeoRedirect } from "./queries";
 import { slugify } from "@/lib/seo";
+import { buildWallpaperSeoFields, normalizeTag } from "@/lib/wallpaper-seo";
 import {
   supabaseHasKey,
   supabaseProjectRef,
@@ -46,6 +47,51 @@ function parseJson<T>(value: unknown, fallback: T): T {
 
 function toBool(v: boolean | number | null | undefined): boolean {
   return v === true || v === 1;
+}
+
+function submissionAspectLabel(width: number, height: number): string {
+  if (!width || !height) return "1:1";
+  const ratio = width / height;
+  const presets: Array<[number, string]> = [
+    [9 / 16, "9:16"],
+    [16 / 9, "16:9"],
+    [1, "1:1"],
+    [4 / 3, "4:3"],
+    [3 / 4, "3:4"],
+    [3 / 2, "3:2"],
+    [2 / 3, "2:3"],
+  ];
+  return presets.find(([value]) => Math.abs(ratio - value) < 0.045)?.[1] ?? `${width}:${height}`;
+}
+
+async function attachSubmissionTags(wallpaperId: string, rawTags: unknown) {
+  const sql = await getSql();
+  const tags = parseJson<string[]>(rawTags, [])
+    .map((tag) => normalizeTag(tag))
+    .filter((tag) => tag.length >= 2)
+    .slice(0, 18);
+  const seen = new Set<string>();
+  for (const tag of tags) {
+    const tagSlug = slugify(tag).slice(0, 32);
+    if (!tagSlug || seen.has(tagSlug)) continue;
+    seen.add(tagSlug);
+    const tagId = `tag-${tagSlug}`.slice(0, 40);
+    await sql.query(
+      `insert into tags (id, slug, name) values ($1, $2, $3)
+       on conflict (slug) do update set name = excluded.name`,
+      [tagId, tagSlug, tag],
+    );
+    const saved = await sql.query<{ id: string }>(
+      `select id from tags where slug = $1 limit 1`,
+      [tagSlug],
+    );
+    if (saved[0]?.id) {
+      await sql.query(
+        `insert into wallpaper_tags (wallpaper_id, tag_id) values ($1, $2) on conflict do nothing`,
+        [wallpaperId, saved[0].id],
+      );
+    }
+  }
 }
 
 class ForbiddenError extends Error {
@@ -1108,32 +1154,39 @@ export const listOpsSubmissions = createServerFn({ method: "GET" })
       id: string;
       title: string;
       status: string;
-      access_type: "free" | "premium";
       created_at: string;
-      creator_name: string;
-      creator_slug: string;
-      thumbnail_url: string | null;
+      thumbnail_path: string;
+      primary_keyword: string;
+      rights_confirmed: boolean | number;
+      ai_generated: boolean | number;
+      category_name: string;
+      submitter_name: string | null;
+      submitter_email: string | null;
     }>(
-      `select w.id, w.title, w.status, w.access_type, w.created_at,
-              cp.display_name as creator_name, cp.slug as creator_slug,
-              (select a.path from wallpaper_assets a
-                where a.wallpaper_id = w.id and a.kind = 'thumbnail' limit 1) as thumbnail_url
-       from wallpapers w
-       join creator_profiles cp on cp.user_id = w.creator_id
-       where w.status = 'pending'
-       order by w.updated_at desc
+      `select s.id, s.title, s.status, s.created_at::text as created_at,
+              s.thumbnail_path, s.primary_keyword, s.rights_confirmed, s.ai_generated,
+              c.name as category_name,
+              u.name as submitter_name, u.email as submitter_email
+       from wallpaper_submissions s
+       join categories c on c.id = s.category_id
+       left join "user" u on u.id = s.user_id
+       where s.status = 'pending'
+       order by s.created_at desc
        limit 80`,
     );
     return {
-      items: rows.map((r) => ({
-        id: r.id,
-        title: r.title,
-        creatorName: r.creator_name,
-        creatorSlug: r.creator_slug,
-        thumbnailUrl: thumb(r.thumbnail_url, r.id),
-        status: r.status,
-        accessType: r.access_type,
-        createdAt: r.created_at,
+      items: rows.map((row) => ({
+        id: row.id,
+        title: row.title,
+        submitterName: row.submitter_name,
+        submitterEmail: row.submitter_email,
+        thumbnailUrl: row.thumbnail_path,
+        status: row.status,
+        createdAt: row.created_at,
+        categoryName: row.category_name,
+        primaryKeyword: row.primary_keyword || "",
+        rightsConfirmed: toBool(row.rights_confirmed),
+        aiGenerated: toBool(row.ai_generated),
       })),
     };
   });
@@ -1145,61 +1198,151 @@ export const reviewOpsSubmission = createServerFn({ method: "POST" })
     await requireOps(context.userId);
     const sql = await getSql();
     const rows = await sql.query<{
-      creator_id: string;
+      id: string;
+      user_id: string;
       title: string;
-      slug: string | null;
+      description: string;
       category_id: string;
+      tags: unknown;
+      alt_text: string;
+      primary_keyword: string;
+      device_type: string;
+      width: number;
+      height: number;
+      file_size_bytes: number;
+      format: string;
+      mime: string;
+      sha256: string | null;
+      source_sha256: string | null;
+      original_path: string;
+      preview_path: string;
+      thumbnail_path: string;
+      preview_width: number | null;
+      preview_height: number | null;
+      preview_bytes: number;
+      thumbnail_width: number | null;
+      thumbnail_height: number | null;
+      thumbnail_bytes: number;
+      status: string;
+      published_wallpaper_id: string | null;
       category_name: string;
       category_slug: string;
     }>(
-      `select w.creator_id, w.title, w.slug, w.category_id,
-              c.name as category_name, c.slug as category_slug
-       from wallpapers w
-       join categories c on c.id = w.category_id
-       where w.id = $1
+      `select s.*, c.name as category_name, c.slug as category_slug
+       from wallpaper_submissions s
+       join categories c on c.id = s.category_id
+       where s.id = $1
        limit 1`,
       [data.id],
     );
     const row = rows[0];
-    if (!row?.creator_id) return { ok: false as const };
-    if (data.status === "approved") {
+    if (!row || row.status !== "pending") return { ok: false as const };
+
+    if (data.status === "rejected") {
       await sql.query(
-        `update wallpapers
-            set status = 'approved', published_at = now(), updated_at = now()
-          where id = $1`,
+        `update wallpaper_submissions
+         set status = 'rejected', reviewed_at = now(), updated_at = now()
+         where id = $1`,
         [data.id],
       );
       await notify(
-        row.creator_id,
-        "Live in the catalog",
-        `${row.title} is available to download.`,
-        `/wallpaper/${row.slug || data.id}`,
-        data.id,
+        row.user_id,
+        "Wallpaper submission reviewed",
+        "This submission was not approved for the catalog.",
+        "/submit",
       );
-      await notifyTasteSubscribersForWallpaper({
-        wallpaperId: data.id,
-        categoryId: row.category_id,
-        categoryName: row.category_name,
-        categorySlug: row.category_slug,
-      }).catch((error) => console.error("[push] approved creator wallpaper", error));
-    } else {
-      await sql.query(
-        `update wallpapers
-            set status = 'draft',
-                creator_id = null,
-                title = 'Untitled plate',
-                description = '',
-                published_at = null,
-                updated_at = now()
-          where id = $1`,
-        [data.id],
-      );
-      await notify(
-        row.creator_id,
-        "Plate returned",
-        `${row.title} was not approved. The composition is back in the drop.`,
-        "/studio",
-      );
+      return { ok: true as const };
     }
-    return { ok: true as const };
+
+    const wallpaperId = "w" + crypto.randomUUID().replaceAll("-", "").slice(0, 12);
+    const slug = await uniqueWallpaperSlug(slugify(row.title));
+    const seo = buildWallpaperSeoFields({
+      title: row.title,
+      description: row.description,
+      primaryKeyword: row.primary_keyword,
+    });
+
+    await sql.query(
+      `insert into wallpapers
+         (id, title, description, category_id, creator_id, access_type, status,
+          width, height, file_size_bytes, format, aspect_ratio, device_type,
+          sha256, source_sha256, published_at, slug, alt_text, primary_keyword,
+          seo_title, seo_description, robots)
+       values
+         ($1, $2, $3, $4, null, 'free', 'approved',
+          $5, $6, $7, $8, $9, $10, $11, $12, now(), $13, $14, $15, $16, $17, 'index')`,
+      [
+        wallpaperId,
+        row.title,
+        row.description,
+        row.category_id,
+        row.width,
+        row.height,
+        row.file_size_bytes,
+        row.format,
+        submissionAspectLabel(row.width, row.height),
+        parseDeviceType(row.device_type),
+        row.sha256,
+        row.source_sha256,
+        slug,
+        row.alt_text || row.title,
+        seo.primaryKeyword,
+        seo.seoTitle,
+        seo.seoDescription,
+      ],
+    );
+
+    await sql.query(
+      `insert into wallpaper_assets
+         (id, wallpaper_id, kind, bucket, path, width, height, bytes, mime, is_public)
+       values
+         ($1, $2, 'thumbnail', 'public', $3, $4, $5, $6, 'image/jpeg', true),
+         ($7, $2, 'preview', 'public', $8, $9, $10, $11, 'image/jpeg', true),
+         ($12, $2, 'original', 'protected', $13, $14, $15, $16, $17, false)`,
+      [
+        \`\${wallpaperId}-sthumb\`,
+        wallpaperId,
+        row.thumbnail_path,
+        row.thumbnail_width || row.width,
+        row.thumbnail_height || row.height,
+        row.thumbnail_bytes,
+        \`\${wallpaperId}-sprev\`,
+        row.preview_path,
+        row.preview_width || row.width,
+        row.preview_height || row.height,
+        row.preview_bytes,
+        \`\${wallpaperId}-sorig\`,
+        row.original_path,
+        row.width,
+        row.height,
+        row.file_size_bytes,
+        row.mime,
+      ],
+    );
+
+    await attachSubmissionTags(wallpaperId, row.tags);
+    await sql.query(
+      `update wallpaper_submissions
+       set status = 'approved', published_wallpaper_id = $2,
+           reviewed_at = now(), updated_at = now()
+       where id = $1`,
+      [data.id, wallpaperId],
+    );
+
+    await notify(
+      row.user_id,
+      "Your wallpaper is live",
+      \`\${row.title} was approved and is now free to download.\`,
+      \`/wallpaper/\${slug}\`,
+      wallpaperId,
+    );
+    await notifyTasteSubscribersForWallpaper({
+      wallpaperId,
+      categoryId: row.category_id,
+      categoryName: row.category_name,
+      categorySlug: row.category_slug,
+    }).catch((error) => console.error("[push] approved community wallpaper", error));
+
+    return { ok: true as const, wallpaperId, slug };
   });
+
