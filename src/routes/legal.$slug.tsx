@@ -12,9 +12,13 @@ const pages: Record<string, { title: string; body: string[] }> = {
   guidelines: {
     title: t.profile.guidelines,
     body: [
-      "Do not submit stolen, infringing, hateful, malicious, deceptive, or unlawful content.",
-      "Metadata should accurately describe the wallpaper and should not be used for spam or misleading search manipulation.",
-      "Content or accounts that repeatedly violate these guidelines may be removed, restricted, or suspended.",
+      "Submit only a wallpaper you created or an image you have permission to share and distribute. Do not submit stolen, infringing, malicious, deceptive, hateful, or unlawful content.",
+      "Every community submission is private while pending and is reviewed manually by Mr Wallpapers before publication. Approval is not guaranteed.",
+      "Approved community wallpapers are published as free downloads. Submission does not create a paid creator account, premium listing, revenue share, or right to compensation.",
+      "OpenAI metadata generation is optional. Review the generated title, description, tags, alt text, primary keyword, and category before submitting because AI suggestions can be inaccurate.",
+      "Metadata must accurately describe the wallpaper and must not be used for spam, impersonation, misleading search manipulation, or false claims of ownership.",
+      "Mr Wallpapers may reject or remove submissions for duplication, low quality, inaccurate metadata, rights concerns, safety issues, or other reasonable catalog and service needs.",
+      "Accounts that repeatedly violate these guidelines may lose submission access or be suspended.",
     ],
   },
 };
