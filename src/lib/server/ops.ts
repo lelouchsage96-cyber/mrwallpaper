@@ -18,6 +18,7 @@ import type {
   OpsWallpaperRow,
 } from "@/lib/types";
 import { notify } from "./studio";
+import { notifyCollectionDrop, notifyWallpaperOfDay } from "./web-push-delivery";
 import { resolveOwnedThumb } from "@/lib/media";
 import { mergeMediation, type AdNetworkConfig } from "@/lib/ads";
 import { parseDeviceType } from "@/lib/device";
@@ -482,6 +483,20 @@ export const setFeaturedSlot = createServerFn({ method: "POST" })
        values ($1, $2, $3, now(), now() + interval '365 days', 10)`,
       [crypto.randomUUID(), data.slot, data.wallpaperId],
     );
+    if (data.slot === "wotd") {
+      const wallpapers = await sql.query<{ title: string; slug: string | null }>(
+        `select title, slug from wallpapers where id = $1 limit 1`,
+        [data.wallpaperId],
+      );
+      const wallpaper = wallpapers[0];
+      if (wallpaper) {
+        await notifyWallpaperOfDay({
+          wallpaperId: data.wallpaperId,
+          title: wallpaper.title,
+          slug: wallpaper.slug || data.wallpaperId,
+        }).catch((error) => console.error("[push] wallpaper of the day", error));
+      }
+    }
     return { ok: true as const };
   });
 
@@ -902,10 +917,22 @@ export const updateOpsCollection = createServerFn({ method: "POST" })
   .handler(async ({ context, data }) => {
     await requireOps(context.userId, true);
     const sql = await getSql();
+    const before = await sql.query<{ name: string; slug: string; is_visible: boolean | number }>(
+      `select name, slug, is_visible from collections where id = $1 limit 1`,
+      [data.id],
+    );
     await sql.query(`update collections set is_visible = $1 where id = $2`, [
       data.isVisible,
       data.id,
     ]);
+    const collection = before[0];
+    if (data.isVisible && collection && !toBool(collection.is_visible)) {
+      await notifyCollectionDrop({
+        collectionId: data.id,
+        name: collection.name,
+        slug: collection.slug,
+      }).catch((error) => console.error("[push] collection", error));
+    }
     return { ok: true as const };
   });
 
