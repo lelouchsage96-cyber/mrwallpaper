@@ -104,18 +104,6 @@ function CatalogRow({
           >
             Edit
           </Link>
-          <button
-            type="button"
-            className={cn(
-              "h-11 rounded-full px-4 text-sm",
-              w.accessType === "premium" ? "bg-fg text-bg" : "bg-surface text-muted",
-            )}
-            onClick={() =>
-              onPatch({ accessType: w.accessType === "premium" ? "free" : "premium" })
-            }
-          >
-            {w.accessType === "premium" ? t.ops.access.premium : t.ops.access.free}
-          </button>
           <Select
             value={w.deviceType}
             aria-label={t.ops.device.phone}
@@ -257,7 +245,6 @@ function OpsWallpapersPage() {
       data: {
         wallpaperId: id,
         status: next.status as "draft" | "pending" | "approved" | "rejected" | "removed" | undefined,
-        accessType: next.accessType,
         deviceType: next.deviceType,
         slug: next.slug,
         seoTitle: next.seoTitle,
