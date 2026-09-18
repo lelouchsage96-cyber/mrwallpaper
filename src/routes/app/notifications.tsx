@@ -10,6 +10,7 @@ import { t } from "@/lib/i18n/en";
 import { listNotifications, markNotificationsRead, updateNotificationPref } from "@/lib/server/api";
 import {
   getPushConfig,
+  hasPushSubscription,
   removePushSubscription,
   savePushSubscription,
   sendPushTest,
@@ -87,8 +88,13 @@ function NotificationsPage() {
     let cancelled = false;
     void navigator.serviceWorker.ready
       .then((registration) => registration.pushManager.getSubscription())
-      .then((subscription) => {
-        if (!cancelled) setPushSubscribed(Boolean(subscription));
+      .then(async (subscription) => {
+        if (!subscription) return false;
+        const status = await hasPushSubscription({ data: { endpoint: subscription.endpoint } });
+        return status.active;
+      })
+      .then((active) => {
+        if (!cancelled) setPushSubscribed(active);
       })
       .catch(() => {
         if (!cancelled) setPushSubscribed(false);
