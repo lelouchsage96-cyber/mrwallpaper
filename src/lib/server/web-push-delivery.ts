@@ -96,8 +96,9 @@ function generateVapidKeys(): VapidKeys {
   };
 }
 
-export async function ensureVapidKeys(sql: Sql = await getSql()): Promise<VapidKeys> {
-  const rows = await sql.query<{ value: unknown }>(
+export async function ensureVapidKeys(sql?: Sql): Promise<VapidKeys> {
+  const db = sql ?? (await getSql());
+  const rows = await db.query<{ value: unknown }>(
     `select value from app_settings where key = 'web_push_vapid' limit 1`,
   );
   const existing = parseJson<VapidKeys>(rows[0]?.value);
@@ -105,7 +106,7 @@ export async function ensureVapidKeys(sql: Sql = await getSql()): Promise<VapidK
 
   const generated = generateVapidKeys();
   if (rows[0]) {
-    await sql.query(
+    await db.query(
       `update app_settings set value = $1::jsonb, updated_at = now()
        where key = 'web_push_vapid'`,
       [JSON.stringify(generated)],
@@ -113,20 +114,21 @@ export async function ensureVapidKeys(sql: Sql = await getSql()): Promise<VapidK
     return generated;
   }
 
-  await sql.query(
+  await db.query(
     `insert into app_settings (key, value) values ('web_push_vapid', $1::jsonb)
      on conflict (key) do nothing`,
     [JSON.stringify(generated)],
   );
-  const after = await sql.query<{ value: unknown }>(
+  const after = await db.query<{ value: unknown }>(
     `select value from app_settings where key = 'web_push_vapid' limit 1`,
   );
   const persisted = parseJson<VapidKeys>(after[0]?.value);
   return isVapidKeys(persisted) ? persisted : generated;
 }
 
-export async function notificationsFeatureEnabled(sql: Sql = await getSql()): Promise<boolean> {
-  const rows = await sql.query<{ value: unknown }>(
+export async function notificationsFeatureEnabled(sql?: Sql): Promise<boolean> {
+  const db = sql ?? (await getSql());
+  const rows = await db.query<{ value: unknown }>(
     `select value from app_settings where key = 'feature_flags' limit 1`,
   );
   const flags = parseJson<{ notifications_enabled?: boolean }>(rows[0]?.value);
