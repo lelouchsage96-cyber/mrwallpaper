@@ -82,7 +82,7 @@ function OpsUsersPage() {
                   value={u.role === "creator" ? "user" : u.role}
                   className="h-11 rounded-md bg-surface px-3 text-sm text-fg"
                   onChange={async (e) => {
-                    const role = e.target.value as OpsUserRow["role"];
+                    const role = e.target.value as "user" | "moderator" | "admin";
                     const res = await updateOpsUser({ data: { userId: u.userId, role } });
                     if (res.ok) {
                       setUsers((prev) =>
