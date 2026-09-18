@@ -106,7 +106,8 @@ function DetailsPage() {
   const [isPremium, setIsPremium] = useState(false);
   const [reportOpen, setReportOpen] = useState(false);
   const [viewerOpen, setViewerOpen] = useState(false);
-  const [viewerDepth, setViewerDepth] = useState(0);
+  const [viewerQueue, setViewerQueue] = useState<Array<{ id: string; slug: string }>>([]);
+  const [viewerIndex, setViewerIndex] = useState(0);
   const [mode, setMode] = useState<PreviewMode>(
     initial.pair && initial.wallpaper && initial.pair.home.id === initial.wallpaper.id ? "home" : "lock",
   );
@@ -129,6 +130,33 @@ function DetailsPage() {
       categorySlug: initial.wallpaper.categorySlug,
     });
   }, [initial.wallpaper?.id]);
+
+  useEffect(() => {
+    if (!viewerOpen || !initial.wallpaper) return;
+    setViewerQueue((current) => {
+      const next = [...current];
+      const seen = new Set(next.map((item) => item.id));
+      for (const item of [initial.wallpaper, ...initial.related]) {
+        if (seen.has(item.id)) continue;
+        seen.add(item.id);
+        next.push({ id: item.id, slug: item.slug || item.id });
+      }
+      return next;
+    });
+  }, [viewerOpen, initial.wallpaper?.id, initial.related]);
+
+  function openViewer() {
+    const queue = [wallpaper, ...related].map((item) => ({
+      id: item.id,
+      slug: item.slug || item.id,
+    }));
+    const unique = queue.filter(
+      (item, index) => queue.findIndex((candidate) => candidate.id === item.id) === index,
+    );
+    setViewerQueue(unique);
+    setViewerIndex(0);
+    setViewerOpen(true);
+  }
 
   function goBack() {
     if (typeof window !== "undefined" && window.history.length > 1) {
@@ -217,10 +245,7 @@ function DetailsPage() {
           />
           <button
             type="button"
-            onClick={() => {
-              setViewerDepth(0);
-              setViewerOpen(true);
-            }}
+            onClick={openViewer}
             className="mx-auto mt-3 flex min-h-11 items-center gap-2 rounded-full bg-elevated px-4 text-sm font-medium text-fg lg:hidden"
           >
             <Maximize2 className="size-4" strokeWidth={1.75} />
@@ -371,22 +396,26 @@ function DetailsPage() {
         title={wallpaper.title}
         wallpaperId={wallpaper.id}
         isFavorite={wallpaper.isFavorite}
-        hasNext={related.length > 0}
-        hasPrevious={viewerDepth > 0}
+        hasNext={viewerIndex < viewerQueue.length - 1}
+        hasPrevious={viewerIndex > 0}
         onClose={() => {
           setViewerOpen(false);
-          setViewerDepth(0);
+          setViewerQueue([]);
+          setViewerIndex(0);
         }}
         onNext={() => {
-          const next = related[0];
+          const nextIndex = viewerIndex + 1;
+          const next = viewerQueue[nextIndex];
           if (!next) return;
-          setViewerDepth((depth) => depth + 1);
-          void navigate({ to: "/wallpaper/$id", params: { id: next.slug || next.id } });
+          setViewerIndex(nextIndex);
+          void navigate({ to: "/wallpaper/$id", params: { id: next.slug } });
         }}
         onPrevious={() => {
-          if (viewerDepth <= 0) return;
-          setViewerDepth((depth) => Math.max(0, depth - 1));
-          window.history.back();
+          const previousIndex = viewerIndex - 1;
+          const previous = viewerQueue[previousIndex];
+          if (!previous) return;
+          setViewerIndex(previousIndex);
+          void navigate({ to: "/wallpaper/$id", params: { id: previous.slug } });
         }}
         onDownload={() => setDownloadOpen(true)}
         onShare={() => void share()}
@@ -399,10 +428,7 @@ function DetailsPage() {
         <div className="mx-auto flex max-w-md items-center gap-2">
           <button
             type="button"
-            onClick={() => {
-              setViewerDepth(0);
-              setViewerOpen(true);
-            }}
+            onClick={openViewer}
             aria-label="View wallpaper full screen"
             className="grid size-12 shrink-0 place-items-center rounded-full bg-elevated text-fg active:scale-[0.96]"
           >
