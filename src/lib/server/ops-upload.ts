@@ -11,6 +11,7 @@ import { fetchCategories, uniqueWallpaperSlug } from "./queries";
 import { persistPlateMedia } from "./storage";
 import { MAX_ORIGINAL_BYTES } from "@/lib/upload-limit";
 import { buildWallpaperSeoFields, normalizeTag, trimAtWord } from "@/lib/wallpaper-seo";
+import { buildWallpaperSeoCatalogContext, buildWallpaperSeoDeveloperPrompt, MRWALLPAPER_AI_CONTEXT_VERSION } from "@/lib/mrwallpaper-ai";
 import { notifyTasteSubscribersForWallpaper } from "./web-push-delivery";
 
 const MAX_PREVIEW = MAX_ORIGINAL_BYTES;
@@ -199,6 +200,22 @@ export const generateWallpaperSeo = createServerFn({ method: "POST" })
     const categoryOptions = categories.map((category) => `${category.id}: ${category.name}`).join("\n");
     const supports4k = Math.max(data.width, data.height) >= 3840 && Math.min(data.width, data.height) >= 2160;
     const field = data.field || "all";
+    const catalogRows = await sql.query<{ title: string; primary_keyword: string | null }>(
+      `select title, primary_keyword
+       from wallpapers
+       where status = 'approved'
+       order by published_at desc nulls last
+       limit 120`,
+    );
+    const catalogContext = buildWallpaperSeoCatalogContext(
+      catalogRows.map((row) => ({ title: row.title, primaryKeyword: row.primary_keyword })),
+      80,
+    );
+    const developerPrompt = buildWallpaperSeoDeveloperPrompt({
+      supports4k,
+      field,
+      catalogContext,
+    });
 
     try {
       const response = await fetch("https://api.openai.com/v1/responses", {
@@ -215,7 +232,7 @@ export const generateWallpaperSeo = createServerFn({ method: "POST" })
           input: [
             {
               role: "developer",
-              content: [{ type: "input_text", text: `Create accurate SEO metadata for MrWallpaper.org. Analyze only what is actually visible. Never invent people, characters, brands, locations, objects, meanings, quotes, or Bible references. Preserve visible wording exactly when legible; otherwise do not guess. Use natural long-tail phrasing without stuffing. Title: 4-10 words, human-readable, and closely aligned with the primary keyword so the visible page heading and search title describe the same main subject. If an important visible Bible reference, quote, person, or named subject is central to the search intent, keep it consistent across the title and primary keyword. Description: exactly one complete natural sentence, target 120-160 characters and never exceed 170 characters; it must finish with sentence punctuation and must never end as a fragment. Avoid filler such as "visible" unless it improves clarity. Tags: 12-18 distinct useful lowercase phrases without hashtags; every tag must be a complete phrase of 40 characters or fewer. Alt text: one natural sentence about the actual image and useful visible text. Primary keyword: one realistic specific search phrase that matches the title's main subject. Never repeat wallpaper wording, such as \"wallpaper phone wallpaper\". Category must be one supplied ID. ${supports4k ? "Mention 4K only if useful and accurate." : "Never claim or imply 4K."} Generate ${field === "all" ? "all fields" : `only the ${field} field; copy the supplied values for all other fields`}.` }],
+              content: [{ type: "input_text", text: developerPrompt }],
             },
             {
               role: "user",
@@ -279,7 +296,7 @@ export const generateWallpaperSeo = createServerFn({ method: "POST" })
       ) {
         return { ok: false as const, code: "malformed_output" as const, error: "OpenAI returned incomplete details. Please try again." };
       }
-      console.info("[ops-upload] OpenAI SEO usage", { model: "gpt-5.6-luna", field, ...body.usage });
+      console.info("[ops-upload] OpenAI SEO usage", { model: "gpt-5.6-luna", field, contextVersion: MRWALLPAPER_AI_CONTEXT_VERSION, ...body.usage });
       if (role !== "admin") {
         await sql.query(
           `insert into ai_generation_events (id, user_id, kind) values ($1, $2, 'wallpaper_seo')`,
