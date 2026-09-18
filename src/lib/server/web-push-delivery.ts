@@ -194,7 +194,7 @@ function vapidJwt(endpoint: string, keys: VapidKeys): string {
   );
   const unsigned = `${header}.${claims}`;
   const signature = sign("sha256", Buffer.from(unsigned), {
-    key: createPrivateKey({ key: keys.privateJwk as JsonWebKey, format: "jwk" }),
+    key: createPrivateKey({ key: keys.privateJwk, format: "jwk" }),
     dsaEncoding: "ieee-p1363",
   });
   return `${unsigned}.${toBase64Url(signature)}`;
