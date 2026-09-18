@@ -79,8 +79,8 @@ export function buildWallpaperSeoCatalogContext(entries: WallpaperSeoCatalogEntr
   return entries
     .slice(0, Math.max(0, limit))
     .map((entry) => {
-      const title = entry.title.replace(/\\s+/g, " ").trim().slice(0, 80);
-      const keyword = (entry.primaryKeyword || "").replace(/\\s+/g, " ").trim().slice(0, 80);
+      const title = entry.title.replace(/\s+/g, " ").trim().slice(0, 80);
+      const keyword = (entry.primaryKeyword || "").replace(/\s+/g, " ").trim().slice(0, 80);
       return keyword ? "- " + title + " | " + keyword : "- " + title;
     })
     .filter((line) => line.length > 2)
