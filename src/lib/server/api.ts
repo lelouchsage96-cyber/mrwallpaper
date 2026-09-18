@@ -592,38 +592,46 @@ export const requestDownload = createServerFn({ method: "POST" })
     }),
   )
   .handler(async ({ context, data }): Promise<DownloadRequestResult> => {
-    if (!context.userId) return { status: "needs_auth" };
-    const detail = await fetchDetail(data.wallpaperId, context.userId);
+    const userId = context.userId;
+    const detail = await fetchDetail(data.wallpaperId, userId);
     if (!detail) return { status: "error", message: "Not found" };
+
     const sql = await getSql();
-    const premium = await isPremiumUser(context.userId);
+    const premium = await isPremiumUser(userId);
     const mode = await setting<string>("free_download_mode", "direct");
     const flags = await readFlags();
-    if (detail.accessType === "premium" && !premium && flags.premium_enabled) return { status: "needs_premium" };
 
-    if (!premium && mode === "rewarded_ad" && flags.rewarded_downloads_enabled && !data.adSessionId) {
-      return { status: "needs_ad" };
+    if (detail.accessType === "premium" && !premium && flags.premium_enabled) {
+      return { status: userId ? "needs_premium" : "needs_auth" };
     }
 
-    if (data.adSessionId) {
-      const auth = await sql.query<{ id: string }>(
-        `select id from download_authorizations
-         where id = $1 and user_id = $2 and wallpaper_id = $3
-           and consumed_at is null and expires_at > now()
-         limit 1`,
-        [data.adSessionId, context.userId, data.wallpaperId],
+    // Free wallpapers are intentionally downloadable without an account.
+    // Signed-in users keep rewarded-ad, authorization, and account rate-limit behavior.
+    if (userId) {
+      if (!premium && mode === "rewarded_ad" && flags.rewarded_downloads_enabled && !data.adSessionId) {
+        return { status: "needs_ad" };
+      }
+
+      if (data.adSessionId) {
+        const auth = await sql.query<{ id: string }>(
+          `select id from download_authorizations
+           where id = $1 and user_id = $2 and wallpaper_id = $3
+             and consumed_at is null and expires_at > now()
+           limit 1`,
+          [data.adSessionId, userId, data.wallpaperId],
+        );
+        if (!auth[0]) return { status: "needs_ad" };
+        await sql.query(`update download_authorizations set consumed_at = now() where id = $1`, [auth[0].id]);
+      }
+
+      const limit = await setting<number>("daily_download_limit", 40);
+      const today = await sql.query<{ n: number }>(
+        `select count(*)::int as n from downloads
+         where user_id = $1 and downloaded_at > now() - interval '1 day'`,
+        [userId],
       );
-      if (!auth[0]) return { status: "needs_ad" };
-      await sql.query(`update download_authorizations set consumed_at = now() where id = $1`, [auth[0].id]);
+      if ((today[0]?.n ?? 0) >= limit && !premium) return { status: "rate_limited" };
     }
-
-    const limit = await setting<number>("daily_download_limit", 40);
-    const today = await sql.query<{ n: number }>(
-      `select count(*)::int as n from downloads
-       where user_id = $1 and downloaded_at > now() - interval '1 day'`,
-      [context.userId],
-    );
-    if ((today[0]?.n ?? 0) >= limit && !premium) return { status: "rate_limited" };
 
     const assets = await sql.query<{ path: string; mime: string }>(
       `select path, mime from wallpaper_assets
@@ -632,25 +640,29 @@ export const requestDownload = createServerFn({ method: "POST" })
     );
     const url = resolveOriginal(data.wallpaperId, assets[0]?.path);
     const ext = downloadExt(detail.format);
-    const downloadType = premium ? "premium" : data.adSessionId ? "rewarded" : "free";
-    await sql.query(
-      `insert into downloads (id, user_id, wallpaper_id, download_type, source, is_premium_user, authorization_id)
-       values ($1, $2, $3, $4, $5, $6, $7)`,
-      [
-        crypto.randomUUID(),
-        context.userId,
-        data.wallpaperId,
-        downloadType,
-        data.source ?? "details",
-        premium,
-        data.adSessionId ?? null,
-      ],
-    );
+
+    if (userId) {
+      const downloadType = premium ? "premium" : data.adSessionId ? "rewarded" : "free";
+      await sql.query(
+        `insert into downloads (id, user_id, wallpaper_id, download_type, source, is_premium_user, authorization_id)
+         values ($1, $2, $3, $4, $5, $6, $7)`,
+        [
+          crypto.randomUUID(),
+          userId,
+          data.wallpaperId,
+          downloadType,
+          data.source ?? "details",
+          premium,
+          data.adSessionId ?? null,
+        ],
+      );
+    }
+
     await sql.query(`update wallpapers set download_count = download_count + 1 where id = $1`, [data.wallpaperId]);
     return {
       status: "ok",
       url: `${url}${url.includes("?") ? "&" : "?"}dl=1`,
-      filename: `${detail.title.replace(/[^\w]+/g, "-").toLowerCase()}.${ext}`,
+      filename: `${detail.title.replace(/[^\\w]+/g, "-").toLowerCase()}.${ext}`,
       mime: assets[0]?.mime || "image/jpeg",
       isLive: detail.isLive,
       stillUrl: null,
