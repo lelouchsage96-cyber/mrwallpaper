@@ -453,61 +453,15 @@ function OpsSettingsPage() {
             onBlur={() => void save({ dailyDownloadLimit: settings.dailyDownloadLimit })}
           />
         </label>
-        <div className="grid grid-cols-2 gap-2">
-          <label className="text-sm text-muted">
-            {t.ops.creatorShare}
-            <Input
-              className="mt-2"
-              type="number"
-              min={0}
-              max={100}
-              value={settings.creatorSharePercent}
-              onChange={(e) =>
-                setSettings((s) =>
-                  s ? { ...s, creatorSharePercent: Number(e.target.value) || 0 } : s,
-                )
-              }
-            />
-          </label>
-          <label className="text-sm text-muted">
-            {t.ops.platformShare}
-            <Input
-              className="mt-2"
-              type="number"
-              min={0}
-              max={100}
-              value={settings.platformSharePercent}
-              onChange={(e) =>
-                setSettings((s) =>
-                  s ? { ...s, platformSharePercent: Number(e.target.value) || 0 } : s,
-                )
-              }
-            />
-          </label>
-        </div>
-        <Button
-          variant="secondary"
-          onClick={() =>
-            void save({
-              creatorSharePercent: settings.creatorSharePercent,
-              platformSharePercent: settings.platformSharePercent,
-            })
-          }
-        >
-          {t.save}
-        </Button>
       </section>
 
       <section className="space-y-2">
         <h2 className="font-display text-xl text-fg">{t.ops.flags}</h2>
         {(
           [
-            ["premium_enabled", t.premium.brand],
             ["rewarded_downloads_enabled", t.ops.rewardedFlag],
-            ["lifetime_purchase_enabled", t.premium.lifetime],
             ["recommendations_enabled", t.home.recommended],
             ["notifications_enabled", t.profile.notifications],
-            ["creator_marketplace_enabled", t.ops.marketplace],
           ] as const
         ).map(([key, label]) => (
           <Toggle key={key} label={label} on={flags[key]} onToggle={() => setFlag(key, !flags[key])} />
