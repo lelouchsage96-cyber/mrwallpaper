@@ -1300,18 +1300,18 @@ export const reviewOpsSubmission = createServerFn({ method: "POST" })
          ($7, $2, 'preview', 'public', $8, $9, $10, $11, 'image/jpeg', true),
          ($12, $2, 'original', 'protected', $13, $14, $15, $16, $17, false)`,
       [
-        \`\${wallpaperId}-sthumb\`,
+        `${wallpaperId}-sthumb`,
         wallpaperId,
         row.thumbnail_path,
         row.thumbnail_width || row.width,
         row.thumbnail_height || row.height,
         row.thumbnail_bytes,
-        \`\${wallpaperId}-sprev\`,
+        `${wallpaperId}-sprev`,
         row.preview_path,
         row.preview_width || row.width,
         row.preview_height || row.height,
         row.preview_bytes,
-        \`\${wallpaperId}-sorig\`,
+        `${wallpaperId}-sorig`,
         row.original_path,
         row.width,
         row.height,
@@ -1332,8 +1332,8 @@ export const reviewOpsSubmission = createServerFn({ method: "POST" })
     await notify(
       row.user_id,
       "Your wallpaper is live",
-      \`\${row.title} was approved and is now free to download.\`,
-      \`/wallpaper/\${slug}\`,
+      `${row.title} was approved and is now free to download.`,
+      `/wallpaper/${slug}`,
       wallpaperId,
     );
     await notifyTasteSubscribersForWallpaper({
