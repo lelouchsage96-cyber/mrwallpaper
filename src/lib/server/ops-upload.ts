@@ -50,6 +50,18 @@ async function requireAdmin(userId: string): Promise<Sql> {
   return sql;
 }
 
+async function requireActiveUser(userId: string): Promise<{ sql: Sql; role: string }> {
+  const sql = await getSql();
+  await sql.query(`insert into profiles (user_id) values ($1) on conflict (user_id) do nothing`, [userId]);
+  const rows = await sql.query<{ role: string; status: string }>(
+    `select role, status from profiles where user_id = $1 limit 1`,
+    [userId],
+  );
+  const row = rows[0];
+  if (!row || row.status !== "active") throw new ForbiddenError();
+  return { sql, role: row.role || "user" };
+}
+
 function formString(form: FormData, key: string): string {
   const v = form.get(key);
   return typeof v === "string" ? v.trim() : "";
@@ -137,6 +149,13 @@ export const getOpsUploadMeta = createServerFn({ method: "GET" })
     return { categories: await fetchCategories() };
   });
 
+export const getCommunityUploadMeta = createServerFn({ method: "GET" })
+  .middleware([authMiddleware])
+  .handler(async ({ context }): Promise<{ categories: Category[]; aiDailyLimit: number }> => {
+    await requireActiveUser(context.userId);
+    return { categories: await fetchCategories(), aiDailyLimit: 8 };
+  });
+
 export const generateWallpaperSeo = createServerFn({ method: "POST" })
   .middleware([authMiddleware])
   .validator((input: {
@@ -153,7 +172,22 @@ export const generateWallpaperSeo = createServerFn({ method: "POST" })
     field?: SeoField;
   }) => input)
   .handler(async ({ context, data }) => {
-    await requireAdmin(context.userId);
+    const { sql, role } = await requireActiveUser(context.userId);
+    if (role !== "admin") {
+      const recent = await sql.query<{ n: number }>(
+        `select count(*)::int as n from ai_generation_events
+         where user_id = $1 and kind = 'wallpaper_seo'
+           and created_at > now() - interval '1 day'`,
+        [context.userId],
+      );
+      if ((recent[0]?.n ?? 0) >= 8) {
+        return {
+          ok: false as const,
+          code: "rate_limit" as const,
+          error: "You have used today’s AI metadata allowance. You can still submit by filling the details manually.",
+        };
+      }
+    }
     const apiKey = process.env.OPENAI_API_KEY?.trim();
     if (!apiKey) return { ok: false as const, code: "missing_key" as const, error: "Add OPENAI_API_KEY in Vercel to enable SEO generation." };
     if (!data.imageDataUrl.startsWith("data:image/") || data.imageDataUrl.length > MAX_SEO_IMAGE_DATA_URL) {
@@ -246,6 +280,12 @@ export const generateWallpaperSeo = createServerFn({ method: "POST" })
         return { ok: false as const, code: "malformed_output" as const, error: "OpenAI returned incomplete details. Please try again." };
       }
       console.info("[ops-upload] OpenAI SEO usage", { model: "gpt-5.6-luna", field, ...body.usage });
+      if (role !== "admin") {
+        await sql.query(
+          `insert into ai_generation_events (id, user_id, kind) values ($1, $2, 'wallpaper_seo')`,
+          [crypto.randomUUID(), context.userId],
+        );
+      }
       return {
         ok: true as const,
         seo: {
