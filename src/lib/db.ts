@@ -102,7 +102,17 @@ function createNeonSql(): Promise<Sql> {
     types.setTypeParser(OID_INT8, Number);
     types.setTypeParser(OID_DATE, identity);
     types.setTypeParser(OID_INTERVAL, identity);
-    const pool = new Pool({ connectionString: databaseUrl });
+    const pool = new Pool({
+      connectionString: databaseUrl,
+      // Vercel functions can fan out under crawler bursts. Keep each warm
+      // instance deliberately small and release idle sockets quickly.
+      max: 3,
+      min: 0,
+      idleTimeoutMillis: 10_000,
+      connectionTimeoutMillis: 10_000,
+      maxLifetimeSeconds: 300,
+      allowExitOnIdle: true,
+    });
     return toSql(async <T>(text: string, params: unknown[]) => {
       const res = await pool.query(text, params);
       return res.rows as T[];
