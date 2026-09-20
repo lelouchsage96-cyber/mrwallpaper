@@ -110,7 +110,6 @@ function createNeonSql(): Promise<Sql> {
       min: 0,
       idleTimeoutMillis: 10_000,
       connectionTimeoutMillis: 10_000,
-      maxLifetimeSeconds: 300,
       allowExitOnIdle: true,
     });
     return toSql(async <T>(text: string, params: unknown[]) => {
