@@ -59,6 +59,45 @@ async function settle<T>(label: string, task: Promise<T>, fallback: T): Promise<
   }
 }
 
+type PublicReadCacheEntry = {
+  expiresAt: number;
+  value: Promise<unknown>;
+};
+
+const cacheGlobal = globalThis as typeof globalThis & {
+  __mrwallpaperPublicReadCache__?: Map<string, PublicReadCacheEntry>;
+};
+
+const publicReadCache =
+  cacheGlobal.__mrwallpaperPublicReadCache__ ??=
+    new Map<string, PublicReadCacheEntry>();
+
+function cachedPublicRead<T>(key: string, ttlMs: number, load: () => Promise<T>): Promise<T> {
+  const now = Date.now();
+  const hit = publicReadCache.get(key);
+  if (hit && hit.expiresAt > now) return hit.value as Promise<T>;
+  if (hit) publicReadCache.delete(key);
+
+  let value: Promise<T>;
+  value = load().catch((err) => {
+    if (publicReadCache.get(key)?.value === value) publicReadCache.delete(key);
+    throw err;
+  });
+  publicReadCache.set(key, { expiresAt: now + ttlMs, value });
+
+  if (publicReadCache.size > 200) {
+    for (const [cacheKey, entry] of publicReadCache) {
+      if (entry.expiresAt <= now) publicReadCache.delete(cacheKey);
+    }
+    while (publicReadCache.size > 200) {
+      const oldest = publicReadCache.keys().next().value as string | undefined;
+      if (!oldest) break;
+      publicReadCache.delete(oldest);
+    }
+  }
+  return value;
+}
+
 const PREMIUM_PLANS: PremiumPlan[] = [];
 
 const emptyHome = (): HomePayload => ({
@@ -169,6 +208,7 @@ export const getHomeFeed = createServerFn({ method: "GET" })
   .middleware([optionalAuthMiddleware])
   .validator(z.object({ tasteIds: z.array(z.string()).optional() }).optional())
   .handler(async ({ context, data }): Promise<HomePayload> => {
+    const run = async () => {
     try {
     const userId = context.userId;
     let tasteIds = data?.tasteIds ?? [];
@@ -282,6 +322,9 @@ export const getHomeFeed = createServerFn({ method: "GET" })
       console.error("[home] feed", err);
       return emptyHome();
     }
+    };
+    return context.userId ? run() : cachedPublicRead(`home:${JSON.stringify(data ?? {})}`, 120_000, run);
+
   });
 
 export const getAppConfig = createServerFn({ method: "GET" })
@@ -305,7 +348,7 @@ export const getAppConfig = createServerFn({ method: "GET" })
     };
   });
 
-export const getExploreMeta = createServerFn({ method: "GET" }).handler(async (): Promise<ExploreMeta> => {
+export const getExploreMeta = createServerFn({ method: "GET" }).handler(async (): Promise<ExploreMeta> => cachedPublicRead("explore-meta", 300_000, async () => {
   try {
     const categories = await fetchCategories();
     const popularRows = await settle(
@@ -318,7 +361,7 @@ export const getExploreMeta = createServerFn({ method: "GET" }).handler(async ()
     console.error("[explore] meta", err);
     return { categories: [], popular: [] };
   }
-});
+}));
 
 export const searchWallpapers = createServerFn({ method: "GET" })
   .middleware([optionalAuthMiddleware])
@@ -333,6 +376,7 @@ export const searchWallpapers = createServerFn({ method: "GET" })
     }),
   )
   .handler(async ({ context, data }) => {
+    const run = async () => {
     try {
     const cats = await fetchCategories();
     const categoryId = data.categorySlug ? cats.find((c) => c.slug === data.categorySlug)?.id : undefined;
@@ -358,6 +402,9 @@ export const searchWallpapers = createServerFn({ method: "GET" })
       console.error("[search]", err);
       return { items: [] as WallpaperCard[], offset: data.offset ?? 0, hasMore: false };
     }
+    };
+    return context.userId ? run() : cachedPublicRead(`search:${JSON.stringify(data)}`, 120_000, run);
+
   });
 
 export const getCategoryPage = createServerFn({ method: "GET" })
@@ -370,6 +417,7 @@ export const getCategoryPage = createServerFn({ method: "GET" })
     }),
   )
   .handler(async ({ context, data }) => {
+    const run = async () => {
     try {
     const page = data.page ?? (data.offset ? Math.floor(data.offset / PAGE_SIZE) + 1 : 1);
     const offset = (page - 1) * PAGE_SIZE;
@@ -409,12 +457,16 @@ export const getCategoryPage = createServerFn({ method: "GET" })
       console.error("[category]", err);
       return { category: null, hub: null, items: [] as WallpaperCard[], hasMore: false, page: 1, pages: 0 };
     }
+    };
+    return context.userId ? run() : cachedPublicRead(`category:${JSON.stringify(data)}`, 120_000, run);
+
   });
 
 export const getCollectionPage = createServerFn({ method: "GET" })
   .middleware([optionalAuthMiddleware])
   .validator(z.object({ slug: z.string() }))
   .handler(async ({ context, data }) => {
+    const run = async () => {
     try {
       const collections = await fetchCollections();
       const collection = collections.find((c) => c.slug === data.slug) ?? null;
@@ -434,12 +486,16 @@ export const getCollectionPage = createServerFn({ method: "GET" })
       console.error("[collection]", err);
       return { collection: null, items: [] as WallpaperCard[] };
     }
+    };
+    return context.userId ? run() : cachedPublicRead(`collection:${data.slug}`, 300_000, run);
+
   });
 
 export const getWallpaper = createServerFn({ method: "GET" })
   .middleware([optionalAuthMiddleware])
   .validator(z.object({ id: z.string() }))
   .handler(async ({ context, data }) => {
+    const run = async () => {
     try {
     const ref = await lookupWallpaperRef(data.id);
     if (!ref) return { wallpaper: null, related: [] as WallpaperCard[], pair: null, status: "missing" as const };
@@ -480,18 +536,21 @@ export const getWallpaper = createServerFn({ method: "GET" })
       console.error("[wallpaper]", err);
       return { wallpaper: null, related: [] as WallpaperCard[], pair: null, status: "missing" as const };
     }
+    };
+    return context.userId ? run() : cachedPublicRead(`wallpaper:${data.id}`, 300_000, run);
+
   });
 
-export const getPublicSeo = createServerFn({ method: "GET" }).handler(async () => readSeoSettings());
+export const getPublicSeo = createServerFn({ method: "GET" }).handler(async () => cachedPublicRead("public-seo", 600_000, readSeoSettings));
 
-export const getSitemapData = createServerFn({ method: "GET" }).handler(async () => {
+export const getSitemapData = createServerFn({ method: "GET" }).handler(async () => cachedPublicRead("sitemap", 600_000, async () => {
   try {
     return await fetchSitemapEntries();
   } catch (err) {
     console.error("[sitemap]", err);
     return { wallpapers: [], categories: [], collections: [], creators: [], pairs: [] };
   }
-});
+}));
 
 export const getSeoRedirect = createServerFn({ method: "GET" })
   .validator(z.object({ path: z.string() }))
@@ -882,10 +941,14 @@ export const getPairPage = createServerFn({ method: "GET" })
   .middleware([optionalAuthMiddleware])
   .validator(z.object({ slug: z.string() }))
   .handler(async ({ context, data }) => {
+    const run = async () => {
     try {
       return { pair: await fetchPairBySlug(data.slug, context.userId) };
     } catch (err) {
       console.error("[pair]", err);
       return { pair: null };
     }
+    };
+    return context.userId ? run() : cachedPublicRead(`pair:${data.slug}`, 300_000, run);
+
   });
