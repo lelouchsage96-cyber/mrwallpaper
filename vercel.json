@@ -3,7 +3,8 @@
   "git": {
     "deploymentEnabled": {
       "*": false,
-      "main": true
+      "main": true,
+      "optimize-neon-compute-20260920": true
     }
   },
   "images": {
