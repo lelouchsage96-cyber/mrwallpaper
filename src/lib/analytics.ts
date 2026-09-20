@@ -33,6 +33,14 @@ const VISITOR_KEY = "mrwallpapers.analytics.visitor.v1";
 const SESSION_KEY = "mrwallpapers.analytics.session.v1";
 const SOURCE_KEY = "mrwallpapers.analytics.source.v1";
 
+const FIRST_PARTY_DB_EVENTS = new Set<ClientAnalyticsEvent>([
+  "download",
+  "favorite_add",
+  "favorite_remove",
+  "share",
+  "search_zero_results",
+]);
+
 function randomId(prefix: string): string {
   try {
     return `${prefix}_${crypto.randomUUID().replaceAll("-", "")}`;
@@ -108,11 +116,22 @@ export function trackEvent(eventName: ClientAnalyticsEvent, data: EventData = {}
     metadata: data.metadata,
   };
 
-  try {
-    const body = JSON.stringify(payload);
-    if (typeof navigator.sendBeacon === "function") {
-      const sent = navigator.sendBeacon("/api/analytics", new Blob([body], { type: "application/json" }));
-      if (!sent) {
+  // GA4 handles high-volume navigation events. Keep Postgres analytics for
+  // sparse, high-signal product actions so routine browsing cannot keep Neon awake.
+  if (FIRST_PARTY_DB_EVENTS.has(eventName)) {
+    try {
+      const body = JSON.stringify(payload);
+      if (typeof navigator.sendBeacon === "function") {
+        const sent = navigator.sendBeacon("/api/analytics", new Blob([body], { type: "application/json" }));
+        if (!sent) {
+          void fetch("/api/analytics", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body,
+            keepalive: true,
+          }).catch(() => undefined);
+        }
+      } else {
         void fetch("/api/analytics", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -120,16 +139,9 @@ export function trackEvent(eventName: ClientAnalyticsEvent, data: EventData = {}
           keepalive: true,
         }).catch(() => undefined);
       }
-    } else {
-      void fetch("/api/analytics", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body,
-        keepalive: true,
-      }).catch(() => undefined);
+    } catch {
+      // Product actions should never fail because analytics failed.
     }
-  } catch {
-    // Product actions should never fail because analytics failed.
   }
 
   try {
