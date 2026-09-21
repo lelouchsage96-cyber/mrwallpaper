@@ -211,11 +211,10 @@ export async function persistPlateMedia(
   };
 }
 
-export async function removePlateMedia(sql: Sql, wallpaperId: string) {
-  const files = await sql.query<{ id: string; storage: string | null; storage_key: string | null }>(
-    `select id, storage, storage_key from media_files where id like $1`,
-    [`${wallpaperId}-%`],
-  );
+async function removeMediaRows(
+  sql: Sql,
+  files: Array<{ id: string; storage: string | null; storage_key: string | null }>,
+) {
   for (const file of files) {
     if (file.storage === "r2" && file.storage_key) {
       try {
@@ -224,10 +223,32 @@ export async function removePlateMedia(sql: Sql, wallpaperId: string) {
         console.error("[storage] r2 delete", file.storage_key, err);
       }
     }
+    await sql.query(`delete from media_files where id = $1`, [file.id]);
   }
-  if (files.length) {
-    await sql.query(`delete from media_files where id like $1`, [`${wallpaperId}-%`]);
+}
+
+export async function removeMediaFiles(sql: Sql, ids: string[]) {
+  if (!ids.length) return;
+  for (const id of ids) {
+    const files = await sql.query<{ id: string; storage: string | null; storage_key: string | null }>(
+      `select id, storage, storage_key from media_files where id = $1 limit 1`,
+      [id],
+    );
+    await removeMediaRows(sql, files);
   }
+}
+
+export async function removePlateMediaExcept(sql: Sql, wallpaperId: string, keepIds: string[] = []) {
+  const keep = new Set(keepIds);
+  const files = await sql.query<{ id: string; storage: string | null; storage_key: string | null }>(
+    `select id, storage, storage_key from media_files where id like $1`,
+    [`${wallpaperId}-%`],
+  );
+  await removeMediaRows(sql, files.filter((file) => !keep.has(file.id)));
+}
+
+export async function removePlateMedia(sql: Sql, wallpaperId: string) {
+  await removePlateMediaExcept(sql, wallpaperId);
 }
 
 export async function loadMediaFile(id: string) {
