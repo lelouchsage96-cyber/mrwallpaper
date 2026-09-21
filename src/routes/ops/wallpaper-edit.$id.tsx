@@ -147,7 +147,9 @@ function EditWallpaperPage() {
         return;
       }
 
+      const attemptId = crypto.randomUUID().replaceAll("-", "").slice(0, 12);
       const form = new FormData();
+      form.set("attemptId", attemptId);
       form.set("wallpaperId", id);
       form.set("originalKey", originalKey);
       form.set("preview", plate.previewBlob, "preview.jpg");
@@ -166,8 +168,13 @@ function EditWallpaperPage() {
           setMessage("That image is already used by another wallpaper.");
         } else if (result.error === "assets") {
           setMessage("This wallpaper is missing one of its stored image assets, so it was left unchanged.");
+        } else if (result.error === "image") {
+          setMessage("The replacement image failed validation before it could be saved. Please choose the file again.");
+        } else if (result.error === "replace_failed") {
+          const label = result.stage === "storage" ? "media storage" : "database update";
+          setMessage(`Replacement failed during ${label}. The current wallpaper was left unchanged. Ref: ${attemptId}`);
         } else {
-          setMessage("Could not replace the image. The current wallpaper was left unchanged.");
+          setMessage(`Could not replace the image. The current wallpaper was left unchanged. Ref: ${attemptId}`);
         }
         return;
       }
@@ -200,7 +207,7 @@ function EditWallpaperPage() {
         });
     } catch (error) {
       console.error("[ops-wallpaper-edit] replace image", error);
-      setMessage("Could not replace the image. The current wallpaper was left unchanged.");
+      setMessage("The replacement request could not be completed. The current wallpaper was left unchanged.");
     } finally {
       setReplacingImage(false);
     }
