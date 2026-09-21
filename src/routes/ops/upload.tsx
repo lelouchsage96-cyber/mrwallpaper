@@ -111,6 +111,8 @@ function OpsUploadPage() {
       setMessage("Choose a wallpaper before generating SEO.");
       return;
     }
+    const variationIndex = seoGenerationPasses.current[field] + 1;
+    const regenerate = field !== "all" || seoGenerationPasses.current[field] > 0;
     setGeneratingSeo(true);
     setSeoPreview(false);
     setMessage(null);
@@ -136,6 +138,7 @@ function OpsUploadPage() {
         setMessage(result.error);
         return;
       }
+      seoGenerationPasses.current[field] = variationIndex;
       if (field === "all" || field === "title") setTitle(result.seo.title);
       if (field === "all" || field === "description") setDescription(result.seo.description);
       if (field === "all" || field === "tags") setTags(result.seo.tags.join(", "));
