@@ -1,4 +1,4 @@
-export const MRWALLPAPER_AI_CONTEXT_VERSION = "2026-09-18.1";
+export const MRWALLPAPER_AI_CONTEXT_VERSION = "2026-09-21.2";
 
 export type WallpaperSeoCatalogEntry = {
   title: string;
