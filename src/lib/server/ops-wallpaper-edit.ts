@@ -374,19 +374,19 @@ export const replaceOpsWallpaperImage = createServerFn({ method: "POST" })
                  else $17
                end,
                width = case kind
-                 when 'thumbnail' then $10
-                 when 'preview' then $14
-                 else $2
+                 when 'thumbnail' then $10::integer
+                 when 'preview' then $14::integer
+                 else $2::integer
                end,
                height = case kind
-                 when 'thumbnail' then $11
-                 when 'preview' then $15
-                 else $3
+                 when 'thumbnail' then $11::integer
+                 when 'preview' then $15::integer
+                 else $3::integer
                end,
                bytes = case kind
-                 when 'thumbnail' then $12
-                 when 'preview' then $16
-                 else $4
+                 when 'thumbnail' then $12::integer
+                 when 'preview' then $16::integer
+                 else $4::integer
                end,
                mime = case when kind = 'original' then $18 else 'image/jpeg' end,
                is_public = case when kind = 'original' then false else true end
@@ -395,9 +395,9 @@ export const replaceOpsWallpaperImage = createServerFn({ method: "POST" })
          ),
          changed_wallpaper as (
            update wallpapers
-           set width = $2,
-               height = $3,
-               file_size_bytes = $4,
+           set width = $2::integer,
+               height = $3::integer,
+               file_size_bytes = $4::integer,
                format = $5,
                aspect_ratio = $6,
                sha256 = $7,
