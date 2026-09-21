@@ -8,7 +8,7 @@ export type DbSource = "neon" | "pglite";
 const rawDatabaseUrl =
   typeof process !== "undefined" ? process.env.DATABASE_URL : undefined;
 
-function normalizeDatabaseUrl(value: string | undefined): string | undefined {
+export function normalizeDatabaseUrl(value: string | undefined): string | undefined {
   const trimmed = value?.trim();
   if (!trimmed) return undefined;
   return trimmed.replace(
