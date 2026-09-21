@@ -66,7 +66,7 @@ export const Route = createFileRoute("/wallpaper/$id")({
       seoDescription: w.seoDescription,
       primaryKeyword: w.primaryKeyword,
     });
-    const path = w.canonicalPath || wallpaperPath(w.slug);
+    const path = w.canonicalPath || wallpaperPath(w.slug || w.id);
     return pageHead({
       title: meta.title,
       description: meta.description,
@@ -313,7 +313,7 @@ function DetailsPage() {
                 className="mt-3 inline-flex min-h-11 items-center gap-2 text-xs text-subtle hover:text-fg"
                 onClick={() => {
                   if (!user) {
-                    void navigate({ to: "/login", search: { next: wallpaperPath(wallpaper.slug) } });
+                    void navigate({ to: "/login", search: { next: wallpaperPath(wallpaper.slug || wallpaper.id) } });
                     return;
                   }
                   setReportOpen((open) => !open);

@@ -51,8 +51,10 @@ export function slugify(input: string, fallback = "wallpaper"): string {
   return slug || fallback;
 }
 
-export function wallpaperPath(slug: string): string {
-  return `/wallpaper/${slug}`;
+export function wallpaperPath(slug: string | null | undefined): string {
+  const safeSlug = typeof slug === "string" ? slug.trim() : "";
+  if (!safeSlug || safeSlug === "null" || safeSlug === "undefined") return "/wallpapers";
+  return `/wallpaper/${safeSlug}`;
 }
 
 export function categoryPath(slug: string): string {
