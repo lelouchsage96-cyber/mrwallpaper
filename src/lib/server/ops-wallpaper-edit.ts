@@ -3,12 +3,18 @@ import { z } from "zod";
 import { getSql, type Sql } from "@/lib/db";
 import { authMiddleware } from "@/lib/auth/middleware";
 import { parseDeviceType, type DeviceType } from "@/lib/device";
-import { resolveOwnedThumb } from "@/lib/media";
+import { resolveOwnedThumb, sniffImage } from "@/lib/media";
 import { fetchCategories } from "./queries";
 import type { Category } from "@/lib/types";
 import { buildWallpaperSeoFields, normalizeTag } from "@/lib/wallpaper-seo";
+import { SHA256 } from "@/lib/hash";
+import { MAX_ORIGINAL_BYTES } from "@/lib/upload-limit";
+import { sha256Buffer } from "./dupes";
+import { persistPlateMedia, removeMediaFiles, removePlateMediaExcept } from "./storage";
 
 const MAX_TAGS = 18;
+const MAX_PREVIEW = MAX_ORIGINAL_BYTES;
+const MAX_THUMB = 800_000;
 
 class ForbiddenError extends Error {
   readonly status = 403;
@@ -206,5 +212,212 @@ export const updateOpsWallpaperMetadata = createServerFn({ method: "POST" })
     );
     await replaceTags(sql, data.wallpaperId, tags);
     return { ok: true as const };
+  });
+
+function editFormString(form: FormData, key: string): string {
+  const value = form.get(key);
+  return typeof value === "string" ? value.trim() : "";
+}
+
+async function editFormBuffer(form: FormData, key: string, max: number): Promise<Buffer | null> {
+  const value = form.get(key);
+  if (!(value instanceof Blob)) return null;
+  if (value.size < 32 || value.size > max) return null;
+  return Buffer.from(await value.arrayBuffer());
+}
+
+function editFormHex(form: FormData, key: string): string | null {
+  const value = editFormString(form, key).toLowerCase();
+  return SHA256.test(value) ? value : null;
+}
+
+function replacementAspectLabel(width: number, height: number): string {
+  if (!width || !height) return "1:1";
+  const ratio = width / height;
+  const presets: [number, string][] = [
+    [9 / 16, "9:16"],
+    [9 / 19.5, "9:19.5"],
+    [9 / 20, "9:20"],
+    [16 / 9, "16:9"],
+    [1, "1:1"],
+    [4 / 3, "4:3"],
+    [3 / 4, "3:4"],
+    [3 / 2, "3:2"],
+    [2 / 3, "2:3"],
+    [21 / 9, "21:9"],
+    [9 / 21, "9:21"],
+  ];
+  const hit = presets.find(([value]) => Math.abs(ratio - value) < 0.045);
+  return hit ? hit[1] : `${width}:${height}`;
+}
+
+export const replaceOpsWallpaperImage = createServerFn({ method: "POST" })
+  .middleware([authMiddleware])
+  .validator((input: unknown) => {
+    if (typeof FormData !== "undefined" && input instanceof FormData) return input;
+    throw new Error("Expected FormData");
+  })
+  .handler(async ({ context, data }) => {
+    const sql = await requireAdmin(context.userId);
+    const wallpaperId = editFormString(data, "wallpaperId");
+    if (!wallpaperId) return { ok: false as const, error: "not_found" as const };
+
+    const current = await sql.query<{ id: string }>(
+      `select id from wallpapers where id = $1 limit 1`,
+      [wallpaperId],
+    );
+    if (!current[0]) return { ok: false as const, error: "not_found" as const };
+
+    const assetRows = await sql.query<{ kind: string }>(
+      `select kind from wallpaper_assets
+       where wallpaper_id = $1 and kind in ('thumbnail', 'preview', 'original')`,
+      [wallpaperId],
+    );
+    const assetKinds = new Set(assetRows.map((row) => row.kind));
+    if (!assetKinds.has("thumbnail") || !assetKinds.has("preview") || !assetKinds.has("original")) {
+      return { ok: false as const, error: "assets" as const };
+    }
+
+    const originalKey = editFormString(data, "originalKey");
+    const preview = await editFormBuffer(data, "preview", MAX_PREVIEW);
+    const thumb = await editFormBuffer(data, "thumb", MAX_THUMB);
+    if (!originalKey || !preview || !thumb) {
+      return { ok: false as const, error: "image" as const };
+    }
+
+    const width = Number(editFormString(data, "width")) || 0;
+    const height = Number(editFormString(data, "height")) || 0;
+    const originalBytes = Number(editFormString(data, "bytes")) || 0;
+    const rawMime = editFormString(data, "mime");
+    const mime = /^(image\/jpeg|image\/png|image\/webp)$/i.test(rawMime) ? rawMime : "image/jpeg";
+    const rawFormat = editFormString(data, "format");
+    const format: "jpg" | "png" | "webp" =
+      rawFormat === "png" || rawFormat === "webp" ? rawFormat : "jpg";
+    const previewMeta = sniffImage(preview);
+    const thumbMeta = sniffImage(thumb);
+    if (width < 8 || height < 8 || originalBytes < 1 || !previewMeta || !thumbMeta) {
+      return { ok: false as const, error: "image" as const };
+    }
+
+    const fileSha = editFormHex(data, "fileSha256") ?? sha256Buffer(preview);
+    const sourceSha = editFormHex(data, "sourceSha256") ?? fileSha;
+    const duplicate = await sql.query<{ id: string }>(
+      `select id from wallpapers
+       where id <> $3 and (sha256 = $1 or source_sha256 = $2)
+       limit 1`,
+      [fileSha, sourceSha, wallpaperId],
+    );
+    if (duplicate[0]) return { ok: false as const, error: "duplicate" as const };
+
+    const stored = await persistPlateMedia(sql, {
+      wallpaperId,
+      original: Buffer.alloc(0),
+      originalKey,
+      originalBytes,
+      preview,
+      thumb,
+      mime,
+      format,
+      width,
+      height,
+      previewWidth: previewMeta.width,
+      previewHeight: previewMeta.height,
+      thumbWidth: thumbMeta.width,
+      thumbHeight: thumbMeta.height,
+    });
+    const keepIds = [stored.originalId, stored.previewId, stored.thumbId];
+
+    try {
+      const updated = await sql.query<{ id: string; asset_count: number }>(
+        `with changed_assets as (
+           update wallpaper_assets
+           set bucket = case when kind = 'original' then 'protected' else 'public' end,
+               path = case kind
+                 when 'thumbnail' then $9
+                 when 'preview' then $13
+                 else $17
+               end,
+               width = case kind
+                 when 'thumbnail' then $10
+                 when 'preview' then $14
+                 else $2
+               end,
+               height = case kind
+                 when 'thumbnail' then $11
+                 when 'preview' then $15
+                 else $3
+               end,
+               bytes = case kind
+                 when 'thumbnail' then $12
+                 when 'preview' then $16
+                 else $4
+               end,
+               mime = case when kind = 'original' then $18 else 'image/jpeg' end,
+               is_public = case when kind = 'original' then false else true end
+           where wallpaper_id = $1 and kind in ('thumbnail', 'preview', 'original')
+           returning kind
+         ),
+         changed_wallpaper as (
+           update wallpapers
+           set width = $2,
+               height = $3,
+               file_size_bytes = $4,
+               format = $5,
+               aspect_ratio = $6,
+               sha256 = $7,
+               source_sha256 = $8,
+               updated_at = now()
+           where id = $1
+           returning id
+         )
+         select w.id, (select count(*)::int from changed_assets) as asset_count
+         from changed_wallpaper w`,
+        [
+          wallpaperId,
+          width,
+          height,
+          originalBytes,
+          format,
+          replacementAspectLabel(width, height),
+          fileSha,
+          sourceSha,
+          stored.thumbPath,
+          thumbMeta.width,
+          thumbMeta.height,
+          thumb.length,
+          stored.previewPath,
+          previewMeta.width,
+          previewMeta.height,
+          preview.length,
+          stored.originalPath,
+          mime,
+        ],
+      );
+      if (!updated[0]?.id) {
+        throw new Error("Wallpaper assets could not be updated.");
+      }
+      if (updated[0].asset_count < 3) {
+        console.error("[ops-wallpaper-edit] replacement updated fewer assets than expected", {
+          wallpaperId,
+          assetCount: updated[0].asset_count,
+        });
+      }
+    } catch (error) {
+      await removeMediaFiles(sql, keepIds).catch((cleanupError) =>
+        console.error("[ops-wallpaper-edit] replacement cleanup", cleanupError),
+      );
+      throw error;
+    }
+
+    await removePlateMediaExcept(sql, wallpaperId, keepIds).catch((error) =>
+      console.error("[ops-wallpaper-edit] old media cleanup", error),
+    );
+
+    return {
+      ok: true as const,
+      width,
+      height,
+      thumbnailUrl: stored.thumbPath,
+    };
   });
 
