@@ -46,6 +46,8 @@ export function buildWallpaperSeoDeveloperPrompt(input: {
   supports4k: boolean;
   field: "all" | "title" | "description" | "tags" | "altText" | "primaryKeyword";
   catalogContext?: string;
+  regenerate?: boolean;
+  variationIndex?: number;
 }) {
   const taskRules = [
     "TASK RULES",
@@ -63,6 +65,25 @@ export function buildWallpaperSeoDeveloperPrompt(input: {
       : "- Generate only the " + input.field + " field and copy the supplied values for every other field.",
   ].join("\n");
 
+  const regeneration = input.regenerate
+    ? [
+        "",
+        "REGENERATION MODE",
+        "- The currently supplied value for the requested field was rejected by the editor. Do not return the same wording or a cosmetic rewrite.",
+        "- Produce a materially different but still accurate alternative. Keep only factual anchors that must stay the same, such as clearly visible quote text, named subjects, or scripture references.",
+        input.field === "all"
+          ? "- Rebuild the SEO package from a different accurate search angle. Change the title structure, primary keyword phrasing, description wording, and a substantial portion of the tags."
+          : input.field === "tags"
+            ? "- Replace at least half of the supplied tags with different relevant search phrases; do not merely reorder them."
+            : input.field === "description"
+              ? "- Use a different sentence structure and different descriptive emphasis while preserving visible facts."
+              : input.field === "altText"
+                ? "- Rewrite the accessibility description from a different natural sentence structure without adding anything not visible."
+                : "- Change the main phrasing and search angle, not just one adjective or word order.",
+        `- Variation pass: ${Math.max(1, input.variationIndex || 1)}. Use this pass to explore another valid phrasing instead of repeating earlier output.`,
+      ].join("\n")
+    : "";
+
   const catalog = input.catalogContext?.trim()
     ? [
         "",
@@ -72,7 +93,7 @@ export function buildWallpaperSeoDeveloperPrompt(input: {
       ].join("\n")
     : "";
 
-  return [MRWALLPAPER_AI_KNOWLEDGE, "", taskRules, catalog].filter(Boolean).join("\n");
+  return [MRWALLPAPER_AI_KNOWLEDGE, "", taskRules, regeneration, catalog].filter(Boolean).join("\n");
 }
 
 export function buildWallpaperSeoCatalogContext(entries: WallpaperSeoCatalogEntry[], limit = 80): string {
