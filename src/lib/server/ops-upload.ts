@@ -157,6 +157,134 @@ export const getCommunityUploadMeta = createServerFn({ method: "GET" })
     return { categories: await fetchCategories(), aiDailyLimit: 8 };
   });
 
+
+function seoTagOverlap(current: string | undefined, generated: string[]): number {
+  const left = new Set(
+    (current || "")
+      .split(",")
+      .map((tag) => normalizeTag(tag))
+      .filter((tag) => tag.length >= 2),
+  );
+  const right = new Set(generated.map((tag) => normalizeTag(tag)).filter((tag) => tag.length >= 2));
+  if (!left.size || !right.size) return 0;
+  let shared = 0;
+  for (const tag of left) if (right.has(tag)) shared += 1;
+  return shared / Math.min(left.size, right.size);
+}
+
+function seoRegenerationTooSimilar(
+  data: {
+    title?: string;
+    description?: string;
+    tags?: string;
+    altText?: string;
+    primaryKeyword?: string;
+  },
+  generated: GeneratedWallpaperSeo,
+  field: SeoField,
+): boolean {
+  const titleSimilarity = wordSimilarity(data.title || "", generated.title || "");
+  const descriptionSimilarity = wordSimilarity(data.description || "", generated.description || "");
+  const altSimilarity = wordSimilarity(data.altText || "", generated.altText || "");
+  const keywordSimilarity = wordSimilarity(data.primaryKeyword || "", generated.primaryKeyword || "");
+  const tagsSimilarity = seoTagOverlap(data.tags, generated.tags || []);
+
+  if (field === "title") return titleSimilarity >= 0.72;
+  if (field === "description") return descriptionSimilarity >= 0.82;
+  if (field === "altText") return altSimilarity >= 0.82;
+  if (field === "primaryKeyword") return keywordSimilarity >= 0.72;
+  if (field === "tags") return tagsSimilarity >= 0.65;
+
+  const tooClose = [
+    titleSimilarity >= 0.78,
+    descriptionSimilarity >= 0.86,
+    altSimilarity >= 0.86,
+    keywordSimilarity >= 0.78,
+    tagsSimilarity >= 0.7,
+  ].filter(Boolean).length;
+  return (titleSimilarity >= 0.82 && keywordSimilarity >= 0.82) || tooClose >= 3;
+}
+
+type SeoModelCall =
+  | { ok: true; parsed: GeneratedWallpaperSeo; usage?: { input_tokens?: number; output_tokens?: number } }
+  | { ok: false; status: number; detail: string };
+
+async function requestWallpaperSeoCandidate(input: {
+  apiKey: string;
+  developerPrompt: string;
+  userText: string;
+  imageDataUrl: string;
+  field: SeoField;
+  categories: Category[];
+}): Promise<SeoModelCall> {
+  const response = await fetch("https://api.openai.com/v1/responses", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${input.apiKey}`,
+    },
+    body: JSON.stringify({
+      model: "gpt-5.6-luna",
+      reasoning: { effort: "none" },
+      max_output_tokens: input.field === "all" ? 700 : 300,
+      store: false,
+      input: [
+        {
+          role: "developer",
+          content: [{ type: "input_text", text: input.developerPrompt }],
+        },
+        {
+          role: "user",
+          content: [
+            { type: "input_text", text: input.userText },
+            { type: "input_image", image_url: input.imageDataUrl, detail: "high" },
+          ],
+        },
+      ],
+      text: {
+        format: {
+          type: "json_schema",
+          name: "wallpaper_seo",
+          strict: true,
+          schema: {
+            type: "object",
+            properties: {
+              primaryKeyword: { type: "string" },
+              title: { type: "string" },
+              description: { type: "string" },
+              tags: { type: "array", items: { type: "string" }, minItems: 12, maxItems: 18 },
+              altText: { type: "string" },
+              categoryId: { type: "string", enum: input.categories.map((category) => category.id) },
+            },
+            required: ["primaryKeyword", "title", "description", "tags", "altText", "categoryId"],
+            additionalProperties: false,
+          },
+        },
+      },
+    }),
+  });
+
+  if (!response.ok) {
+    return { ok: false, status: response.status, detail: (await response.text()).slice(0, 500) };
+  }
+
+  const body = (await response.json()) as {
+    output?: unknown;
+    usage?: { input_tokens?: number; output_tokens?: number };
+  };
+  const outputText = (Array.isArray(body.output) ? body.output : [])
+    .flatMap((item) => item?.type === "message" && Array.isArray(item.content) ? item.content : [])
+    .filter((part) => part?.type === "output_text" && typeof part.text === "string")
+    .map((part) => part.text)
+    .join("");
+
+  return {
+    ok: true,
+    parsed: JSON.parse(outputText || "{}") as GeneratedWallpaperSeo,
+    usage: body.usage,
+  };
+}
+
 export const generateWallpaperSeo = createServerFn({ method: "POST" })
   .middleware([authMiddleware])
   .validator((input: {
