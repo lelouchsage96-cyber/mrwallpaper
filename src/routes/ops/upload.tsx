@@ -43,6 +43,14 @@ async function putOriginal(file: File): Promise<string | null> {
 function OpsUploadPage() {
   const navigate = useNavigate();
   const fileRef = useRef<HTMLInputElement>(null);
+  const seoGenerationPasses = useRef<Record<SeoField, number>>({
+    all: 0,
+    title: 0,
+    description: 0,
+    tags: 0,
+    altText: 0,
+    primaryKeyword: 0,
+  });
   const [categories, setCategories] = useState<Category[]>([]);
   const [encoded, setEncoded] = useState<Encoded | null>(null);
   const [sourceFile, setSourceFile] = useState<File | null>(null);
@@ -120,6 +128,8 @@ function OpsUploadPage() {
           width: encoded.plate.width,
           height: encoded.plate.height,
           field,
+          regenerate,
+          variationIndex,
         },
       });
       if (!result.ok) {
