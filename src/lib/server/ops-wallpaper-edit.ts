@@ -278,11 +278,20 @@ export const replaceOpsWallpaperImage = createServerFn({ method: "POST" })
       return { ok: false as const, error: "assets" as const };
     }
 
+    const attemptId = editFormString(data, "attemptId").slice(0, 40) || "unknown";
     const originalKey = editFormString(data, "originalKey");
     const preview = await editFormBuffer(data, "preview", MAX_PREVIEW);
     const thumb = await editFormBuffer(data, "thumb", MAX_THUMB);
     if (!originalKey || !preview || !thumb) {
-      return { ok: false as const, error: "image" as const };
+      console.warn("[ops-wallpaper-edit] replacement rejected", {
+        wallpaperId,
+        attemptId,
+        reason: "missing_image_payload",
+        hasOriginalKey: Boolean(originalKey),
+        previewBytes: preview?.length ?? 0,
+        thumbBytes: thumb?.length ?? 0,
+      });
+      return { ok: false as const, error: "image" as const, stage: "validation" as const };
     }
 
     const width = Number(editFormString(data, "width")) || 0;
@@ -296,7 +305,21 @@ export const replaceOpsWallpaperImage = createServerFn({ method: "POST" })
     const previewMeta = sniffImage(preview);
     const thumbMeta = sniffImage(thumb);
     if (width < 8 || height < 8 || originalBytes < 1 || !previewMeta || !thumbMeta) {
-      return { ok: false as const, error: "image" as const };
+      console.warn("[ops-wallpaper-edit] replacement rejected", {
+        wallpaperId,
+        attemptId,
+        reason: "invalid_image_metadata",
+        width,
+        height,
+        originalBytes,
+        previewBytes: preview.length,
+        thumbBytes: thumb.length,
+        previewDetected: Boolean(previewMeta),
+        thumbDetected: Boolean(thumbMeta),
+        mime,
+        format,
+      });
+      return { ok: false as const, error: "image" as const, stage: "validation" as const };
     }
 
     const fileSha = editFormHex(data, "fileSha256") ?? sha256Buffer(preview);
@@ -307,27 +330,40 @@ export const replaceOpsWallpaperImage = createServerFn({ method: "POST" })
        limit 1`,
       [fileSha, sourceSha, wallpaperId],
     );
-    if (duplicate[0]) return { ok: false as const, error: "duplicate" as const };
+    if (duplicate[0]) {
+      console.warn("[ops-wallpaper-edit] replacement rejected", {
+        wallpaperId,
+        attemptId,
+        reason: "duplicate",
+        duplicateWallpaperId: duplicate[0].id,
+      });
+      return { ok: false as const, error: "duplicate" as const };
+    }
 
-    const stored = await persistPlateMedia(sql, {
-      wallpaperId,
-      original: Buffer.alloc(0),
-      originalKey,
-      originalBytes,
-      preview,
-      thumb,
-      mime,
-      format,
-      width,
-      height,
-      previewWidth: previewMeta.width,
-      previewHeight: previewMeta.height,
-      thumbWidth: thumbMeta.width,
-      thumbHeight: thumbMeta.height,
-    });
-    const keepIds = [stored.originalId, stored.previewId, stored.thumbId];
+    let stage: "storage" | "database" = "storage";
+    let stored: Awaited<ReturnType<typeof persistPlateMedia>> | null = null;
+    let keepIds: string[] = [];
 
     try {
+      stored = await persistPlateMedia(sql, {
+        wallpaperId,
+        original: Buffer.alloc(0),
+        originalKey,
+        originalBytes,
+        preview,
+        thumb,
+        mime,
+        format,
+        width,
+        height,
+        previewWidth: previewMeta.width,
+        previewHeight: previewMeta.height,
+        thumbWidth: thumbMeta.width,
+        thumbHeight: thumbMeta.height,
+      });
+      keepIds = [stored.originalId, stored.previewId, stored.thumbId];
+      stage = "database";
+
       const updated = await sql.query<{ id: string; asset_count: number }>(
         `with changed_assets as (
            update wallpaper_assets
@@ -403,15 +439,44 @@ export const replaceOpsWallpaperImage = createServerFn({ method: "POST" })
         });
       }
     } catch (error) {
-      await removeMediaFiles(sql, keepIds).catch((cleanupError) =>
-        console.error("[ops-wallpaper-edit] replacement cleanup", cleanupError),
-      );
-      throw error;
+      if (keepIds.length) {
+        await removeMediaFiles(sql, keepIds).catch((cleanupError) =>
+          console.error("[ops-wallpaper-edit] replacement cleanup", {
+            wallpaperId,
+            attemptId,
+            cleanupError,
+          }),
+        );
+      }
+      console.error("[ops-wallpaper-edit] replacement failed", {
+        wallpaperId,
+        attemptId,
+        stage,
+        error: error instanceof Error ? error.message : String(error),
+      });
+      return { ok: false as const, error: "replace_failed" as const, stage };
+    }
+
+    if (!stored) {
+      console.error("[ops-wallpaper-edit] replacement failed", {
+        wallpaperId,
+        attemptId,
+        stage: "storage",
+        error: "Storage completed without a stored media result.",
+      });
+      return { ok: false as const, error: "replace_failed" as const, stage: "storage" as const };
     }
 
     await removePlateMediaExcept(sql, wallpaperId, keepIds).catch((error) =>
-      console.error("[ops-wallpaper-edit] old media cleanup", error),
+      console.error("[ops-wallpaper-edit] old media cleanup", { wallpaperId, attemptId, error }),
     );
+
+    console.info("[ops-wallpaper-edit] replacement complete", {
+      wallpaperId,
+      attemptId,
+      width,
+      height,
+    });
 
     return {
       ok: true as const,
