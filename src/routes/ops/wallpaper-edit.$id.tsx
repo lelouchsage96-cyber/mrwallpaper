@@ -172,13 +172,32 @@ function EditWallpaperPage() {
         return;
       }
 
-      const refreshed = await getOpsWallpaperEdit({ data: { wallpaperId: id } });
-      if (refreshed.wallpaper) {
-        setWallpaper(refreshed.wallpaper);
-        setCategories(refreshed.categories);
-      }
+      setWallpaper((current) =>
+        current
+          ? {
+              ...current,
+              thumbnailUrl: result.thumbnailUrl,
+              width: result.width,
+              height: result.height,
+            }
+          : current,
+      );
       cancelReplacement();
       setMessage("Image replaced successfully. The wallpaper URL and metadata were preserved.");
+
+      // The replacement has already committed at this point. Refreshing the
+      // editor is best-effort only, so a transient follow-up request must never
+      // turn a successful replacement into an error message.
+      void getOpsWallpaperEdit({ data: { wallpaperId: id } })
+        .then((refreshed) => {
+          if (refreshed.wallpaper) {
+            setWallpaper(refreshed.wallpaper);
+            setCategories(refreshed.categories);
+          }
+        })
+        .catch((error) => {
+          console.warn("[ops-wallpaper-edit] refresh after replacement", error);
+        });
     } catch (error) {
       console.error("[ops-wallpaper-edit] replace image", error);
       setMessage("Could not replace the image. The current wallpaper was left unchanged.");
