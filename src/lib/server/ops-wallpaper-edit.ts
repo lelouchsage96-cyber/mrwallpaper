@@ -393,8 +393,14 @@ export const replaceOpsWallpaperImage = createServerFn({ method: "POST" })
           mime,
         ],
       );
-      if (!updated[0]?.id || updated[0].asset_count < 3) {
+      if (!updated[0]?.id) {
         throw new Error("Wallpaper assets could not be updated.");
+      }
+      if (updated[0].asset_count < 3) {
+        console.error("[ops-wallpaper-edit] replacement updated fewer assets than expected", {
+          wallpaperId,
+          assetCount: updated[0].asset_count,
+        });
       }
     } catch (error) {
       await removeMediaFiles(sql, keepIds).catch((cleanupError) =>
