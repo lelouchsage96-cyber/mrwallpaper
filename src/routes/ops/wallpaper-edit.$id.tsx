@@ -51,6 +51,14 @@ function EditWallpaperPage() {
   const { id } = Route.useParams();
   const navigate = useNavigate();
   const replacementFileRef = useRef<HTMLInputElement>(null);
+  const seoGenerationPasses = useRef<Record<SeoField, number>>({
+    all: 0,
+    title: 0,
+    description: 0,
+    tags: 0,
+    altText: 0,
+    primaryKeyword: 0,
+  });
   const [wallpaper, setWallpaper] = useState<OpsWallpaperEditData | null>(null);
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
@@ -300,14 +308,18 @@ function EditWallpaperPage() {
 
   async function generateSeo(field: SeoField = "all") {
     if (!wallpaper) return;
+    const variationIndex = seoGenerationPasses.current[field] + 1;
+    const regenerate = field !== "all" || seoGenerationPasses.current[field] > 0;
     setGeneratingSeo(true);
     setMessage("");
     try {
       const result = await generateWallpaperSeo({ data: {
         imageDataUrl: await imageDataUrl(), title, description, tags, altText, primaryKeyword,
         categoryId, deviceType, width: wallpaper.width, height: wallpaper.height, field,
+        regenerate, variationIndex,
       } });
       if (!result.ok) { setMessage(result.error); return; }
+      seoGenerationPasses.current[field] = variationIndex;
       if (field === "all" || field === "title") setTitle(result.seo.title);
       if (field === "all" || field === "description") setDescription(result.seo.description);
       if (field === "all" || field === "tags") setTags(result.seo.tags.join(", "));
@@ -316,7 +328,13 @@ function EditWallpaperPage() {
       if (field === "all") setCategoryId(result.seo.categoryId);
       setConflicts([]);
       setConfirmedConflicts(false);
-      setMessage(field === "all" ? "SEO fields generated. Review and save when ready." : "Field regenerated. Review and save when ready.");
+      setMessage(
+        field === "all"
+          ? regenerate
+            ? "SEO regenerated with a different alternative. Review and save when ready."
+            : "SEO fields generated. Review and save when ready."
+          : "Field regenerated with a different alternative. Review and save when ready.",
+      );
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "SEO generation failed. Please try again.");
     } finally { setGeneratingSeo(false); }
