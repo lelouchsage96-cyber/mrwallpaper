@@ -171,6 +171,8 @@ export const generateWallpaperSeo = createServerFn({ method: "POST" })
     width: number;
     height: number;
     field?: SeoField;
+    regenerate?: boolean;
+    variationIndex?: number;
   }) => input)
   .handler(async ({ context, data }) => {
     const { sql, role } = await requireActiveUser(context.userId);
@@ -215,6 +217,8 @@ export const generateWallpaperSeo = createServerFn({ method: "POST" })
       supports4k,
       field,
       catalogContext,
+      regenerate: Boolean(data.regenerate),
+      variationIndex: Math.max(1, Math.min(20, Number(data.variationIndex) || 1)),
     });
 
     try {
@@ -239,7 +243,7 @@ export const generateWallpaperSeo = createServerFn({ method: "POST" })
               content: [
                 {
                   type: "input_text",
-                  text: `Resolution: ${data.width} × ${data.height}.\nDevice: ${data.deviceType || "unknown"}\nTitle: ${data.title?.trim() || ""}\nDescription: ${data.description?.trim() || ""}\nTags: ${data.tags?.trim() || ""}\nAlt text: ${data.altText?.trim() || ""}\nPrimary keyword: ${data.primaryKeyword?.trim() || ""}\nCategory ID: ${data.categoryId || ""}\n\nAllowed categories:\n${categoryOptions}`,
+                  text: `Resolution: ${data.width} × ${data.height}.\nDevice: ${data.deviceType || "unknown"}\n${data.regenerate ? "The current requested field value below was rejected. Treat it as an example to avoid repeating, not as the desired answer.\n" : ""}Title: ${data.title?.trim() || ""}\nDescription: ${data.description?.trim() || ""}\nTags: ${data.tags?.trim() || ""}\nAlt text: ${data.altText?.trim() || ""}\nPrimary keyword: ${data.primaryKeyword?.trim() || ""}\nCategory ID: ${data.categoryId || ""}\n\nAllowed categories:\n${categoryOptions}`,
                 },
                 { type: "input_image", image_url: data.imageDataUrl, detail: "high" },
               ],
