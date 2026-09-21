@@ -7,7 +7,7 @@ import { tanstackStartCookies } from "better-auth/tanstack-start";
 import { getCookie } from "@tanstack/react-start/server";
 import { randomBytes } from "node:crypto";
 import { Pool } from "pg";
-import { ensureDbReady, getPglite } from "../db";
+import { ensureDbReady, getPglite, normalizeDatabaseUrl } from "../db";
 import { emailAndPasswordEnabled } from "./email-password";
 import { GATE_PROVIDER_ID, gateIdentitySessions } from "./gate-session.server";
 import { GROK_PROVIDERS } from "./providers";
@@ -35,7 +35,7 @@ const env = (key: string): string | undefined => {
   return value ? value : undefined;
 };
 
-const databaseUrl = env("DATABASE_URL");
+const databaseUrl = normalizeDatabaseUrl(env("DATABASE_URL"));
 const authDisabled = env("VITE_AUTH_ENABLED") === "false" && !databaseUrl;
 
 const grokIssuer = env("GROK_AUTH_ISSUER") ?? GROK_ISSUER_DEFAULT;
