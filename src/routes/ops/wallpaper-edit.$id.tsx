@@ -1,23 +1,56 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
-import { AlertTriangle, RotateCcw, Sparkles } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { AlertTriangle, ImageUp, RotateCcw, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
   getOpsWallpaperEdit,
+  replaceOpsWallpaperImage,
   updateOpsWallpaperMetadata,
   type OpsWallpaperEditData,
 } from "@/lib/server/ops-wallpaper-edit";
 import type { Category } from "@/lib/types";
+import { encodePlate } from "@/lib/encode-plate";
+import { getBearerToken } from "@/lib/auth/client";
+import { sha256Blob } from "@/lib/hash";
 import { checkWallpaperSeoConflicts, generateWallpaperSeo, type SeoConflict, type SeoField } from "@/lib/server/ops-upload";
 
 export const Route = createFileRoute("/ops/wallpaper-edit/$id")({ component: EditWallpaperPage });
 
 const statuses = ["draft", "pending", "approved", "rejected", "removed"] as const;
 
+type EncodedReplacement = Awaited<ReturnType<typeof encodePlate>>;
+
+async function putReplacementOriginal(file: File): Promise<string | null> {
+  const token = getBearerToken();
+  const uploadId = crypto.randomUUID();
+  const chunkSize = 2 * 1024 * 1024;
+  const count = Math.max(1, Math.ceil(file.size / chunkSize));
+  let key: string | null = null;
+
+  for (let i = 0; i < count; i += 1) {
+    const blob = file.slice(i * chunkSize, Math.min(file.size, (i + 1) * chunkSize));
+    const headers: Record<string, string> = {
+      "content-type": "application/octet-stream",
+      "x-file-type": file.type || "image/jpeg",
+      "x-file-name": encodeURIComponent(file.name || "wallpaper.jpg"),
+      "x-upload-id": uploadId,
+      "x-chunk-index": String(i),
+      "x-chunk-count": String(count),
+    };
+    if (token) headers.authorization = `Bearer ${token}`;
+    const response = await fetch("/api/ops-original", { method: "POST", headers, body: blob });
+    if (!response.ok) return null;
+    const json = (await response.json()) as { key?: string };
+    if (typeof json.key === "string") key = json.key;
+  }
+  return key;
+}
+
 function EditWallpaperPage() {
   const { id } = Route.useParams();
   const navigate = useNavigate();
+  const replacementFileRef = useRef<HTMLInputElement>(null);
   const [wallpaper, setWallpaper] = useState<OpsWallpaperEditData | null>(null);
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
@@ -34,6 +67,10 @@ function EditWallpaperPage() {
   const [generatingSeo, setGeneratingSeo] = useState(false);
   const [conflicts, setConflicts] = useState<SeoConflict[]>([]);
   const [confirmedConflicts, setConfirmedConflicts] = useState(false);
+  const [replacement, setReplacement] = useState<EncodedReplacement | null>(null);
+  const [replacementSource, setReplacementSource] = useState<File | null>(null);
+  const [processingImage, setProcessingImage] = useState(false);
+  const [replacingImage, setReplacingImage] = useState(false);
 
   useEffect(() => {
     setLoading(true);
@@ -56,6 +93,99 @@ function EditWallpaperPage() {
       .catch(() => setMessage("Could not load this wallpaper."))
       .finally(() => setLoading(false));
   }, [id]);
+
+  function openReplacementPicker() {
+    if (!replacementFileRef.current) return;
+    replacementFileRef.current.value = "";
+    replacementFileRef.current.click();
+  }
+
+  function cancelReplacement() {
+    setReplacement(null);
+    setReplacementSource(null);
+    if (replacementFileRef.current) replacementFileRef.current.value = "";
+  }
+
+  async function chooseReplacement(file?: File) {
+    if (!file) return;
+    setProcessingImage(true);
+    setMessage("");
+    try {
+      const result = await encodePlate(file);
+      if (!result.ok) {
+        setReplacement(null);
+        setReplacementSource(null);
+        setMessage("Please use a JPG, PNG or WebP wallpaper within the upload limit.");
+        return;
+      }
+      setReplacement(result);
+      setReplacementSource(file);
+      setMessage("Replacement ready. Review the preview, then use the new image.");
+    } catch (error) {
+      console.error("[ops-wallpaper-edit] encode replacement", error);
+      setReplacement(null);
+      setReplacementSource(null);
+      setMessage("Could not process this replacement image.");
+    } finally {
+      setProcessingImage(false);
+    }
+  }
+
+  async function replaceImage() {
+    if (!replacement?.ok || !replacementSource) {
+      setMessage("Choose a replacement image first.");
+      return;
+    }
+
+    setReplacingImage(true);
+    setMessage("Uploading replacement…");
+    try {
+      const plate = replacement.plate;
+      const originalKey = await putReplacementOriginal(plate.file);
+      if (!originalKey) {
+        setMessage("Original upload failed. Check your R2 configuration and try again.");
+        return;
+      }
+
+      const form = new FormData();
+      form.set("wallpaperId", id);
+      form.set("originalKey", originalKey);
+      form.set("preview", plate.previewBlob, "preview.jpg");
+      form.set("thumb", plate.thumbBlob, "thumb.jpg");
+      form.set("width", String(plate.width));
+      form.set("height", String(plate.height));
+      form.set("bytes", String(plate.bytes));
+      form.set("mime", plate.mime || "image/jpeg");
+      form.set("format", plate.mime.includes("png") ? "png" : plate.mime.includes("webp") ? "webp" : "jpg");
+      form.set("fileSha256", await sha256Blob(plate.file));
+      form.set("sourceSha256", await sha256Blob(replacementSource));
+
+      const result = await replaceOpsWallpaperImage({ data: form });
+      if (!result.ok) {
+        if (result.error === "duplicate") {
+          setMessage("That image is already used by another wallpaper.");
+        } else if (result.error === "assets") {
+          setMessage("This wallpaper is missing one of its stored image assets, so it was left unchanged.");
+        } else {
+          setMessage("Could not replace the image. The current wallpaper was left unchanged.");
+        }
+        return;
+      }
+
+      const refreshed = await getOpsWallpaperEdit({ data: { wallpaperId: id } });
+      if (refreshed.wallpaper) {
+        setWallpaper(refreshed.wallpaper);
+        setCategories(refreshed.categories);
+      }
+      cancelReplacement();
+      setMessage("Image replaced successfully. The wallpaper URL and metadata were preserved.");
+    } catch (error) {
+      console.error("[ops-wallpaper-edit] replace image", error);
+      setMessage("Could not replace the image. The current wallpaper was left unchanged.");
+    } finally {
+      setReplacingImage(false);
+    }
+  }
 
   if (loading) {
     return <div className="h-64 animate-pulse rounded-xl bg-elevated" />;
@@ -129,6 +259,7 @@ function EditWallpaperPage() {
   }
 
   async function imageDataUrl(): Promise<string> {
+    if (replacement?.ok) return replacement.plate.previewDataUrl;
     if (!wallpaper?.thumbnailUrl) throw new Error("No image is available for analysis.");
     const response = await fetch(wallpaper.thumbnailUrl);
     if (!response.ok) throw new Error("The wallpaper image could not be loaded.");
@@ -171,7 +302,7 @@ function EditWallpaperPage() {
         <div>
           <p className="text-xs font-medium uppercase tracking-widest text-subtle">Wallpaper</p>
           <h1 className="mt-1 font-display text-4xl text-fg">Edit wallpaper</h1>
-          <p className="mt-2 text-sm text-muted">Change metadata without re-uploading the image.</p>
+          <p className="mt-2 text-sm text-muted">Update metadata or safely replace the uploaded image without changing this wallpaper’s URL.</p>
         </div>
         <Button variant="secondary" onClick={() => void navigate({ to: "/ops/wallpapers" })}>
           Back
@@ -190,10 +321,60 @@ function EditWallpaperPage() {
             <div className="aspect-[9/16] w-full rounded-xl bg-surface" />
           )}
           <p className="mt-2 break-all text-xs text-subtle">ID: {wallpaper.id}</p>
+          <input
+            ref={replacementFileRef}
+            type="file"
+            accept="image/jpeg,image/png,image/webp,.jpg,.jpeg,.png,.webp"
+            className="sr-only"
+            onChange={(event) => void chooseReplacement(event.target.files?.[0])}
+          />
+          <Button
+            type="button"
+            variant="secondary"
+            className="mt-3 w-full"
+            disabled={processingImage || replacingImage}
+            onClick={openReplacementPicker}
+          >
+            <ImageUp className="size-4" />
+            {processingImage ? "Preparing…" : replacement?.ok ? "Choose another" : "Replace image"}
+          </Button>
+          {replacement?.ok ? (
+            <div className="mt-4 rounded-xl bg-surface p-3">
+              <p className="text-xs font-medium uppercase tracking-widest text-subtle">New image</p>
+              <img
+                src={replacement.plate.previewDataUrl}
+                alt="Replacement wallpaper preview"
+                className="mt-2 aspect-[9/16] w-full rounded-lg object-cover"
+              />
+              <p className="mt-2 text-xs text-subtle">
+                {replacement.plate.width} × {replacement.plate.height}
+              </p>
+              <Button
+                type="button"
+                className="mt-3 w-full"
+                disabled={replacingImage}
+                onClick={() => void replaceImage()}
+              >
+                {replacingImage ? "Replacing…" : "Use this image"}
+              </Button>
+              <button
+                type="button"
+                className="mt-2 min-h-11 w-full text-sm text-muted hover:text-fg"
+                disabled={replacingImage}
+                onClick={cancelReplacement}
+              >
+                Cancel replacement
+              </button>
+            </div>
+          ) : (
+            <p className="mt-2 text-xs leading-5 text-subtle">
+              JPG, PNG or WebP. Replacing the image keeps the same post, URL, views, likes and SEO metadata.
+            </p>
+          )}
         </div>
 
         <div className="space-y-4">
-          <Button type="button" className="w-full" disabled={generatingSeo || !wallpaper.thumbnailUrl} onClick={() => void generateSeo("all")}><Sparkles className="size-4" />{generatingSeo ? "Analyzing wallpaper…" : "Generate SEO"}</Button>
+          <Button type="button" className="w-full" disabled={generatingSeo || processingImage || replacingImage || (!wallpaper.thumbnailUrl && !replacement?.ok)} onClick={() => void generateSeo("all")}><Sparkles className="size-4" />{generatingSeo ? "Analyzing wallpaper…" : "Generate SEO"}</Button>
           <label className="block text-sm text-muted">
             <span className="flex items-center justify-between">Title <button type="button" disabled={generatingSeo} onClick={() => void generateSeo("title")} className="inline-flex items-center gap-1 text-xs text-subtle hover:text-fg"><RotateCcw className="size-3" /> Regenerate</button></span>
             <Input
@@ -304,7 +485,7 @@ function EditWallpaperPage() {
           {conflicts.length ? <div className="rounded-xl border border-amber-500/40 bg-amber-500/10 p-4" role="alert"><p className="flex items-center gap-2 font-medium text-fg"><AlertTriangle className="size-4" /> Possible duplicate SEO</p>{conflicts.map((conflict) => <p key={`${conflict.kind}-${conflict.wallpaperId}`} className="mt-2 text-sm text-muted">{conflict.message}</p>)}</div> : null}
 
           <div className="flex flex-wrap items-center gap-3 pt-2">
-            <Button onClick={() => void save()} disabled={saving || title.trim().length < 2 || !categoryId}>
+            <Button onClick={() => void save()} disabled={saving || replacingImage || title.trim().length < 2 || !categoryId}>
               {saving ? "Saving…" : "Save changes"}
             </Button>
             {message ? <p className="text-sm text-muted">{message}</p> : null}
