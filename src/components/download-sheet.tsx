@@ -354,12 +354,12 @@ export function DownloadSheet({
           <p className="mt-4 border-t border-border pt-4 text-center text-xs text-subtle">
             Enjoying Mr Wallpapers?{" "}
             <a
-              href={brand.support.patreon}
+              href={brand.support.kofi}
               target="_blank"
               rel="noreferrer"
               className="font-medium text-muted transition-colors hover:text-fg"
             >
-              Support us on Patreon · from $3
+              Support us on Ko-fi
             </a>
           </p>
         ) : null}
