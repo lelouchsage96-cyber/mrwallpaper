@@ -28,7 +28,7 @@ export const Route = createRootRoute({
       { name: "apple-mobile-web-app-status-bar-style", content: "black-translucent" },
       { name: "msapplication-config", content: "/browserconfig.xml" },
       { name: "msapplication-TileColor", content: "#0a0a0b" },
-      { name: "msapplication-TileImage", content: "/icons/v11/icon-192.png?v=11" },
+      { name: "msapplication-TileImage", content: "/icons/v11/icon-192.png?v=12" },
     ] as Array<Record<string, string>>;
     if (seo.gscVerification) meta.push({ name: "google-site-verification", content: seo.gscVerification });
     const scripts: Array<Record<string, string>> = [];
@@ -43,7 +43,7 @@ export const Route = createRootRoute({
         { rel: "icon", type: "image/x-icon", href: "/icons/v11/favicon.ico?v=12" },\n        { rel: "icon", type: "image/png", sizes: "192x192", href: "/icons/v11/icon-192.png?v=12" },
         { rel: "shortcut icon", type: "image/x-icon", href: "/icons/v11/favicon.ico?v=12" },
         { rel: "apple-touch-icon", type: "image/png", sizes: "180x180", href: "/icons/v11/apple-touch-icon-180.png?v=12" },
-        { rel: "apple-touch-icon-precomposed", type: "image/png", sizes: "180x180", href: "/icons/v11/apple-touch-icon-180.png?v=11" },
+        { rel: "apple-touch-icon-precomposed", type: "image/png", sizes: "180x180", href: "/icons/v11/apple-touch-icon-180.png?v=12" },
         { rel: "stylesheet", href: appCss },
         { rel: "manifest", href: "/manifest.webmanifest?v=12" },
         { rel: "sitemap", type: "application/xml", href: "/sitemap.xml" },
