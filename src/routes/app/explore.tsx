@@ -1,5 +1,5 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { ChevronLeft, ChevronRight, X } from "lucide-react";
+import { ChevronDown, SlidersHorizontal, X } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { EmptyState, ErrorState } from "@/components/empty-state";
 import { Input } from "@/components/ui/input";
@@ -73,9 +73,9 @@ function ExplorePage() {
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState(false);
   const [showingSuggestions, setShowingSuggestions] = useState(false);
+  const [filtersOpen, setFiltersOpen] = useState(false);
   const busy = useRef(false);
   const zeroTracked = useRef<string | null>(null);
-  const categoryRailRef = useRef<HTMLDivElement | null>(null);
   const access = search.access;
   const sort = search.sort ?? "trending";
   const categorySlug = search.category;
@@ -83,6 +83,7 @@ function ExplorePage() {
   const selectedCategory = useMemo(() => categories.find((category) => category.slug === categorySlug), [categories, categorySlug]);
   const activeSummary = [deviceChips.find((item) => item.id === device)?.label, selectedCategory?.name, sortChips.find((item) => item.id === sort)?.label].filter(Boolean).join(" · ");
   const hasCustomFilters = Boolean(debounced || categorySlug || device !== "phone" || sort !== "trending" || access);
+  const activeFilterCount = Number(Boolean(categorySlug)) + Number(device !== "phone") + Number(sort !== "trending") + Number(Boolean(access));
 
   useEffect(() => {
     void getSearchMetaV2().then((meta) => { setCategories(meta.categories); setPopular(meta.popular); }).catch(() => undefined);
@@ -99,6 +100,13 @@ function ExplorePage() {
   }, [q]);
 
   useEffect(() => { setQ(search.q ?? ""); setDebounced(search.q ?? ""); }, [search.q]);
+
+  useEffect(() => {
+    if (!filtersOpen) return;
+    const previous = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => { document.body.style.overflow = previous; };
+  }, [filtersOpen]);
 
   function setSearch(next: ExploreSearch) {
     void navigate({
@@ -118,10 +126,6 @@ function ExplorePage() {
     setQ("");
     setDebounced("");
     void navigate({ to: "/app/explore", search: {}, replace: true });
-  }
-
-  function scrollCategories(direction: -1 | 1) {
-    categoryRailRef.current?.scrollBy({ left: direction * 440, behavior: "smooth" });
   }
 
   async function closestMatches(): Promise<WallpaperCard[]> {
@@ -176,23 +180,38 @@ function ExplorePage() {
   }, [debounced]);
 
   const deviceButtons = deviceChips.map((filter) => (
-    <button key={filter.id} type="button" onClick={() => setSearch({ q: debounced || undefined, category: categorySlug, access, sort, device: filter.id })}
-      className={cn("h-9 shrink-0 rounded-full px-4 text-sm transition-colors", device === filter.id ? "bg-fg text-bg" : "bg-elevated text-muted hover:text-fg")}>{filter.label}</button>
+    <button
+      key={filter.id}
+      type="button"
+      onClick={() => setSearch({ q: debounced || undefined, category: categorySlug, access, sort, device: filter.id })}
+      className={cn(
+        "h-9 shrink-0 rounded-full px-4 text-sm font-medium transition-colors",
+        device === filter.id ? "bg-fg text-bg" : "bg-elevated text-muted hover:text-fg",
+      )}
+    >
+      {filter.label}
+    </button>
   ));
-  const categoryButtons = categories.map((category) => (
-    <button key={category.id} type="button" onClick={() => setSearch({ q: debounced || undefined, category: category.slug === categorySlug ? undefined : category.slug, access, sort, device })}
-      className={cn("h-9 shrink-0 rounded-full px-4 text-sm transition-colors", categorySlug === category.slug ? "bg-fg text-bg" : "bg-elevated text-muted hover:text-fg")}>{category.name}</button>
-  ));
+
   const sortButtons = sortChips.map((filter) => (
-    <button key={filter.id} type="button" onClick={() => setSearch({ q: debounced || undefined, category: categorySlug, access, sort: filter.id, device })}
-      className={cn("h-9 shrink-0 rounded-full px-4 text-sm transition-colors", sort === filter.id ? "bg-fg text-bg" : "bg-elevated text-muted hover:text-fg")}>{filter.label}</button>
+    <button
+      key={filter.id}
+      type="button"
+      onClick={() => setSearch({ q: debounced || undefined, category: categorySlug, access, sort: filter.id, device })}
+      className={cn(
+        "h-9 shrink-0 rounded-full px-4 text-sm font-medium transition-colors",
+        sort === filter.id ? "bg-fg text-bg" : "bg-elevated text-muted hover:text-fg",
+      )}
+    >
+      {filter.label}
+    </button>
   ));
 
   return (
-    <div className="px-4 pt-5 lg:px-6 lg:pt-6 xl:px-8">
-      <h1 className="font-display text-3xl text-fg lg:text-4xl">{t.explore.title}</h1>
+    <div className="px-4 pt-5 lg:px-6 lg:pt-5 xl:px-8">
+      <h1 className="font-display text-3xl text-fg lg:hidden">{t.explore.title}</h1>
 
-      <div className="sticky top-[env(safe-area-inset-top)] z-30 -mx-4 mt-4 border-y border-border/80 bg-bg/95 px-4 py-3 backdrop-blur-xl lg:hidden">
+      <div className="sticky top-[env(safe-area-inset-top)] z-30 -mx-4 mt-4 border-y border-border/70 bg-bg/95 px-4 py-3 backdrop-blur-xl lg:hidden">
         <Input
           value={q}
           onChange={(event) => setQ(event.target.value)}
@@ -201,73 +220,111 @@ function ExplorePage() {
           type="search"
           className="text-base sm:text-sm"
         />
-        {categories.length > 0 ? (
-          <div className="mt-3 flex flex-nowrap gap-2 overflow-x-auto pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-            {categoryButtons}
-          </div>
-        ) : null}
+
+        <div className="mt-3 flex items-center justify-between gap-3">
+          <button
+            type="button"
+            onClick={() => setFiltersOpen(true)}
+            className="inline-flex h-10 items-center gap-2 rounded-full border border-border bg-elevated/65 px-4 text-sm font-medium text-fg transition-colors active:bg-surface"
+          >
+            <SlidersHorizontal className="size-4" strokeWidth={1.8} />
+            Filters
+            {activeFilterCount > 0 ? (
+              <span className="grid size-5 place-items-center rounded-full bg-fg text-[11px] font-semibold text-bg">
+                {activeFilterCount}
+              </span>
+            ) : null}
+          </button>
+
+          <span className="min-w-0 truncate text-xs text-subtle">{activeSummary}</span>
+        </div>
       </div>
 
-      {!debounced && popular.length > 0 ? (
-        <div className="mt-4 lg:hidden">
-          <p className="mb-2 text-xs tracking-[0.16em] text-subtle uppercase">{t.explore.popularSearches}</p>
-          <div className="flex flex-wrap gap-2">{popular.map((term) => <button key={term} type="button" onClick={() => { setQ(term); setDebounced(term); setSearch({ q: term, category: categorySlug, access, sort, device: "all" }); }} className="h-9 rounded-full bg-elevated px-3 text-sm text-muted hover:text-fg">{term}</button>)}</div>
-        </div>
-      ) : null}
+      <div className="hidden lg:sticky lg:top-[4.5rem] lg:z-30 lg:block lg:rounded-2xl lg:border lg:border-border/70 lg:bg-bg/94 lg:p-2 lg:shadow-[0_8px_24px_rgba(0,0,0,0.12)] lg:backdrop-blur-xl">
+        <div className="flex items-center gap-3">
+          <div className="flex shrink-0 items-center gap-1 rounded-xl bg-elevated/55 p-1">
+            {deviceChips.map((filter) => (
+              <button
+                key={filter.id}
+                type="button"
+                onClick={() => setSearch({ q: debounced || undefined, category: categorySlug, access, sort, device: filter.id })}
+                className={cn(
+                  "h-8 rounded-lg px-3 text-xs font-medium transition-colors",
+                  device === filter.id ? "bg-fg text-bg" : "text-muted hover:bg-surface hover:text-fg",
+                )}
+              >
+                {filter.label}
+              </button>
+            ))}
+          </div>
 
-      <div className="mt-5 lg:hidden">
-        <p className="mb-2 text-xs tracking-[0.16em] text-subtle uppercase">Browse by color</p>
-        <div className="flex gap-2 overflow-x-auto pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-          {colorChips.map((color) => (
-            <button
-              key={color.query}
-              type="button"
-              onClick={() => {
-                setQ(color.query);
-                setDebounced(color.query);
-                setSearch({ q: color.query, category: categorySlug, access, sort, device: "all" });
-              }}
-              className="flex h-10 shrink-0 items-center gap-2 rounded-full bg-elevated px-3 text-sm text-muted active:scale-[0.98]"
+          <div className="relative shrink-0">
+            <select
+              aria-label="Wallpaper category"
+              value={categorySlug ?? ""}
+              onChange={(event) => setSearch({ q: debounced || undefined, category: event.target.value || undefined, access, sort, device })}
+              className="h-10 min-w-44 appearance-none rounded-xl border border-border/70 bg-elevated/45 pl-3 pr-9 text-sm text-fg outline-none transition-colors hover:bg-elevated focus:border-fg/25"
             >
-              <span
-                className="size-4 rounded-full border border-white/20 shadow-sm"
-                style={{ backgroundColor: color.swatch }}
-                aria-hidden="true"
-              />
-              {color.label}
+              <option value="">All categories</option>
+              {categories.map((category) => (
+                <option key={category.id} value={category.slug}>{category.name}</option>
+              ))}
+            </select>
+            <ChevronDown className="pointer-events-none absolute right-3 top-1/2 size-4 -translate-y-1/2 text-muted" aria-hidden="true" />
+          </div>
+
+          <div className="ml-auto flex min-w-0 items-center gap-1 rounded-xl bg-elevated/55 p-1">
+            {sortChips.map((filter) => (
+              <button
+                key={filter.id}
+                type="button"
+                onClick={() => setSearch({ q: debounced || undefined, category: categorySlug, access, sort: filter.id, device })}
+                className={cn(
+                  "h-8 rounded-lg px-3 text-xs font-medium transition-colors",
+                  sort === filter.id ? "bg-fg text-bg" : "text-muted hover:bg-surface hover:text-fg",
+                )}
+              >
+                {filter.label}
+              </button>
+            ))}
+          </div>
+
+          {hasCustomFilters ? (
+            <button
+              type="button"
+              onClick={clearFilters}
+              className="inline-flex size-9 shrink-0 items-center justify-center rounded-xl border border-border/70 text-muted transition-colors hover:bg-elevated hover:text-fg"
+              aria-label="Clear filters"
+              title="Clear filters"
+            >
+              <X className="size-4" />
             </button>
-          ))}
+          ) : null}
         </div>
       </div>
 
-      <div className="lg:hidden">
-        <div className="mt-4 flex flex-nowrap gap-2 overflow-x-auto pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">{deviceButtons}</div>
-        <div className="mt-3 flex flex-nowrap gap-2 overflow-x-auto pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">{sortButtons}</div>
-      </div>
-
-      <div className="mt-5 hidden lg:sticky lg:top-[4.5rem] lg:z-30 lg:block lg:rounded-2xl lg:border lg:border-border/80 lg:bg-bg/95 lg:p-3 lg:shadow-[0_8px_24px_rgba(0,0,0,0.16)] lg:backdrop-blur-xl">
-        <div className="flex items-center justify-between gap-6">
-          <div className="flex shrink-0 gap-2">{deviceButtons}</div>
-          <div className="flex min-w-0 items-center gap-3">
-            <span className="truncate text-xs text-subtle">{activeSummary}</span>
-            {hasCustomFilters ? <button type="button" onClick={clearFilters} className="inline-flex h-8 shrink-0 items-center gap-1 rounded-full border border-border px-3 text-xs font-medium text-muted hover:bg-elevated hover:text-fg"><X className="size-3.5" />Clear</button> : null}
-            <div className="flex shrink-0 gap-2">{sortButtons}</div>
-          </div>
-        </div>
-        {categories.length > 0 ? (
-          <div className="mt-3 flex items-center gap-2">
-            <button type="button" onClick={() => scrollCategories(-1)} aria-label="Scroll categories left" className="grid size-8 shrink-0 place-items-center rounded-full bg-elevated text-muted hover:bg-surface hover:text-fg"><ChevronLeft className="size-4" /></button>
-            <div ref={categoryRailRef} className="flex min-w-0 flex-1 gap-2 overflow-x-auto scroll-smooth [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">{categoryButtons}</div>
-            <button type="button" onClick={() => scrollCategories(1)} aria-label="Scroll categories right" className="grid size-8 shrink-0 place-items-center rounded-full bg-elevated text-muted hover:bg-surface hover:text-fg"><ChevronRight className="size-4" /></button>
-          </div>
-        ) : null}
-      </div>
-
-      <div className="mt-5 lg:mt-6" aria-busy={loading || refreshing}>
+      <div className="mt-4 lg:mt-5" aria-busy={loading || refreshing}>
         {error ? <ErrorState onRetry={() => load(true)} /> : loading && items.length === 0 ? <WallpaperGridSkeleton count={8} /> : items.length === 0 ? (
           <div>
             <EmptyState title={debounced ? `No wallpapers found for “${debounced}”` : t.explore.empty} />
-            {debounced && popular.length > 0 ? <div className="mt-4 flex flex-wrap justify-center gap-2">{popular.slice(0, 6).map((term) => <button key={term} type="button" onClick={() => { setQ(term); setDebounced(term); setSearch({ q: term, category: undefined, access, sort, device: "all" }); }} className="min-h-10 rounded-full bg-elevated px-3.5 text-sm text-muted hover:text-fg">{term}</button>)}</div> : null}
+            {debounced && popular.length > 0 ? (
+              <div className="mt-4 flex flex-wrap justify-center gap-2">
+                {popular.slice(0, 6).map((term) => (
+                  <button
+                    key={term}
+                    type="button"
+                    onClick={() => {
+                      setQ(term);
+                      setDebounced(term);
+                      setSearch({ q: term, category: undefined, access, sort, device: "all" });
+                    }}
+                    className="min-h-10 rounded-full bg-elevated px-3.5 text-sm text-muted hover:text-fg"
+                  >
+                    {term}
+                  </button>
+                ))}
+              </div>
+            ) : null}
           </div>
         ) : (
           <>
@@ -278,6 +335,141 @@ function ExplorePage() {
           </>
         )}
       </div>
+
+      {filtersOpen ? (
+        <div className="fixed inset-0 z-50 lg:hidden" role="dialog" aria-modal="true" aria-label="Explore filters">
+          <button
+            type="button"
+            aria-label="Close filters"
+            onClick={() => setFiltersOpen(false)}
+            className="absolute inset-0 bg-black/55 backdrop-blur-[2px]"
+          />
+
+          <div className="mw-sheet absolute inset-x-0 bottom-0 max-h-[82dvh] overflow-y-auto rounded-t-[28px] border-t border-border bg-bg px-4 pb-[max(1rem,env(safe-area-inset-bottom))] pt-4 shadow-[0_-24px_60px_rgba(0,0,0,0.35)]">
+            <div className="mx-auto mb-4 h-1 w-10 rounded-full bg-muted/35" aria-hidden="true" />
+
+            <div className="flex items-center justify-between gap-3">
+              <div>
+                <p className="text-xs font-medium uppercase tracking-[0.16em] text-subtle">Refine results</p>
+                <h2 className="mt-1 font-display text-2xl text-fg">Filters</h2>
+              </div>
+              <button
+                type="button"
+                onClick={() => setFiltersOpen(false)}
+                className="grid size-10 place-items-center rounded-full bg-elevated text-muted"
+                aria-label="Close filters"
+              >
+                <X className="size-4" />
+              </button>
+            </div>
+
+            <section className="mt-6">
+              <p className="mb-2 text-xs font-medium uppercase tracking-[0.14em] text-subtle">Device</p>
+              <div className="flex flex-wrap gap-2">{deviceButtons}</div>
+            </section>
+
+            <section className="mt-6">
+              <p className="mb-2 text-xs font-medium uppercase tracking-[0.14em] text-subtle">Sort by</p>
+              <div className="flex flex-wrap gap-2">{sortButtons}</div>
+            </section>
+
+            {categories.length > 0 ? (
+              <section className="mt-6">
+                <p className="mb-2 text-xs font-medium uppercase tracking-[0.14em] text-subtle">Category</p>
+                <div className="flex max-h-36 flex-wrap gap-2 overflow-y-auto pr-1">
+                  <button
+                    type="button"
+                    onClick={() => setSearch({ q: debounced || undefined, category: undefined, access, sort, device })}
+                    className={cn(
+                      "h-9 rounded-full px-4 text-sm font-medium transition-colors",
+                      !categorySlug ? "bg-fg text-bg" : "bg-elevated text-muted",
+                    )}
+                  >
+                    All
+                  </button>
+                  {categories.map((category) => (
+                    <button
+                      key={category.id}
+                      type="button"
+                      onClick={() => setSearch({ q: debounced || undefined, category: category.slug === categorySlug ? undefined : category.slug, access, sort, device })}
+                      className={cn(
+                        "h-9 rounded-full px-4 text-sm font-medium transition-colors",
+                        categorySlug === category.slug ? "bg-fg text-bg" : "bg-elevated text-muted",
+                      )}
+                    >
+                      {category.name}
+                    </button>
+                  ))}
+                </div>
+              </section>
+            ) : null}
+
+            <section className="mt-6">
+              <p className="mb-2 text-xs font-medium uppercase tracking-[0.14em] text-subtle">Browse by color</p>
+              <div className="flex gap-2 overflow-x-auto pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+                {colorChips.map((color) => (
+                  <button
+                    key={color.query}
+                    type="button"
+                    onClick={() => {
+                      setQ(color.query);
+                      setDebounced(color.query);
+                      setSearch({ q: color.query, category: categorySlug, access, sort, device: "all" });
+                      setFiltersOpen(false);
+                    }}
+                    className="flex h-10 shrink-0 items-center gap-2 rounded-full bg-elevated px-3 text-sm text-muted active:scale-[0.98]"
+                  >
+                    <span className="size-4 rounded-full border border-white/20 shadow-sm" style={{ backgroundColor: color.swatch }} aria-hidden="true" />
+                    {color.label}
+                  </button>
+                ))}
+              </div>
+            </section>
+
+            {!debounced && popular.length > 0 ? (
+              <section className="mt-6">
+                <p className="mb-2 text-xs font-medium uppercase tracking-[0.14em] text-subtle">{t.explore.popularSearches}</p>
+                <div className="flex flex-wrap gap-2">
+                  {popular.map((term) => (
+                    <button
+                      key={term}
+                      type="button"
+                      onClick={() => {
+                        setQ(term);
+                        setDebounced(term);
+                        setSearch({ q: term, category: categorySlug, access, sort, device: "all" });
+                        setFiltersOpen(false);
+                      }}
+                      className="h-9 rounded-full bg-elevated px-3 text-sm text-muted"
+                    >
+                      {term}
+                    </button>
+                  ))}
+                </div>
+              </section>
+            ) : null}
+
+            <div className="sticky bottom-0 mt-7 flex gap-2 border-t border-border bg-bg/95 py-3 backdrop-blur-xl">
+              {hasCustomFilters ? (
+                <button
+                  type="button"
+                  onClick={clearFilters}
+                  className="h-11 flex-1 rounded-full border border-border text-sm font-medium text-muted"
+                >
+                  Clear
+                </button>
+              ) : null}
+              <button
+                type="button"
+                onClick={() => setFiltersOpen(false)}
+                className="h-11 flex-1 rounded-full bg-fg text-sm font-medium text-bg"
+              >
+                Show wallpapers
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 }
