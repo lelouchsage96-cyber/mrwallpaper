@@ -410,6 +410,12 @@ function DetailsPage() {
         isFavorite={wallpaper.isFavorite}
         hasNext={viewerIndex < viewerQueue.length - 1}
         hasPrevious={viewerIndex > 0}
+        onBackToBrowse={() => {
+          setViewerOpen(false);
+          setViewerQueue([]);
+          setViewerIndex(0);
+          goBack();
+        }}
         onClose={() => {
           setViewerOpen(false);
           setViewerQueue([]);
@@ -420,14 +426,14 @@ function DetailsPage() {
           const next = viewerQueue[nextIndex];
           if (!next) return;
           setViewerIndex(nextIndex);
-          void navigate({ to: "/wallpaper/$id", params: { id: next.slug } });
+          void navigate({ to: "/wallpaper/$id", params: { id: next.slug }, replace: true });
         }}
         onPrevious={() => {
           const previousIndex = viewerIndex - 1;
           const previous = viewerQueue[previousIndex];
           if (!previous) return;
           setViewerIndex(previousIndex);
-          void navigate({ to: "/wallpaper/$id", params: { id: previous.slug } });
+          void navigate({ to: "/wallpaper/$id", params: { id: previous.slug }, replace: true });
         }}
         onDownload={() => setDownloadOpen(true)}
         onShare={() => void share()}
