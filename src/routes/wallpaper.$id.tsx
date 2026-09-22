@@ -244,14 +244,6 @@ function DetailsPage() {
             variant={wallpaper.deviceType === "tablet" ? "tablet" : "phone"}
             landscape={isLandscape(wallpaper.width, wallpaper.height)}
           />
-          <button
-            type="button"
-            onClick={openViewer}
-            className="mx-auto mt-3 flex min-h-11 items-center gap-2 rounded-full bg-elevated px-4 text-sm font-medium text-fg lg:hidden"
-          >
-            <Maximize2 className="size-4" strokeWidth={1.75} />
-            View full screen
-          </button>
         </div>
 
         <div className="pt-6 lg:pt-4">
