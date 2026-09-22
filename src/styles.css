@@ -708,3 +708,107 @@ img.wallpaper-img {
   border-radius: 999px;
   background: color-mix(in oklab, var(--color-on-photo) 86%, transparent);
 }
+
+
+@keyframes mw-support-glow {
+  0%, 72%, 100% {
+    box-shadow:
+      0 0 0 1px color-mix(in oklab, var(--color-warn) 22%, transparent),
+      0 4px 16px color-mix(in oklab, black 10%, transparent);
+  }
+  82% {
+    box-shadow:
+      0 0 0 1px color-mix(in oklab, var(--color-warn) 48%, transparent),
+      0 0 0 4px color-mix(in oklab, var(--color-warn) 10%, transparent),
+      0 8px 24px color-mix(in oklab, var(--color-warn) 20%, transparent);
+  }
+  91% {
+    box-shadow:
+      0 0 0 1px color-mix(in oklab, var(--color-warn) 30%, transparent),
+      0 5px 18px color-mix(in oklab, var(--color-warn) 12%, transparent);
+  }
+}
+
+@keyframes mw-support-shimmer {
+  0%, 74% {
+    transform: translateX(-180%) skewX(-18deg);
+    opacity: 0;
+  }
+  79% {
+    opacity: 0.5;
+  }
+  90% {
+    transform: translateX(250%) skewX(-18deg);
+    opacity: 0;
+  }
+  100% {
+    transform: translateX(250%) skewX(-18deg);
+    opacity: 0;
+  }
+}
+
+@keyframes mw-support-cup {
+  0%, 76%, 100% { transform: rotate(0deg) translateY(0); }
+  81% { transform: rotate(-8deg) translateY(-1px); }
+  85% { transform: rotate(7deg) translateY(-1px); }
+  89% { transform: rotate(-3deg) translateY(0); }
+  93% { transform: rotate(0deg) translateY(0); }
+}
+
+.mw-support-button {
+  isolation: isolate;
+  border: 1px solid color-mix(in oklab, var(--color-warn) 30%, var(--color-border));
+  background:
+    linear-gradient(
+      135deg,
+      color-mix(in oklab, var(--color-warn) 16%, var(--color-elevated)),
+      var(--color-elevated) 60%
+    );
+  animation: mw-support-glow 6s ease-in-out infinite;
+}
+
+.mw-support-button::before {
+  content: "";
+  position: absolute;
+  inset: -35% auto -35% -28%;
+  z-index: 0;
+  width: 34%;
+  pointer-events: none;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    color-mix(in oklab, var(--color-fg) 38%, transparent),
+    transparent
+  );
+  filter: blur(1px);
+  animation: mw-support-shimmer 6s ease-in-out infinite;
+}
+
+.mw-support-button::after {
+  content: "";
+  position: absolute;
+  inset: 1px;
+  z-index: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  background: linear-gradient(
+    180deg,
+    color-mix(in oklab, var(--color-fg) 7%, transparent),
+    transparent 55%
+  );
+}
+
+.mw-support-button:hover {
+  border-color: color-mix(in oklab, var(--color-warn) 52%, var(--color-border));
+  background:
+    linear-gradient(
+      135deg,
+      color-mix(in oklab, var(--color-warn) 22%, var(--color-elevated)),
+      color-mix(in oklab, var(--color-elevated) 94%, var(--color-fg))
+    );
+}
+
+.mw-support-cup {
+  transform-origin: 50% 55%;
+  animation: mw-support-cup 6s ease-in-out infinite;
+}
