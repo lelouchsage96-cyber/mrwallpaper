@@ -24,7 +24,7 @@ function isActivePath(pathname: string, item: (typeof items)[number]) {
 }
 
 const browseChipClass =
-  "shrink-0 rounded-full border border-border bg-elevated/55 px-3.5 py-1.5 text-sm text-muted transition-colors duration-150 hover:bg-surface hover:text-fg";
+  "shrink-0 rounded-full border border-border/60 bg-transparent px-3 py-1 text-xs font-medium text-muted transition-colors duration-150 hover:border-fg/15 hover:bg-elevated/70 hover:text-fg";
 
 export function DesktopNav() {
   const pathname = useActivePath();
@@ -81,13 +81,13 @@ export function DesktopNav() {
       </div>
 
       {showHomeBrowse ? (
-        <div className="border-t border-border/70">
-          <div className="mx-auto flex max-w-7xl items-center gap-2 px-4 py-2.5 xl:px-6">
+        <div className="border-t border-border/50 bg-surface/20">
+          <div className="mx-auto flex max-w-7xl items-center gap-1.5 px-4 py-1.5 xl:px-6">
             <button
               type="button"
               onClick={() => scrollBrowse(-1)}
               aria-label="Scroll browse filters left"
-              className="grid size-8 shrink-0 place-items-center rounded-full border border-border bg-elevated/70 text-muted transition-colors hover:bg-surface hover:text-fg"
+              className="grid size-7 shrink-0 place-items-center rounded-full border border-border/60 bg-transparent text-muted transition-colors hover:bg-elevated hover:text-fg"
             >
               <ChevronLeft className="size-4" />
             </button>
@@ -136,7 +136,7 @@ export function DesktopNav() {
               type="button"
               onClick={() => scrollBrowse(1)}
               aria-label="Scroll browse filters right"
-              className="grid size-8 shrink-0 place-items-center rounded-full border border-border bg-elevated/70 text-muted transition-colors hover:bg-surface hover:text-fg"
+              className="grid size-7 shrink-0 place-items-center rounded-full border border-border/60 bg-transparent text-muted transition-colors hover:bg-elevated hover:text-fg"
             >
               <ChevronRight className="size-4" />
             </button>
@@ -153,7 +153,7 @@ export function BottomNav() {
   return (
     <nav
       aria-label="Main"
-      className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-bg/90 backdrop-blur-md lg:hidden"
+      className="fixed inset-x-0 bottom-0 z-40 border-t border-border/80 bg-bg/92 shadow-[0_-10px_30px_rgba(0,0,0,0.08)] backdrop-blur-xl lg:hidden"
     >
       <ul className="mx-auto grid max-w-lg grid-cols-4 px-2 pb-[max(0.5rem,env(safe-area-inset-bottom))] pt-1">
         {items.map((item) => {
@@ -165,13 +165,19 @@ export function BottomNav() {
                 to={item.to}
                 activeOptions={{ exact: "exact" in item && item.exact }}
                 aria-current={active ? "page" : undefined}
-                className={cn(
-                  "flex min-h-12 flex-col items-center justify-center gap-0.5 text-[11px] font-medium transition-colors duration-150 ease-out",
-                  active ? "text-fg" : "text-muted",
-                )}
+                className="flex min-h-12 flex-col items-center justify-center gap-0.5 text-[11px] font-medium"
               >
-                <Icon className="size-5" strokeWidth={active ? 2 : 1.7} />
-                {item.label}
+                <span
+                  className={cn(
+                    "grid h-7 min-w-12 place-items-center rounded-full transition-[background-color,color,box-shadow] duration-150 ease-out",
+                    active
+                      ? "bg-elevated text-fg shadow-[var(--shadow-border)]"
+                      : "text-muted",
+                  )}
+                >
+                  <Icon className="size-5" strokeWidth={active ? 2 : 1.7} />
+                </span>
+                <span className={active ? "text-fg" : "text-muted"}>{item.label}</span>
               </Link>
             </li>
           );
