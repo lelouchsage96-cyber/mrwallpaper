@@ -263,7 +263,7 @@ function ExplorePage() {
         ) : null}
       </div>
 
-      <div className={cn("mt-5 transition-opacity duration-200 lg:mt-6", refreshing && items.length > 0 ? "opacity-55" : "opacity-100")}>
+      <div className="mt-5 lg:mt-6" aria-busy={loading || refreshing}>
         {error ? <ErrorState onRetry={() => load(true)} /> : loading && items.length === 0 ? <WallpaperGridSkeleton count={8} /> : items.length === 0 ? (
           <div>
             <EmptyState title={debounced ? `No wallpapers found for “${debounced}”` : t.explore.empty} />
