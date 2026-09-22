@@ -1,4 +1,4 @@
-import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, Link, Navigate, useNavigate } from "@tanstack/react-router";
 import {
   CheckCircle2,
   CircleX,
@@ -16,7 +16,7 @@ import { getBearerToken } from "@/lib/auth/client";
 import { useCurrentUserState } from "@/lib/auth/use-current-user";
 import { inferDeviceType, type DeviceType } from "@/lib/device";
 import { sha256Blob } from "@/lib/hash";
-import { pageHead } from "@/lib/seo";
+import { noindexHead } from "@/lib/seo";
 import {
   checkCommunityWallpaperDuplicate,
   generateWallpaperSeo,
@@ -27,13 +27,7 @@ import {
 import type { Category } from "@/lib/types";
 
 export const Route = createFileRoute("/submit")({
-  head: () =>
-    pageHead({
-      title: "Submit a Wallpaper | Mr Wallpapers",
-      description:
-        "Share a wallpaper with the Mr Wallpapers community. Approved submissions are published as free downloads after manual review.",
-      path: "/submit",
-    }),
+  head: () => noindexHead("Submit a Wallpaper | Mr Wallpapers", "/submit"),
   component: SubmitWallpaperPage,
 });
 
@@ -302,6 +296,18 @@ function SubmitWallpaperPage() {
     } finally {
       setLoading(false);
     }
+  }
+
+  if (isPending) {
+    return (
+      <main className="mx-auto max-w-3xl px-4 pb-24 pt-8 sm:px-6 lg:pb-16">
+        <div className="h-44 animate-pulse rounded-2xl bg-elevated" />
+      </main>
+    );
+  }
+
+  if (!user) {
+    return <Navigate to="/login" search={{ next: "/submit" }} replace />;
   }
 
   return (
