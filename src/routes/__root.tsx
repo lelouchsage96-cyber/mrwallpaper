@@ -28,7 +28,7 @@ export const Route = createRootRoute({
       { name: "apple-mobile-web-app-status-bar-style", content: "black-translucent" },
       { name: "msapplication-config", content: "/browserconfig.xml" },
       { name: "msapplication-TileColor", content: "#0a0a0b" },
-      { name: "msapplication-TileImage", content: "/icons/v11/icon-192.png?v=12" },
+      { name: "msapplication-TileImage", content: "/brand-icon-192.png" },
     ] as Array<Record<string, string>>;
     if (seo.gscVerification) meta.push({ name: "google-site-verification", content: seo.gscVerification });
     const scripts: Array<Record<string, string>> = [];
@@ -40,13 +40,12 @@ export const Route = createRootRoute({
       meta,
       scripts,
       links: [
-        { rel: "icon", type: "image/png", sizes: "180x180", href: "/brand-icon.png" },
-        { rel: "icon", type: "image/png", sizes: "192x192", href: "/icons/v11/icon-192.png?v=12" },
-        { rel: "shortcut icon", type: "image/png", href: "/brand-icon.png" },
-        { rel: "apple-touch-icon", type: "image/png", sizes: "180x180", href: "/brand-icon.png" },
-        { rel: "apple-touch-icon-precomposed", type: "image/png", sizes: "180x180", href: "/brand-icon.png" },
+        { rel: "icon", type: "image/png", sizes: "192x192", href: "/brand-icon-192.png" },
+        { rel: "shortcut icon", type: "image/png", href: "/brand-icon-192.png" },
+        { rel: "apple-touch-icon", type: "image/png", sizes: "180x180", href: "/brand-icon-180.png" },
+        { rel: "apple-touch-icon-precomposed", type: "image/png", sizes: "180x180", href: "/brand-icon-180.png" },
         { rel: "stylesheet", href: appCss },
-        { rel: "manifest", href: "/manifest.webmanifest?v=12" },
+        { rel: "manifest", href: "/manifest.webmanifest?v=13" },
         { rel: "sitemap", type: "application/xml", href: "/sitemap.xml" },
         { rel: "preconnect", href: "https://fonts.googleapis.com" },
         { rel: "preconnect", href: "https://fonts.gstatic.com", crossOrigin: "anonymous" },
@@ -75,7 +74,7 @@ const PWA_BOOT_SCRIPT = `
         window.location.reload();
       }
     });
-    if ('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js?v=19', { scope: '/', updateViaCache: 'none' }).catch(function(){});
+    if ('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js?v=20', { scope: '/', updateViaCache: 'none' }).catch(function(){});
   } catch (error) {}
 })();`;
 
