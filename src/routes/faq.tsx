@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { InfoPageHeader } from "@/components/info-page-header";
 import { SiteFaq } from "@/components/site-faq";
 import { SiteFooter } from "@/components/site-footer";
 import { brand } from "@/lib/brand";
@@ -16,12 +17,18 @@ export const Route = createFileRoute("/faq")({
 
 function FaqPage() {
   return (
-    <main className="mx-auto max-w-5xl px-4 pb-20 pt-8">
-      <a href="/" className="text-sm text-muted transition-colors hover:text-fg">
-        Home
-      </a>
+    <main className="mx-auto max-w-5xl px-4 pb-20 pt-6 sm:pt-8">
+      <InfoPageHeader
+        eyebrow="Helpful answers"
+        title="Frequently asked questions"
+        description="Quick answers about downloads, devices, submissions and copyright on Mr Wallpapers."
+        backHref="/"
+      />
 
-      <SiteFaq />
+      <div className="mt-7">
+        <SiteFaq />
+      </div>
+
       <SiteFooter />
     </main>
   );
