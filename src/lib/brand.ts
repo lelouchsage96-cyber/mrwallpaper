@@ -24,6 +24,9 @@ export const brand = {
   support: {
     kofi: "https://ko-fi.com/mrwallpaper/tip",
   },
+  shop: {
+    fourthwall: "https://mrwallpaper-shop.fourthwall.com",
+  },
   deepLinkScheme: "mrwallpapers",
   shareBaseUrl: "https://mrwallpaper.org",
 } as const;
