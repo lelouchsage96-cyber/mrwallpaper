@@ -1,5 +1,5 @@
 import { createFileRoute, notFound, redirect, useNavigate } from "@tanstack/react-router";
-import { ChevronDown, ChevronLeft, Coffee, Download, Flag, Maximize2, Share2 } from "lucide-react";
+import { ChevronDown, ChevronLeft, Coffee, Download, Flag, Share2 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { trackEvent } from "@/lib/analytics";
 import { showActionToast } from "@/components/action-toast";
@@ -241,6 +241,7 @@ function DetailsPage() {
             alt={wallpaper.altText || wallpaper.title}
             mode={mode}
             onModeChange={setMode}
+            onPreviewClick={openViewer}
             variant={wallpaper.deviceType === "tablet" ? "tablet" : "phone"}
             landscape={isLandscape(wallpaper.width, wallpaper.height)}
           />
@@ -437,14 +438,6 @@ function DetailsPage() {
 
       <div className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-bg/92 px-3 pb-[max(0.65rem,env(safe-area-inset-bottom))] pt-2.5 backdrop-blur-xl lg:hidden">
         <div className="mx-auto flex max-w-md items-center gap-2">
-          <button
-            type="button"
-            onClick={openViewer}
-            aria-label="View wallpaper full screen"
-            className="grid size-12 shrink-0 place-items-center rounded-full bg-elevated text-fg active:scale-[0.96]"
-          >
-            <Maximize2 className="size-5" strokeWidth={1.75} />
-          </button>
           <FavoriteButton
             wallpaperId={wallpaper.id}
             isFavorite={wallpaper.isFavorite}
