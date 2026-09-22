@@ -1,4 +1,5 @@
 import { Instagram } from "lucide-react";
+import { trackEvent } from "@/lib/analytics";
 import { brand } from "@/lib/brand";
 
 function XIcon({ className = "size-5" }: { className?: string }) {
@@ -57,6 +58,16 @@ export function SiteFooter({ faqHref = "/#faq" }: { faqHref?: string }) {
             className="transition-colors hover:text-fg"
           >
             Support Us
+          </a>
+          <a
+            href={brand.shop.fourthwall}
+            target="_blank"
+            rel="noreferrer"
+            aria-label="Shop Cases & Merch on Fourthwall (opens in a new tab)"
+            onClick={() => trackEvent("shop_click", { source: "footer_fourthwall" })}
+            className="font-medium text-fg/90 transition-colors hover:text-fg"
+          >
+            Shop Cases & Merch ↗
           </a>
           <a href={brand.legal.copyright} className="transition-colors hover:text-fg">
             Copyright Complaint
