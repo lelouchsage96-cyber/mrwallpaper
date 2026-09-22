@@ -52,9 +52,9 @@ function FavoritesPage() {
 
   if (isPending) {
     return (
-      <div className="px-4 pt-5">
-        <h1 className="font-display text-3xl text-fg">{t.favorites.title}</h1>
-        <div className="mt-5">
+      <div className="px-4 pt-5 lg:px-6 lg:pt-5 xl:px-8">
+        <h1 className="font-display text-3xl text-fg lg:hidden">{t.favorites.title}</h1>
+        <div className="mt-5 lg:mt-0">
           <WallpaperGridSkeleton />
         </div>
       </div>
@@ -63,8 +63,8 @@ function FavoritesPage() {
 
   if (!user) {
     return (
-      <div className="px-4 pt-5">
-        <h1 className="font-display text-3xl text-fg">{t.favorites.title}</h1>
+      <div className="px-4 pt-5 lg:px-6 lg:pt-5 xl:px-8">
+        <h1 className="font-display text-3xl text-fg lg:hidden">{t.favorites.title}</h1>
         <EmptyState
           title={t.favorites.signIn}
           action={{
@@ -79,9 +79,9 @@ function FavoritesPage() {
   }
 
   return (
-    <div className="px-4 pt-5">
-      <h1 className="font-display text-3xl text-fg">{t.favorites.title}</h1>
-      <div className="mt-5">
+    <div className="px-4 pt-5 lg:px-6 lg:pt-5 xl:px-8">
+      <h1 className="font-display text-3xl text-fg lg:hidden">{t.favorites.title}</h1>
+      <div className="mt-5 lg:mt-0">
         {error ? (
           <ErrorState onRetry={() => load(true)} />
         ) : loading && items.length === 0 ? (
