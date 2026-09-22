@@ -126,6 +126,7 @@ export function DevicePreview({
   hideToggle = false,
   variant = "phone",
   landscape = false,
+  onPreviewClick,
 }: {
   src: string;
   videoSrc?: string | null;
@@ -135,6 +136,7 @@ export function DevicePreview({
   hideToggle?: boolean;
   variant?: "phone" | "tablet";
   landscape?: boolean;
+  onPreviewClick?: () => void;
 }) {
   const [now, setNow] = useState<Date | null>(null);
   const [plateSrc, setPlateSrc] = useState(src);
@@ -256,6 +258,14 @@ export function DevicePreview({
                   <span className="mw-tablet-home-bar" />
                 </div>
               </div>
+              {onPreviewClick ? (
+                <button
+                  type="button"
+                  onClick={onPreviewClick}
+                  aria-label="View wallpaper full screen"
+                  className="absolute inset-0 z-[8] lg:hidden"
+                />
+              ) : null}
             </div>
           </div>
         </div>
@@ -436,6 +446,14 @@ export function DevicePreview({
                 </div>
                 <span className="mw-phone-home-bar" />
               </div>
+              {onPreviewClick ? (
+                <button
+                  type="button"
+                  onClick={onPreviewClick}
+                  aria-label="View wallpaper full screen"
+                  className="absolute inset-0 z-[8] lg:hidden"
+                />
+              ) : null}
             </div>
           </div>
         </div>
