@@ -272,10 +272,11 @@ function DetailsPage() {
               href={brand.support.kofi}
               target="_blank"
               rel="noreferrer"
-              className="inline-flex h-11 items-center justify-center gap-2 rounded-full bg-elevated px-4 text-sm font-medium text-fg transition-colors hover:bg-surface"
+              aria-label="Support Mr Wallpapers on Ko-fi"
+              className="mw-support-button group relative inline-flex h-11 items-center justify-center gap-2 overflow-hidden rounded-full px-4 text-sm font-semibold text-fg transition-[transform,background-color,border-color,box-shadow] duration-200 hover:-translate-y-0.5 active:translate-y-0 active:scale-[0.98]"
             >
-              <Coffee className="size-4" />
-              Support
+              <Coffee className="mw-support-cup relative z-10 size-4" />
+              <span className="relative z-10">Support</span>
             </a>
           </div>
 
