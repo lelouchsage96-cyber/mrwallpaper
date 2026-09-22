@@ -180,9 +180,9 @@ export function categoryMeta(opts: {
   return { title, description };
 }
 
-export const HOME_TITLE = "Mr Wallpapers – HD & 4K Wallpapers for Phone & Tablet";
+export const HOME_TITLE = "MrWallpaper – Free HD & 4K Wallpapers";
 export const HOME_DESCRIPTION =
-  "Discover HD and 4K wallpapers for iPhone, Android, iPad and tablets. Explore motivational, Bible verse, minimalist, aesthetic and other wallpaper collections.";
+  "Download free HD and 4K wallpapers for iPhone, Android, iPad and tablets. Explore motivational, Bible verse, minimalist, aesthetic and more from MrWallpaper.";
 
 export const DEVICE_HUBS: Record<
   string,
@@ -193,7 +193,7 @@ export const DEVICE_HUBS: Record<
     device: "phone",
     intro:
       "Portrait plates composed for a tall iPhone lock and home screen. Quiet color, sharp type, and room for the clock.",
-    title: "iPhone Wallpapers HD & 4K | Mr Wallpapers",
+    title: "iPhone Wallpapers HD & 4K | MrWallpaper",
     description:
       "HD and 4K iPhone wallpapers for lock screen and home screen. Minimal, nature, aesthetic and more — free downloads.",
   },
@@ -201,7 +201,7 @@ export const DEVICE_HUBS: Record<
     name: "Android",
     device: "phone",
     intro: "High-resolution phone wallpapers that hold up on OLED Android screens. Deep blacks, calm grain, no clutter.",
-    title: "Android Wallpapers HD & 4K | Mr Wallpapers",
+    title: "Android Wallpapers HD & 4K | MrWallpaper",
     description:
       "HD and 4K Android wallpapers for AMOLED and LCD phones. Download free lock screen and home screen plates.",
   },
@@ -209,22 +209,22 @@ export const DEVICE_HUBS: Record<
     name: "iPad",
     device: "tablet",
     intro: "Wider plates for iPad lock and home. Landscape and portrait, still enough for widgets and Split View.",
-    title: "iPad Wallpapers HD & 4K | Mr Wallpapers",
+    title: "iPad Wallpapers HD & 4K | MrWallpaper",
     description: "HD and 4K iPad wallpapers for portrait and landscape. Free downloads for iPad and iPad Pro.",
   },
   tablet: {
     name: "Tablet",
     device: "tablet",
     intro: "Tablet-first wallpapers with room for a larger clock, dock, and widgets. Phone crops stay in the phone catalog.",
-    title: "Tablet Wallpapers HD & 4K | Mr Wallpapers",
+    title: "Tablet Wallpapers HD & 4K | MrWallpaper",
     description: "HD and 4K tablet wallpapers for iPad and Android tablets. Free landscape and portrait downloads.",
   },
   all: {
     name: "All",
     device: "all",
     intro: "Every HD and 4K plate in the catalog — phone and tablet, lock and home.",
-    title: "All Wallpapers HD & 4K | Mr Wallpapers",
-    description: "Browse every wallpaper on Mr Wallpapers. Free HD and 4K downloads for iPhone, Android, iPad and tablets.",
+    title: "All Wallpapers HD & 4K | MrWallpaper",
+    description: "Browse every wallpaper on MrWallpaper. Free HD and 4K downloads for iPhone, Android, iPad and tablets.",
   },
 };
 
@@ -292,6 +292,7 @@ export function websiteJsonLd() {
     "@type": "WebSite",
     "@id": WEBSITE_ID,
     name: brand.name,
+    alternateName: "Mr Wallpaper",
     url: `${SITE_URL}/`,
     description: HOME_DESCRIPTION,
     publisher: { "@id": ORGANIZATION_ID },
@@ -304,10 +305,11 @@ export function organizationJsonLd() {
     "@type": "Organization",
     "@id": ORGANIZATION_ID,
     name: brand.name,
+    alternateName: "Mr Wallpaper",
     url: `${SITE_URL}/`,
     logo: {
       "@type": "ImageObject",
-      url: absUrl("/icons/v11/icon-512.png?v=11"),
+      url: absUrl("/icon-512.png"),
       width: 512,
       height: 512,
     },

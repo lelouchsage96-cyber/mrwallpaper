@@ -1,12 +1,12 @@
 /**
- * Central brand configuration for Mr Wallpapers.
+ * Central brand configuration for MrWallpaper.
  * Change identity here — do not scatter name, tagline, or links in widgets.
  */
 export const brand = {
-  name: "Mr Wallpapers",
+  name: "MrWallpaper",
   shortName: "MW",
   tagline: "Your Screen. Your Style.",
-  positioning: "High-quality wallpapers for your phone and tablet.",
+  positioning: "Free HD and 4K wallpapers for iPhone, Android, iPad and tablets.",
   supportEmail: "support@mrwallpapers.app",
   website: "https://mrwallpaper.org",
   legal: {
