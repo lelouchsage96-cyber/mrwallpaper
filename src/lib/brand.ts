@@ -22,7 +22,7 @@ export const brand = {
     pinterest: "https://www.pinterest.com/mrwallpaper_/",
   },
   support: {
-    patreon: "https://www.patreon.com/mrwallpaper_/posts/support-mr-169595909",
+    kofi: "https://ko-fi.com/mrwallpaper/tip",
   },
   deepLinkScheme: "mrwallpapers",
   shareBaseUrl: "https://mrwallpaper.org",
