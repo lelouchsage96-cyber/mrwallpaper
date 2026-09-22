@@ -51,7 +51,7 @@ export function SiteFooter({ faqHref = "/#faq" }: { faqHref?: string }) {
             FAQ
           </a>
           <a
-            href={brand.support.patreon}
+            href={brand.support.kofi}
             target="_blank"
             rel="noreferrer"
             className="transition-colors hover:text-fg"
