@@ -1,18 +1,19 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { ChevronRight } from "lucide-react";
 import { useEffect, useState } from "react";
-import { signOut } from "@/lib/auth/client";
+import { authClient, signOut } from "@/lib/auth/client";
 import { useCurrentUserState } from "@/lib/auth/use-current-user";
 import { Button } from "@/components/ui/button";
 import { MwMark } from "@/components/mw-mark";
 import { useTheme, type Theme } from "@/components/theme-provider";
 import { t } from "@/lib/i18n/en";
 import { brand } from "@/lib/brand";
-import { deleteAccountData, listDownloads, listNotifications, updateNotificationPref } from "@/lib/server/api";
+import { listDownloads, listNotifications, updateNotificationPref } from "@/lib/server/api";
 import { getOpsSession } from "@/lib/server/ops";
 import type { DownloadHistoryItem } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { DownloadHistoryList } from "@/components/download-history";
+import { showActionToast } from "@/components/action-toast";
 import { removePushSubscription } from "@/lib/server/web-push-api";
 
 export const Route = createFileRoute("/app/profile")({ component: ProfilePage });
@@ -24,6 +25,8 @@ function ProfilePage() {
   const [showOps, setShowOps] = useState(false);
   const [downloads, setDownloads] = useState<DownloadHistoryItem[]>([]);
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const [deleteBusy, setDeleteBusy] = useState(false);
+  const [deleteError, setDeleteError] = useState("");
   const [notifyOn, setNotifyOn] = useState(true);
 
   const userId = user?.id ?? null;
@@ -60,11 +63,18 @@ function ProfilePage() {
     { id: "light", label: t.profile.themeLight },
   ];
 
-  return (
-    <div className="px-4 pt-5 pb-8">
-      <h1 className="font-display text-3xl text-fg">{t.profile.title}</h1>
+  const legalRows = [
+    { to: "/legal/privacy", label: t.profile.privacy },
+    { to: "/legal/terms", label: t.profile.terms },
+    { to: "/legal/copyright", label: t.profile.copyright },
+    { to: "/legal/guidelines", label: t.profile.guidelines },
+  ] as const;
 
-      <section className="mt-6 rounded-[20px] bg-elevated p-5">
+  return (
+    <div className="mx-auto max-w-2xl px-4 pb-8 pt-5 lg:px-0 lg:pt-6">
+      <h1 className="font-display text-3xl text-fg lg:hidden">{t.profile.title}</h1>
+
+      <section className="mt-6 rounded-[20px] bg-elevated p-5 lg:mt-0">
         {isPending ? (
           <div className="h-16 animate-pulse rounded-[12px] bg-surface" />
         ) : user ? (
@@ -113,7 +123,7 @@ function ProfilePage() {
         <section className="mt-8 space-y-2">
           <h2 className="font-display text-xl text-fg">{t.profile.settings}</h2>
           <Link
-            to="/submit"
+            to="/studio/submit"
             className="flex items-center justify-between rounded-xl bg-elevated px-4 py-4"
           >
             <span>
@@ -187,14 +197,26 @@ function ProfilePage() {
       ) : null}
 
       <section className="mt-8">
-        <h2 className="font-display text-xl text-fg">{t.profile.legal}</h2>
-        <ul className="mt-3 divide-y divide-border rounded-[16px] bg-elevated">
-          {[
-            { to: "/legal/privacy", label: t.profile.privacy },
-            { to: "/legal/terms", label: t.profile.terms },
-            { to: "/legal/copyright", label: t.profile.copyright },
-            { to: "/legal/guidelines", label: t.profile.guidelines },
-          ].map((row) => (
+        <h2 className="hidden font-display text-xl text-fg lg:block">{t.profile.legal}</h2>
+
+        <details className="group overflow-hidden rounded-[16px] bg-elevated lg:hidden">
+          <summary className="flex min-h-12 cursor-pointer list-none items-center justify-between px-4 text-sm font-medium text-fg [&::-webkit-details-marker]:hidden">
+            <span>Legal & policies</span>
+            <ChevronRight className="size-4 text-subtle transition-transform duration-150 group-open:rotate-90" />
+          </summary>
+          <ul className="divide-y divide-border border-t border-border">
+            {legalRows.map((row) => (
+              <li key={row.to}>
+                <Link to={row.to} className="flex min-h-12 items-center px-4 text-sm text-fg">
+                  {row.label}
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </details>
+
+        <ul className="mt-3 hidden divide-y divide-border rounded-[16px] bg-elevated lg:block">
+          {legalRows.map((row) => (
             <li key={row.to}>
               <Link to={row.to} className="flex min-h-12 items-center px-4 text-sm text-fg">
                 {row.label}
@@ -206,6 +228,7 @@ function ProfilePage() {
 
       {user ? (
         <section className="mt-8 space-y-3">
+          <h2 className="font-display text-xl text-fg">Account</h2>
           <Button
             variant="secondary"
             className="w-full"
@@ -217,29 +240,65 @@ function ProfilePage() {
             {t.auth.signOut}
           </Button>
           {confirmDelete ? (
-            <div className="rounded-[16px] bg-elevated p-4">
-              <p className="text-sm text-fg">{t.profile.deleteConfirm}</p>
-              <p className="mt-1 text-xs text-muted">{t.profile.deleteHint}</p>
+            <div className="rounded-[16px] border border-danger/25 bg-elevated p-4">
+              <p className="text-sm font-medium text-fg">{t.profile.deleteConfirm}</p>
+              <p className="mt-1 text-xs leading-5 text-muted">{t.profile.deleteHint}</p>
+              {deleteError ? <p className="mt-2 text-xs text-danger">{deleteError}</p> : null}
               <div className="mt-3 flex gap-2">
                 <Button
                   variant="danger"
                   className="flex-1"
+                  disabled={deleteBusy}
                   onClick={async () => {
-                    await clearDevicePush();
-                    await deleteAccountData();
-                    await signOut().catch(() => undefined);
-                    void navigate({ to: "/app" });
+                    if (deleteBusy) return;
+                    setDeleteBusy(true);
+                    setDeleteError("");
+                    try {
+                      await clearDevicePush();
+                      const { error } = await authClient.deleteUser({ callbackURL: "/app" });
+                      if (error) throw new Error(error.message || "Could not start account deletion.");
+
+                      const { data: session } = await authClient.getSession({
+                        query: { disableCookieCache: true },
+                      });
+                      if (!session) {
+                        window.location.assign("/app");
+                        return;
+                      }
+
+                      setConfirmDelete(false);
+                      showActionToast("Check your email to confirm account deletion.");
+                    } catch (error) {
+                      setDeleteError(error instanceof Error ? error.message : "Could not start account deletion. Please try again.");
+                    } finally {
+                      setDeleteBusy(false);
+                    }
                   }}
                 >
-                  {t.profile.delete}
+                  {deleteBusy ? "Please wait…" : t.profile.delete}
                 </Button>
-                <Button variant="ghost" className="flex-1" onClick={() => setConfirmDelete(false)}>
+                <Button
+                  variant="ghost"
+                  className="flex-1"
+                  disabled={deleteBusy}
+                  onClick={() => {
+                    setConfirmDelete(false);
+                    setDeleteError("");
+                  }}
+                >
                   {t.cancel}
                 </Button>
               </div>
             </div>
           ) : (
-            <Button variant="ghost" className="w-full text-danger" onClick={() => setConfirmDelete(true)}>
+            <Button
+              variant="ghost"
+              className="w-full text-danger"
+              onClick={() => {
+                setDeleteError("");
+                setConfirmDelete(true);
+              }}
+            >
               {t.profile.delete}
             </Button>
           )}

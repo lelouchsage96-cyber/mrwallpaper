@@ -18,7 +18,8 @@ import {
   PREVIEW_CLIENT_ID,
   PREVIEW_CLIENT_SECRET,
 } from "./preview";
-import { sendPasswordResetEmail } from "@/lib/server/auth-email";
+import { sendAccountDeletionEmail, sendPasswordResetEmail } from "@/lib/server/auth-email";
+import { cleanupAccountData } from "./account-cleanup.server";
 
 void ensureDbReady();
 
@@ -118,6 +119,22 @@ export const auth = betterAuth({
         GATE_PROVIDER_ID,
       ],
       requireLocalEmailVerified: false,
+    },
+  },
+
+  user: {
+    deleteUser: {
+      enabled: true,
+      sendDeleteAccountVerification: async ({ user, url }) => {
+        await sendAccountDeletionEmail({
+          to: user.email,
+          name: user.name,
+          deleteUrl: url,
+        });
+      },
+      beforeDelete: async (user) => {
+        await cleanupAccountData(user.id);
+      },
     },
   },
 

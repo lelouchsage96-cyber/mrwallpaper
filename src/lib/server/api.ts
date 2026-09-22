@@ -22,6 +22,7 @@ import {
   marketplaceEnabled,
   readSeoSettings,
 } from "./queries";
+import { cleanupAccountData } from "@/lib/auth/account-cleanup.server";
 import { DEVICE_HUBS, PAGE_SIZE } from "@/lib/seo";
 import type {
   AdContext,
@@ -925,15 +926,7 @@ export const updateNotificationPref = createServerFn({ method: "POST" })
 export const deleteAccountData = createServerFn({ method: "POST" })
   .middleware([authMiddleware])
   .handler(async ({ context }) => {
-    const sql = await getSql();
-    const uid = context.userId;
-    await sql.query(`delete from favorites where user_id = $1`, [uid]);
-    await sql.query(`delete from downloads where user_id = $1`, [uid]);
-    await sql.query(`delete from push_subscriptions where user_id = $1`, [uid]);
-    await sql.query(`delete from notifications where user_id = $1`, [uid]);
-    await sql.query(`delete from user_tastes where user_id = $1`, [uid]);
-    await sql.query(`delete from wallpaper_views where user_id = $1`, [uid]);
-    await sql.query(`delete from profiles where user_id = $1`, [uid]);
+    await cleanupAccountData(context.userId);
     return { ok: true as const };
   });
 
