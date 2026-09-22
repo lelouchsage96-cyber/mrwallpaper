@@ -446,15 +446,16 @@ export function DevicePreview({
                 </div>
                 <span className="mw-phone-home-bar" />
               </div>
-              {onPreviewClick ? (
-                <button
-                  type="button"
-                  onClick={onPreviewClick}
-                  aria-label="View wallpaper full screen"
-                  className="absolute inset-0 z-[8] lg:hidden"
-                />
-              ) : null}
             </div>
+
+            {onPreviewClick ? (
+              <button
+                type="button"
+                onClick={onPreviewClick}
+                aria-label="View wallpaper full screen"
+                className="absolute inset-0 z-[8] touch-manipulation cursor-zoom-in lg:hidden"
+              />
+            ) : null}
           </div>
         </div>
       </div>
