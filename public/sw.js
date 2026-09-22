@@ -44,8 +44,8 @@ self.addEventListener("push", (event) => {
 
   const options = {
     body: data.body || "A new wallpaper is ready.",
-    icon: "/icons/v11/icon-192.png?v=11",
-    badge: "/icons/v11/icon-192.png?v=11",
+    icon: "/icons/v11/icon-192.png?v=12",
+    badge: "/icons/v11/icon-192.png?v=12",
     tag: data.tag || "mrwallpapers",
     renotify: false,
     data: { url: targetUrl },
