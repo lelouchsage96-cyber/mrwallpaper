@@ -11,6 +11,7 @@ export type ClientAnalyticsEvent =
   | "favorite_add"
   | "favorite_remove"
   | "share"
+  | "shop_click"
   | "open_app";
 
 type EventData = {
