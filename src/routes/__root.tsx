@@ -40,12 +40,12 @@ export const Route = createRootRoute({
       meta,
       scripts,
       links: [
-        { rel: "icon", type: "image/x-icon", href: "/favicon.ico" },
-        { rel: "shortcut icon", type: "image/x-icon", href: "/favicon.ico" },
-        { rel: "apple-touch-icon", type: "image/png", sizes: "180x180", href: "/icons/v11/apple-touch-icon-180.png?v=11" },
+        { rel: "icon", type: "image/x-icon", href: "/icons/v11/favicon.ico?v=12" },\n        { rel: "icon", type: "image/png", sizes: "192x192", href: "/icons/v11/icon-192.png?v=12" },
+        { rel: "shortcut icon", type: "image/x-icon", href: "/icons/v11/favicon.ico?v=12" },
+        { rel: "apple-touch-icon", type: "image/png", sizes: "180x180", href: "/icons/v11/apple-touch-icon-180.png?v=12" },
         { rel: "apple-touch-icon-precomposed", type: "image/png", sizes: "180x180", href: "/icons/v11/apple-touch-icon-180.png?v=11" },
         { rel: "stylesheet", href: appCss },
-        { rel: "manifest", href: "/manifest.webmanifest" },
+        { rel: "manifest", href: "/manifest.webmanifest?v=12" },
         { rel: "sitemap", type: "application/xml", href: "/sitemap.xml" },
         { rel: "preconnect", href: "https://fonts.googleapis.com" },
         { rel: "preconnect", href: "https://fonts.gstatic.com", crossOrigin: "anonymous" },
@@ -74,7 +74,7 @@ const PWA_BOOT_SCRIPT = `
         window.location.reload();
       }
     });
-    if ('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js?v=18', { scope: '/', updateViaCache: 'none' }).catch(function(){});
+    if ('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js?v=19', { scope: '/', updateViaCache: 'none' }).catch(function(){});
   } catch (error) {}
 })();`;
 
