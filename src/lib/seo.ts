@@ -309,7 +309,7 @@ export function organizationJsonLd() {
     url: `${SITE_URL}/`,
     logo: {
       "@type": "ImageObject",
-      url: absUrl("/icon-512.png"),
+      url: absUrl("/brand-icon.png"),
       width: 512,
       height: 512,
     },

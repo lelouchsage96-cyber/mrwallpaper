@@ -165,7 +165,7 @@ export function InstallAppPrompt() {
       >
         <div className="flex items-center gap-3">
           <img
-            src="/icons/v11/icon-192.png?v=12"
+            src="/brand-icon-192.png"
             alt="Mr Wallpapers app icon"
             width={56}
             height={56}

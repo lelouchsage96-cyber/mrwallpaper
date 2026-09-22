@@ -1,1 +1,0 @@
-Mr Wallpapers v11 PWA icon aliases use the approved Mr Wallpaper badge artwork.
