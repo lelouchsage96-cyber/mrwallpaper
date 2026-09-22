@@ -1,5 +1,5 @@
 import { createFileRoute, notFound, redirect, useNavigate } from "@tanstack/react-router";
-import { ChevronDown, ChevronLeft, Download, Flag, Maximize2, Share2 } from "lucide-react";
+import { ChevronDown, ChevronLeft, Coffee, Download, Flag, Maximize2, Share2 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { trackEvent } from "@/lib/analytics";
 import { showActionToast } from "@/components/action-toast";
@@ -271,10 +271,21 @@ function DetailsPage() {
           </p>
           <p className="mt-1 text-sm text-subtle">{designedFor(wallpaper.deviceType)}</p>
 
-          <Button className="mt-5 hidden w-full sm:w-auto sm:min-w-52 lg:inline-flex" onClick={() => setDownloadOpen(true)}>
-            <Download className="size-4" />
-            Download wallpaper
-          </Button>
+          <div className="mt-5 hidden flex-wrap items-center gap-2 lg:flex">
+            <Button className="w-full sm:w-auto sm:min-w-52" onClick={() => setDownloadOpen(true)}>
+              <Download className="size-4" />
+              Download wallpaper
+            </Button>
+            <a
+              href={brand.support.kofi}
+              target="_blank"
+              rel="noreferrer"
+              className="inline-flex h-11 items-center justify-center gap-2 rounded-full bg-elevated px-4 text-sm font-medium text-fg transition-colors hover:bg-surface"
+            >
+              <Coffee className="size-4" />
+              Support
+            </a>
+          </div>
 
           <details className="group mt-6 border-t border-border pt-2">
             <summary className="flex min-h-11 cursor-pointer list-none items-center justify-between gap-3 text-sm font-medium text-muted hover:text-fg [&::-webkit-details-marker]:hidden">
@@ -443,6 +454,16 @@ function DetailsPage() {
             }
             className="size-12 shrink-0 bg-elevated backdrop-blur-none"
           />
+          <a
+            href={brand.support.kofi}
+            target="_blank"
+            rel="noreferrer"
+            aria-label="Support Mr Wallpapers on Ko-fi"
+            className="inline-flex h-12 shrink-0 items-center justify-center gap-1.5 rounded-full bg-elevated px-3.5 text-sm font-medium text-fg active:scale-[0.98]"
+          >
+            <Coffee className="size-4" />
+            Support
+          </a>
           <Button className="h-12 min-w-0 flex-1 rounded-full" onClick={() => setDownloadOpen(true)}>
             <Download className="size-4" />
             Download 4K
