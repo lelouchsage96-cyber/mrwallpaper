@@ -36,7 +36,7 @@ export function FavoriteButton({
       disabled={busy}
       className={cn(
         "grid size-11 place-items-center rounded-full bg-bg/55 text-fg backdrop-blur-sm",
-        "transition-transform duration-150 ease-out active:scale-[0.96]",
+        "transition-[transform,background-color,opacity] duration-150 ease-out hover:bg-bg/75 active:scale-[0.96] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring",
         className,
       )}
       onClick={async (e) => {
