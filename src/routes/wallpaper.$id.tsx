@@ -457,10 +457,10 @@ function DetailsPage() {
             target="_blank"
             rel="noreferrer"
             aria-label="Support Mr Wallpapers on Ko-fi"
-            className="inline-flex h-12 shrink-0 items-center justify-center gap-1.5 rounded-full bg-elevated px-3.5 text-sm font-medium text-fg active:scale-[0.98]"
+            className="mw-support-button group relative inline-flex h-12 shrink-0 items-center justify-center gap-1.5 overflow-hidden rounded-full px-3.5 text-sm font-semibold text-fg transition-[transform,background-color,border-color,box-shadow] duration-200 hover:-translate-y-0.5 active:translate-y-0 active:scale-[0.98]"
           >
-            <Coffee className="size-4" />
-            Support
+            <Coffee className="mw-support-cup relative z-10 size-4" />
+            <span className="relative z-10">Support</span>
           </a>
           <Button className="h-12 min-w-0 flex-1 rounded-full" onClick={() => setDownloadOpen(true)}>
             <Download className="size-4" />
