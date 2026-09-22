@@ -40,7 +40,8 @@ export const Route = createRootRoute({
       meta,
       scripts,
       links: [
-        { rel: "icon", type: "image/x-icon", href: "/icons/v11/favicon.ico?v=12" },\n        { rel: "icon", type: "image/png", sizes: "192x192", href: "/icons/v11/icon-192.png?v=12" },
+        { rel: "icon", type: "image/x-icon", href: "/icons/v11/favicon.ico?v=12" },
+        { rel: "icon", type: "image/png", sizes: "192x192", href: "/icons/v11/icon-192.png?v=12" },
         { rel: "shortcut icon", type: "image/x-icon", href: "/icons/v11/favicon.ico?v=12" },
         { rel: "apple-touch-icon", type: "image/png", sizes: "180x180", href: "/icons/v11/apple-touch-icon-180.png?v=12" },
         { rel: "apple-touch-icon-precomposed", type: "image/png", sizes: "180x180", href: "/icons/v11/apple-touch-icon-180.png?v=12" },
