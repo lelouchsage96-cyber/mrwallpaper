@@ -61,6 +61,19 @@ const PWA_BOOT_SCRIPT = `
   try {
     window.addEventListener('beforeinstallprompt', function(event) { window.__mrWallpapersInstallPrompt = event; });
     window.addEventListener('appinstalled', function() { window.__mrWallpapersInstallPrompt = null; });
+    window.addEventListener('vite:preloadError', function(event) {
+      try {
+        var key = 'mrwallpapers.preload-reload';
+        var now = Date.now();
+        var last = Number(sessionStorage.getItem(key) || '0');
+        if (now - last < 15000) return;
+        sessionStorage.setItem(key, String(now));
+        event.preventDefault();
+        window.location.reload();
+      } catch (error) {
+        window.location.reload();
+      }
+    });
     if ('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js?v=18', { scope: '/', updateViaCache: 'none' }).catch(function(){});
   } catch (error) {}
 })();`;

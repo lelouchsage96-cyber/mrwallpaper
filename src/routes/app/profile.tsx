@@ -123,7 +123,7 @@ function ProfilePage() {
         <section className="mt-8 space-y-2">
           <h2 className="font-display text-xl text-fg">{t.profile.settings}</h2>
           <Link
-            to="/studio/submit"
+            to="/submit"
             className="flex items-center justify-between rounded-xl bg-elevated px-4 py-4"
           >
             <span>

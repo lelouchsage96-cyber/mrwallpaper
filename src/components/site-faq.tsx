@@ -30,7 +30,7 @@ const items: Array<{ id: string; question: string; answer: ReactNode }> = [
     answer: (
       <>
         Sign in and use the{" "}
-        <a href="/studio/submit" className="font-medium text-fg underline underline-offset-4">
+        <a href="/submit" className="font-medium text-fg underline underline-offset-4">
           Submit a wallpaper
         </a>{" "}
         page. You can add the details manually or use the optional OpenAI metadata tool before sending it for review.
