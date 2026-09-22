@@ -6,7 +6,6 @@ import { optionalAuthMiddleware } from "./optional-auth";
 import { mergeMediation } from "@/lib/ads";
 import { downloadExt, resolveOriginal, resolveThumb } from "@/lib/media";
 import {
-import { cleanupAccountData } from "@/lib/auth/account-cleanup.server";
   fetchCardList,
   fetchCardsByIds,
   fetchCategories,
@@ -23,6 +22,7 @@ import { cleanupAccountData } from "@/lib/auth/account-cleanup.server";
   marketplaceEnabled,
   readSeoSettings,
 } from "./queries";
+import { cleanupAccountData } from "@/lib/auth/account-cleanup.server";
 import { DEVICE_HUBS, PAGE_SIZE } from "@/lib/seo";
 import type {
   AdContext,
