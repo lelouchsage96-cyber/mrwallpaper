@@ -257,6 +257,15 @@ function ProfilePage() {
                       await clearDevicePush();
                       const { error } = await authClient.deleteUser({ callbackURL: "/app" });
                       if (error) throw new Error(error.message || "Could not start account deletion.");
+
+                      const { data: session } = await authClient.getSession({
+                        query: { disableCookieCache: true },
+                      });
+                      if (!session) {
+                        window.location.assign("/app");
+                        return;
+                      }
+
                       setConfirmDelete(false);
                       showActionToast("Check your email to confirm account deletion.");
                     } catch (error) {
