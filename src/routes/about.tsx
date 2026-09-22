@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { InfoPageHeader } from "@/components/info-page-header";
 import { SiteFooter } from "@/components/site-footer";
 import { brand } from "@/lib/brand";
 import { pageHead } from "@/lib/seo";
@@ -15,15 +16,16 @@ export const Route = createFileRoute("/about")({
 
 function AboutPage() {
   return (
-    <main className="mx-auto max-w-5xl px-4 pb-20 pt-8">
-      <a href="/app" className="text-sm text-muted transition-colors hover:text-fg">
-        Home
-      </a>
+    <main className="mx-auto max-w-5xl px-4 pb-20 pt-6 sm:pt-8">
+      <InfoPageHeader
+        eyebrow="About"
+        title={`About ${brand.name}`}
+        description="A simple, wallpaper-first experience for discovering high-quality backgrounds across phones and tablets."
+        backHref="/"
+      />
 
-      <section className="mt-8 max-w-2xl">
-        <p className="text-xs font-medium uppercase tracking-[0.2em] text-subtle">About</p>
-        <h1 className="mt-3 font-display text-4xl text-fg sm:text-5xl">About {brand.name}</h1>
-        <div className="mt-6 space-y-4 text-sm leading-relaxed text-muted sm:text-base">
+      <section className="mt-8 max-w-2xl rounded-2xl border border-border/70 bg-elevated/45 p-5 sm:p-6">
+        <div className="space-y-4 text-sm leading-relaxed text-muted sm:text-base">
           <p>
             {brand.name} is a free wallpaper website built to make it easy to discover and download high-quality wallpapers for phones and tablets.
           </p>

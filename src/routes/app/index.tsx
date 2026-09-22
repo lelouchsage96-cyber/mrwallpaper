@@ -17,6 +17,7 @@ import type { HomePayload, WallpaperCard as Card } from "@/lib/types";
 import { categoryPreview, categoryPreviewFallback } from "@/lib/media";
 import { pageHead } from "@/lib/seo";
 import { readRecentlyViewed } from "@/lib/recently-viewed";
+import { cn } from "@/lib/utils";
 
 const APP_HOME_TITLE = "Free HD & 4K Wallpapers for Phone & Tablet | Mr Wallpapers";
 const APP_HOME_DESCRIPTION = "Download free HD and 4K wallpapers for iPhone, Android, iPad and tablets. Explore aesthetic, motivational, Bible verse, anime, dark and more wallpapers.";
@@ -44,10 +45,18 @@ function HomePage() {
   const [refreshKey, setRefreshKey] = useState(0);
   const [searchOpen, setSearchOpen] = useState(false);
   const [recentlyViewed, setRecentlyViewed] = useState<Card[]>([]);
+  const [compactHeaderVisible, setCompactHeaderVisible] = useState(false);
   const userId = user?.id ?? null;
 
   useEffect(() => {
     setRecentlyViewed(readRecentlyViewed());
+  }, []);
+
+  useEffect(() => {
+    const updateHeader = () => setCompactHeaderVisible(window.scrollY > 120);
+    updateHeader();
+    window.addEventListener("scroll", updateHeader, { passive: true });
+    return () => window.removeEventListener("scroll", updateHeader);
   }, []);
 
   useEffect(() => {
@@ -97,6 +106,38 @@ function HomePage() {
 
   return (
     <div className="mw-enter px-4 pt-5 lg:px-6 lg:pt-6 xl:px-8">
+      <div
+        className={cn(
+          "fixed inset-x-0 top-0 z-30 border-b border-border/70 bg-bg/92 pt-[env(safe-area-inset-top)] backdrop-blur-xl transition-[transform,opacity] duration-200 lg:hidden",
+          compactHeaderVisible ? "translate-y-0 opacity-100" : "pointer-events-none -translate-y-full opacity-0",
+        )}
+      >
+        <div className="mx-auto flex h-14 max-w-lg items-center justify-between px-4">
+          <Link to="/app" className="font-display text-xl text-fg">
+            {brand.name}
+          </Link>
+          <div className="flex items-center gap-1">
+            <button
+              type="button"
+              onClick={() => setSearchOpen(true)}
+              aria-label={t.home.search}
+              aria-expanded={searchOpen}
+              className="grid size-10 place-items-center rounded-full text-fg transition-colors hover:bg-elevated"
+            >
+              <Search className="size-5" strokeWidth={1.75} />
+            </button>
+            <Link
+              to="/app/notifications"
+              aria-label={t.home.notifications}
+              className="relative grid size-10 place-items-center rounded-full text-fg transition-colors hover:bg-elevated"
+            >
+              <Bell className="size-5" strokeWidth={1.75} />
+              {data && data.unreadCount > 0 ? <span className="absolute right-2 top-2 size-2.5 rounded-full bg-fg ring-2 ring-bg" /> : null}
+            </Link>
+          </div>
+        </div>
+      </div>
+
       <header className="mb-7 flex items-center justify-between gap-3 lg:hidden">
         <div>
           <p className="text-xs tracking-[0.22em] text-muted uppercase">{brand.tagline}</p>

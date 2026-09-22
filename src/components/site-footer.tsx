@@ -29,80 +29,63 @@ function PinterestIcon({ className = "size-5" }: { className?: string }) {
 const socialClass =
   "grid size-10 place-items-center rounded-full text-muted transition-colors hover:bg-elevated hover:text-fg";
 
+const footerLinkClass = "transition-colors hover:text-fg";
+
 export function SiteFooter({ faqHref = "/faq" }: { faqHref?: string }) {
   return (
     <footer className="mt-16 border-t border-border pt-7 text-sm text-muted">
-      <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
-        <p className="text-sm text-muted">© 2026 {brand.name}. All Rights Reserved.</p>
+      <div className="flex flex-col gap-6 lg:flex-row lg:items-start lg:justify-between">
+        <p className="shrink-0 pt-0.5 text-sm text-muted">© 2026 {brand.name}. All Rights Reserved.</p>
 
-        <nav aria-label="Footer" className="flex flex-wrap gap-x-6 gap-y-3">
-          <a href={brand.legal.terms} className="transition-colors hover:text-fg">
-            Terms & Conditions
-          </a>
-          <a href={brand.legal.privacy} className="transition-colors hover:text-fg">
-            Privacy Policy
-          </a>
-          <a href="/about" className="transition-colors hover:text-fg">
-            About
-          </a>
-          <a href="/contact" className="transition-colors hover:text-fg">
-            Contact Us
-          </a>
-          <a href={faqHref} className="transition-colors hover:text-fg">
-            FAQ
-          </a>
-          <a
-            href={brand.support.kofi}
-            target="_blank"
-            rel="noreferrer"
-            className="transition-colors hover:text-fg"
-          >
-            Support Us
-          </a>
-          <a
-            href={brand.shop.fourthwall}
-            target="_blank"
-            rel="noreferrer"
-            aria-label="Shop Cases & Merch on Fourthwall (opens in a new tab)"
-            onClick={() => trackEvent("shop_click", { source: "footer_fourthwall" })}
-            className="font-medium text-fg/90 transition-colors hover:text-fg"
-          >
-            Shop Cases & Merch ↗
-          </a>
-          <a href={brand.legal.copyright} className="transition-colors hover:text-fg">
-            Copyright Complaint
-          </a>
+        <nav
+          aria-label="Footer"
+          className="flex flex-1 flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:gap-0 lg:justify-center"
+        >
+          <span className="flex flex-wrap gap-x-4 gap-y-2 sm:pr-4">
+            <a href="/about" className={footerLinkClass}>About</a>
+            <a href="/contact" className={footerLinkClass}>Contact</a>
+            <a href={faqHref} className={footerLinkClass}>FAQ</a>
+          </span>
+
+          <span className="flex flex-wrap gap-x-4 gap-y-2 sm:border-l sm:border-border sm:px-4">
+            <a href={brand.legal.privacy} className={footerLinkClass}>Privacy</a>
+            <a href={brand.legal.terms} className={footerLinkClass}>Terms</a>
+            <a href={brand.legal.copyright} className={footerLinkClass}>Copyright</a>
+          </span>
+
+          <span className="flex flex-wrap gap-x-4 gap-y-2 sm:border-l sm:border-border sm:pl-4">
+            <a
+              href={brand.support.kofi}
+              target="_blank"
+              rel="noreferrer"
+              className={footerLinkClass}
+            >
+              Support Us
+            </a>
+            <a
+              href={brand.shop.fourthwall}
+              target="_blank"
+              rel="noreferrer"
+              aria-label="Shop Cases & Merch on Fourthwall (opens in a new tab)"
+              onClick={() => trackEvent("shop_click", { source: "footer_fourthwall" })}
+              className="font-medium text-fg/90 transition-colors hover:text-fg"
+            >
+              Shop Cases & Merch ↗
+            </a>
+          </span>
         </nav>
 
-        <div className="flex items-center gap-1" aria-label="Social links">
+        <div className="flex shrink-0 items-center gap-1" aria-label="Social links">
           <a href={brand.social.x} target="_blank" rel="noreferrer" aria-label="X" className={socialClass}>
             <XIcon />
           </a>
-          <a
-            href={brand.social.tiktok}
-            target="_blank"
-            rel="noreferrer"
-            aria-label="TikTok"
-            className={socialClass}
-          >
+          <a href={brand.social.tiktok} target="_blank" rel="noreferrer" aria-label="TikTok" className={socialClass}>
             <TikTokIcon />
           </a>
-          <a
-            href={brand.social.instagram}
-            target="_blank"
-            rel="noreferrer"
-            aria-label="Instagram"
-            className={socialClass}
-          >
+          <a href={brand.social.instagram} target="_blank" rel="noreferrer" aria-label="Instagram" className={socialClass}>
             <Instagram className="size-5" />
           </a>
-          <a
-            href={brand.social.pinterest}
-            target="_blank"
-            rel="noreferrer"
-            aria-label="Pinterest"
-            className={socialClass}
-          >
+          <a href={brand.social.pinterest} target="_blank" rel="noreferrer" aria-label="Pinterest" className={socialClass}>
             <PinterestIcon />
           </a>
         </div>
