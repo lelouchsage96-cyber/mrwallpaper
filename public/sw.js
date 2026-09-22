@@ -1,7 +1,7 @@
-const VERSION = "mrwallpapers-v19";
+const VERSION = "mrwallpapers-v20";
 const SHELL_CACHE = `${VERSION}-shell`;
 const RUNTIME_CACHE = `${VERSION}-runtime`;
-const APP_SHELL = ["/app", "/manifest.webmanifest?v=12", "/icons/v11/icon-192.png?v=12", "/icons/v11/icon-512.png?v=12", "/icons/v11/apple-touch-icon-180.png?v=12", "/icons/v11/favicon.ico?v=12"];
+const APP_SHELL = ["/app", "/manifest.webmanifest?v=13", "/brand-icon-180.png", "/brand-icon-192.png", "/brand-icon.png"];
 
 self.addEventListener("install", (event) => {
   event.waitUntil((async () => {
@@ -44,8 +44,8 @@ self.addEventListener("push", (event) => {
 
   const options = {
     body: data.body || "A new wallpaper is ready.",
-    icon: "/icons/v11/icon-192.png?v=12",
-    badge: "/icons/v11/icon-192.png?v=12",
+    icon: "/brand-icon-192.png",
+    badge: "/brand-icon-192.png",
     tag: data.tag || "mrwallpapers",
     renotify: false,
     data: { url: targetUrl },
@@ -128,7 +128,7 @@ self.addEventListener("fetch", (event) => {
     event.respondWith(networkFirst(request));
     return;
   }
-  if (url.pathname.startsWith("/assets/") || url.pathname.startsWith("/icons/") || url.pathname === "/manifest.webmanifest" || url.pathname === "/favicon.ico") {
+  if (url.pathname.startsWith("/assets/") || url.pathname.startsWith("/brand-icon") || url.pathname === "/manifest.webmanifest") {
     event.respondWith(cacheFirst(request));
   }
 });
