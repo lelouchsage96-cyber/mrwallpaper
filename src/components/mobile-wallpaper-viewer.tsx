@@ -11,6 +11,7 @@ export function MobileWallpaperViewer({
   isFavorite,
   hasNext,
   hasPrevious,
+  onBackToBrowse,
   onClose,
   onNext,
   onPrevious,
@@ -26,6 +27,7 @@ export function MobileWallpaperViewer({
   isFavorite: boolean;
   hasNext: boolean;
   hasPrevious: boolean;
+  onBackToBrowse: () => void;
   onClose: () => void;
   onNext: () => void;
   onPrevious: () => void;
@@ -34,6 +36,7 @@ export function MobileWallpaperViewer({
   onFavoriteChange: (next: boolean) => void;
 }) {
   const touchStartX = useRef<number | null>(null);
+  const touchStartY = useRef<number | null>(null);
 
   useEffect(() => {
     if (!open) return;
@@ -55,14 +58,33 @@ export function MobileWallpaperViewer({
 
   if (!open) return null;
 
-  function finishSwipe(clientX: number) {
-    const start = touchStartX.current;
+  function resetSwipe() {
     touchStartX.current = null;
-    if (start === null) return;
-    const delta = clientX - start;
-    if (Math.abs(delta) < 64) return;
-    if (delta < 0 && hasNext) onNext();
-    if (delta > 0 && hasPrevious) onPrevious();
+    touchStartY.current = null;
+  }
+
+  function finishSwipe(clientX: number, clientY: number) {
+    const startX = touchStartX.current;
+    const startY = touchStartY.current;
+    resetSwipe();
+    if (startX === null || startY === null) return;
+
+    // Keep the iPhone/Safari left-edge back gesture available.
+    if (startX <= 28) return;
+
+    const deltaX = clientX - startX;
+    const deltaY = clientY - startY;
+    const absX = Math.abs(deltaX);
+    const absY = Math.abs(deltaY);
+
+    if (deltaY > 88 && absY > absX * 1.15) {
+      onClose();
+      return;
+    }
+
+    if (absX < 64 || absX <= absY * 1.1) return;
+    if (deltaX < 0 && hasNext) onNext();
+    if (deltaX > 0 && hasPrevious) onPrevious();
   }
 
   return (
@@ -73,26 +95,31 @@ export function MobileWallpaperViewer({
       aria-label="Full-screen wallpaper viewer"
       onTouchStart={(event) => {
         touchStartX.current = event.touches[0]?.clientX ?? null;
+        touchStartY.current = event.touches[0]?.clientY ?? null;
       }}
       onTouchEnd={(event) => {
-        finishSwipe(event.changedTouches[0]?.clientX ?? 0);
+        finishSwipe(
+          event.changedTouches[0]?.clientX ?? 0,
+          event.changedTouches[0]?.clientY ?? 0,
+        );
       }}
+      onTouchCancel={resetSwipe}
     >
-      <div className="absolute inset-x-0 top-0 z-10 flex items-center gap-2 bg-gradient-to-b from-black/75 to-transparent px-3 pb-8 pt-[max(0.75rem,env(safe-area-inset-top))]">
+      <div className="absolute inset-x-0 top-0 z-10 flex items-center gap-2 bg-gradient-to-b from-black/80 via-black/45 to-transparent px-3 pb-8 pt-[max(0.75rem,env(safe-area-inset-top))]">
         <button
           type="button"
-          onClick={onClose}
-          aria-label="Close full-screen preview"
-          className="grid size-11 shrink-0 place-items-center rounded-full bg-black/35 text-white backdrop-blur-md active:scale-[0.96]"
+          onClick={onBackToBrowse}
+          aria-label="Back to previous page"
+          className="grid size-11 shrink-0 place-items-center rounded-full bg-black/40 text-white backdrop-blur-md active:scale-[0.96]"
         >
-          <X className="size-5" />
+          <ChevronLeft className="size-5" />
         </button>
         <p className="min-w-0 flex-1 truncate text-sm font-medium text-white/90">{title}</p>
         <button
           type="button"
           onClick={onShare}
           aria-label="Share wallpaper"
-          className="grid size-11 shrink-0 place-items-center rounded-full bg-black/35 text-white backdrop-blur-md active:scale-[0.96]"
+          className="grid size-11 shrink-0 place-items-center rounded-full bg-black/40 text-white backdrop-blur-md active:scale-[0.96]"
         >
           <Share2 className="size-5" strokeWidth={1.75} />
         </button>
@@ -100,8 +127,16 @@ export function MobileWallpaperViewer({
           wallpaperId={wallpaperId}
           isFavorite={isFavorite}
           onChange={onFavoriteChange}
-          className="shrink-0 bg-black/35 text-white"
+          className="shrink-0 bg-black/40 text-white"
         />
+        <button
+          type="button"
+          onClick={onClose}
+          aria-label="Close full-screen preview"
+          className="grid size-11 shrink-0 place-items-center rounded-full bg-black/40 text-white backdrop-blur-md active:scale-[0.96]"
+        >
+          <X className="size-5" />
+        </button>
       </div>
 
       <div className="flex h-full items-center justify-center px-2 pb-28 pt-20">
@@ -115,8 +150,8 @@ export function MobileWallpaperViewer({
       </div>
 
       <div className="absolute inset-x-0 bottom-0 z-10 bg-gradient-to-t from-black/90 via-black/65 to-transparent px-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-10">
-        <p className="mb-3 text-center text-xs text-white/65">
-          Swipe to browse similar wallpapers
+        <p className="mb-3 text-center text-xs text-white/70">
+          Swipe left/right to browse · Swipe down to close
         </p>
         <div className="mx-auto flex max-w-md items-center gap-2">
           <button
