@@ -7,7 +7,11 @@
     }
   },
   "images": {
-    "sizes": [480, 1080, 1440],
+    "sizes": [
+      480,
+      1080,
+      1440
+    ],
     "remotePatterns": [
       {
         "protocol": "https",
@@ -18,7 +22,40 @@
       }
     ],
     "minimumCacheTTL": 86400,
-    "qualities": [75, 85],
-    "formats": ["image/webp"]
-  }
+    "qualities": [
+      75,
+      85
+    ],
+    "formats": [
+      "image/webp"
+    ]
+  },
+  "headers": [
+    {
+      "source": "/manifest.webmanifest",
+      "headers": [
+        {
+          "key": "Content-Type",
+          "value": "application/manifest+json; charset=utf-8"
+        },
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=0, must-revalidate"
+        }
+      ]
+    },
+    {
+      "source": "/sw.js",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=0, must-revalidate"
+        },
+        {
+          "key": "Service-Worker-Allowed",
+          "value": "/"
+        }
+      ]
+    }
+  ]
 }

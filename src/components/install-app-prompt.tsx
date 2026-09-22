@@ -165,7 +165,7 @@ export function InstallAppPrompt() {
       >
         <div className="flex items-center gap-3">
           <img
-            src="/icon-192.png"
+            src="/icons/v11/icon-192.png?v=12"
             alt="Mr Wallpapers app icon"
             width={56}
             height={56}
@@ -259,7 +259,7 @@ export function InstallAppPrompt() {
         {isIOS && (
           <div className="space-y-2 text-sm text-muted">
             <p>In Safari, tap <span className="font-medium text-fg">Share</span>, then <span className="font-medium text-fg">Add to Home Screen</span>.</p>
-            <p className="text-xs text-subtle">Keep “Open as Web App” turned on, then tap Add.</p>
+            <p className="text-xs text-subtle">Keep “Open as Web App” turned on, then tap Add. If “Add to Home Screen” is missing, scroll to the bottom of the Share sheet, choose “Edit Actions,” and enable it.</p>
           </div>
         )}
 
