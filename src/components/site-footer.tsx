@@ -29,7 +29,7 @@ function PinterestIcon({ className = "size-5" }: { className?: string }) {
 const socialClass =
   "grid size-10 place-items-center rounded-full text-muted transition-colors hover:bg-elevated hover:text-fg";
 
-export function SiteFooter({ faqHref = "/#faq" }: { faqHref?: string }) {
+export function SiteFooter({ faqHref = "/faq" }: { faqHref?: string }) {
   return (
     <footer className="mt-16 border-t border-border pt-7 text-sm text-muted">
       <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
