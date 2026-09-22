@@ -1,5 +1,5 @@
 import { Link, useRouterState } from "@tanstack/react-router";
-import { Bell, ChevronLeft, ChevronRight, Compass, Heart, Home, Upload, User } from "lucide-react";
+import { Bell, ChevronLeft, ChevronRight, Compass, Heart, Home, User } from "lucide-react";
 import { useRef } from "react";
 import { DesktopSearch } from "@/components/smart-search";
 import { brand } from "@/lib/brand";
@@ -9,7 +9,6 @@ import { cn } from "@/lib/utils";
 const items = [
   { to: "/app", label: t.nav.home, icon: Home, exact: true },
   { to: "/app/explore", label: t.nav.explore, icon: Compass },
-  { to: "/submit", label: "Submit", icon: Upload },
   { to: "/app/favorites", label: t.nav.favorites, icon: Heart },
   { to: "/app/profile", label: t.nav.profile, icon: User },
 ] as const;
@@ -156,7 +155,7 @@ export function BottomNav() {
       aria-label="Main"
       className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-bg/90 backdrop-blur-md lg:hidden"
     >
-      <ul className="mx-auto grid max-w-lg grid-cols-5 px-2 pb-[max(0.5rem,env(safe-area-inset-bottom))] pt-1">
+      <ul className="mx-auto grid max-w-lg grid-cols-4 px-2 pb-[max(0.5rem,env(safe-area-inset-bottom))] pt-1">
         {items.map((item) => {
           const active = isActivePath(pathname, item);
           const Icon = item.icon;
