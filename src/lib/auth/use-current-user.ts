@@ -32,6 +32,8 @@ export type CurrentUserState = {
   user: AppUser | null;
   /** True while the session is still resolving — don't treat `user: null` as signed out yet. */
   isPending: boolean;
+  /** Re-read the reactive Better Auth session. Useful after a forced server-side session check. */
+  refetch: () => Promise<unknown>;
 };
 
 /**
@@ -56,9 +58,9 @@ export type CurrentUserState = {
  * call keeps a stable hook order across every render of a given component.
  */
 export function useCurrentUserState(): CurrentUserState {
-  if (!authEnabled) return { user: DEV_USER, isPending: false };
+  if (!authEnabled) return { user: DEV_USER, isPending: false, refetch: async () => undefined };
   // eslint-disable-next-line react-hooks/rules-of-hooks -- authEnabled is constant for the app's lifetime
-  const { data, isPending } = authClient.useSession();
+  const { data, isPending, refetch } = authClient.useSession();
   const raw = data?.user;
   // eslint-disable-next-line react-hooks/rules-of-hooks -- paired with useSession; authEnabled never flips
   const user = useMemo<AppUser | null>(() => {
@@ -71,7 +73,7 @@ export function useCurrentUserState(): CurrentUserState {
       isDevFallback: false,
     };
   }, [raw?.id, raw?.name, raw?.email, raw?.image]);
-  return { user, isPending };
+  return { user, isPending, refetch };
 }
 
 /**

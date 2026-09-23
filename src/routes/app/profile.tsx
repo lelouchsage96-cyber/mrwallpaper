@@ -1,6 +1,6 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { ChevronRight } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { authClient, signOut } from "@/lib/auth/client";
 import { useCurrentUserState } from "@/lib/auth/use-current-user";
 import { Button } from "@/components/ui/button";
@@ -19,7 +19,7 @@ import { removePushSubscription } from "@/lib/server/web-push-api";
 export const Route = createFileRoute("/app/profile")({ component: ProfilePage });
 
 function ProfilePage() {
-  const { user, isPending } = useCurrentUserState();
+  const { user, isPending, refetch } = useCurrentUserState();
   const { theme, setTheme } = useTheme();
   const navigate = useNavigate();
   const [showOps, setShowOps] = useState(false);
@@ -28,6 +28,8 @@ function ProfilePage() {
   const [deleteBusy, setDeleteBusy] = useState(false);
   const [deleteError, setDeleteError] = useState("");
   const [notifyOn, setNotifyOn] = useState(true);
+  const [sessionRechecking, setSessionRechecking] = useState(false);
+  const sessionRecheckAttempted = useRef(false);
 
   const userId = user?.id ?? null;
 
@@ -43,6 +45,18 @@ function ProfilePage() {
       // Signing out should still succeed if push cleanup is unavailable.
     }
   }
+
+  useEffect(() => {
+    if (isPending || user || sessionRecheckAttempted.current) return;
+    sessionRecheckAttempted.current = true;
+    setSessionRechecking(true);
+    void authClient.getSession({ query: { disableCookieCache: true } })
+      .then(async (result) => {
+        if (result.data?.user) await refetch();
+      })
+      .catch(() => undefined)
+      .finally(() => setSessionRechecking(false));
+  }, [isPending, refetch, user]);
 
   useEffect(() => {
     if (isPending || !userId) return;
@@ -75,7 +89,7 @@ function ProfilePage() {
       <h1 className="font-display text-3xl text-fg lg:hidden">{t.profile.title}</h1>
 
       <section className="mt-6 rounded-[20px] bg-elevated p-5 lg:mt-0">
-        {isPending ? (
+        {isPending || sessionRechecking ? (
           <div className="h-16 animate-pulse rounded-[12px] bg-surface" />
         ) : user ? (
           <div className="flex items-center justify-between gap-3">

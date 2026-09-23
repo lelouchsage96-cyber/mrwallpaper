@@ -1,5 +1,5 @@
-import { createFileRoute, Link, useRouter } from "@tanstack/react-router";
-import { useState, type FormEvent } from "react";
+import { createFileRoute, Link } from "@tanstack/react-router";
+import { useEffect, useState, type FormEvent } from "react";
 import { MwMark } from "@/components/mw-mark";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -15,6 +15,7 @@ import {
 import { brand } from "@/lib/brand";
 import { t } from "@/lib/i18n/en";
 import { noindexHead } from "@/lib/seo";
+import { useCurrentUserState } from "@/lib/auth/use-current-user";
 
 type LoginSearch = { next?: string };
 
@@ -28,7 +29,7 @@ export const Route = createFileRoute("/login")({
 
 function Login() {
   const { next } = Route.useSearch();
-  const router = useRouter();
+  const { user: currentUser, isPending: sessionPending } = useCurrentUserState();
   const [mode, setMode] = useState<"signin" | "signup" | "reset">("signin");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -36,6 +37,12 @@ function Login() {
   const [error, setError] = useState<string | null>(null);
   const [info, setInfo] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+
+  useEffect(() => {
+    if (sessionPending || !currentUser) return;
+    // A signed-in visitor should never be shown a second sign-in form.
+    window.location.replace(next ?? "/app");
+  }, [currentUser, next, sessionPending]);
 
   async function onEmail(e: FormEvent) {
     e.preventDefault();
@@ -62,7 +69,11 @@ function Login() {
         const { error: err } = await authClient.signIn.email({ email, password });
         if (err) throw new Error(err.message);
       }
-      router.history.push(next ?? "/app");
+      // Verify the cookie-backed session before leaving /login, then do a hard
+      // navigation so every mounted useSession() consumer starts from fresh state.
+      const session = await authClient.getSession({ query: { disableCookieCache: true } });
+      if (!session.data?.user) throw new Error("Session was not established");
+      window.location.assign(next ?? "/app");
     } catch (err) {
       console.error("[auth] email", err);
       setError(mode === "signin" ? t.auth.invalid : mode === "reset" ? "Could not send the reset email. Please try again." : t.auth.error);
@@ -84,6 +95,14 @@ function Login() {
   }
 
   const showSocial = googleAuthEnabled || brokerAuthEnabled;
+
+  if (sessionPending || currentUser) {
+    return (
+      <main className="grid min-h-dvh place-items-center px-6">
+        <p className="text-sm text-muted">Checking your session…</p>
+      </main>
+    );
+  }
 
   return (
     <main className="mx-auto flex min-h-dvh max-w-md flex-col justify-center px-6 py-10">

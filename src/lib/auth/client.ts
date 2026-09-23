@@ -5,6 +5,13 @@ import { GROK_PROVIDERS } from "./providers";
 
 export const authClient = createAuthClient({
   plugins: [genericOAuthClient()],
+  // Keep the reactive session in sync after OAuth/email sign-in and when a PWA
+  // returns to the foreground. No polling: this avoids unnecessary auth/DB work.
+  sessionOptions: {
+    refetchInterval: 0,
+    refetchOnWindowFocus: true,
+    refetchWhenOffline: false,
+  },
   fetchOptions: {
     onRequest(ctx) {
       const token = getBearerToken();
