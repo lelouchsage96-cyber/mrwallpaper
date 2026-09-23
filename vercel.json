@@ -15,7 +15,7 @@
     "remotePatterns": [
       {
         "protocol": "https",
-        "hostname": "^cdn\\.mrwallpaper\\.org$",
+        "hostname": "cdn.mrwallpaper.org",
         "port": "",
         "pathname": "^/.*$",
         "search": ""
@@ -92,6 +92,12 @@
           "value": "public, max-age=0, must-revalidate"
         }
       ]
+    }
+  ],
+  "rewrites": [
+    {
+      "source": "/apple-touch-icon-precomposed.png",
+      "destination": "/apple-touch-icon.png"
     }
   ]
 }

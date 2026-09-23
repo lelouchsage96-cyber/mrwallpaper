@@ -1,0 +1,8 @@
+# MrWallpaper
+
+> Free HD and 4K wallpapers for phones and tablets.
+
+Canonical: https://mrwallpaper.org/
+App: https://mrwallpaper.org/app
+Wallpaper index: https://mrwallpaper.org/wallpapers
+Sitemap: https://mrwallpaper.org/sitemap.xml

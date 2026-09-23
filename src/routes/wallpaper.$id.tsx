@@ -30,11 +30,15 @@ import { rememberRecentlyViewed } from "@/lib/recently-viewed";
 
 export const Route = createFileRoute("/wallpaper/$id")({
   loader: async ({ params }) => {
-    const alias = await getSeoRedirect({ data: { path: `/wallpaper/${params.id}` } });
-    if (alias?.to_path && alias.to_path !== `/wallpaper/${params.id}`) {
+    const requestedId = params.id.trim();
+    if (!requestedId || requestedId === "null" || requestedId === "undefined") {
+      throw redirect({ to: "/app", replace: true, statusCode: 302 });
+    }
+    const alias = await getSeoRedirect({ data: { path: `/wallpaper/${requestedId}` } });
+    if (alias?.to_path && alias.to_path !== `/wallpaper/${requestedId}`) {
       throw redirect({ href: alias.to_path, statusCode: alias.status || 301 });
     }
-    const data = await getWallpaper({ data: { id: params.id } });
+    const data = await getWallpaper({ data: { id: requestedId } });
     if (data.status === "gone") {
       throw new Response("Gone", {
         status: 410,
@@ -43,7 +47,7 @@ export const Route = createFileRoute("/wallpaper/$id")({
       });
     }
     if (!data.wallpaper) throw notFound();
-    if (data.canonicalSlug && data.canonicalSlug !== params.id) {
+    if (data.canonicalSlug && data.canonicalSlug !== requestedId) {
       throw redirect({
         to: "/wallpaper/$id",
         params: { id: data.canonicalSlug },

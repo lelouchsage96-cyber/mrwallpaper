@@ -1,12 +1,9 @@
 import { createServerFn } from "@tanstack/react-start";
 import { getSql } from "@/lib/db";
 import type { WallpaperCard } from "@/lib/types";
+import { resolveHero } from "@/lib/media";
 import { optionalAuthMiddleware } from "./optional-auth";
 import { fetchCardsByIds } from "./queries";
-
-function wotdPreviewUrl(url: string): string {
-  return url.includes("/thumbs/") ? url.replace("/thumbs/", "/previews/") : url;
-}
 
 export const getSelectedWallpaperOfDay = createServerFn({ method: "GET" })
   .middleware([optionalAuthMiddleware])
@@ -28,7 +25,7 @@ export const getSelectedWallpaperOfDay = createServerFn({ method: "GET" })
       if (!wallpaperId) return null;
       const cards = await fetchCardsByIds([wallpaperId], context.userId);
       const card = cards[0] ?? null;
-      return card ? { ...card, thumbnailUrl: wotdPreviewUrl(card.thumbnailUrl) } : null;
+      return card ? { ...card, thumbnailUrl: resolveHero(card.id, card.thumbnailUrl, card.slug) } : null;
     } catch (err) {
       console.error("[wotd] selected wallpaper", err);
       return null;

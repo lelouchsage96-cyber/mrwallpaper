@@ -51,6 +51,21 @@ function prettyName(id: string, slug?: string | null) {
   return (slug && slug.trim()) || id;
 }
 
+function isR2PublicPlate(url: string): boolean {
+  try {
+    const pathname = new URL(url, "https://mrwallpaper.org").pathname;
+    return /^\/(?:previews|thumbs)\/.+-[a-f0-9]{8,}\.(?:jpe?g|png|webp)$/i.test(pathname);
+  } catch {
+    return false;
+  }
+}
+
+/** Route public R2 plates through our stable media endpoint instead of relying on a raw CDN image URL. */
+export function stablePreviewUrl(id: string, stored?: string | null, slug?: string | null): string | null {
+  if (!stored || !isR2PublicPlate(stored)) return null;
+  return `/media/${prettyName(id, slug)}-preview.jpg`;
+}
+
 export function resolveThumb(id: string, stored?: string | null, slug?: string | null) {
   // Creator plates live behind a private bucket — expose a crawlable pretty filename.
   if (stored?.startsWith("/api/media/")) return `/media/${prettyName(id, slug)}-thumb.jpg`;
@@ -77,7 +92,9 @@ export function resolvePreview(id: string, stored?: string | null, slug?: string
   if (stored?.startsWith("/api/media/") || (slug && !stored)) {
     return `/media/${prettyName(id, slug)}-preview.jpg`;
   }
-  if (stored?.startsWith("https://") || stored?.startsWith("http://")) return stored;
+  if (stored?.startsWith("https://") || stored?.startsWith("http://")) {
+    return stablePreviewUrl(id, stored, slug) ?? stored;
+  }
   return wallpaperFile(id);
 }
 
@@ -87,7 +104,9 @@ export function resolveHero(id: string, thumbUrl?: string | null, slug?: string 
     const name = prettyName(id, slug);
     return `/media/${name}-preview.jpg`;
   }
-  if (thumbUrl?.startsWith("https://") || thumbUrl?.startsWith("http://")) return thumbUrl;
+  if (thumbUrl?.startsWith("https://") || thumbUrl?.startsWith("http://")) {
+    return stablePreviewUrl(id, thumbUrl, slug) ?? thumbUrl;
+  }
   return wallpaperFile(id);
 }
 

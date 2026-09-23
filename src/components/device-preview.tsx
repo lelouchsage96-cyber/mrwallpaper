@@ -152,12 +152,13 @@ export function DevicePreview({
   }, [src]);
 
   function onPlateError() {
-    if (plateSrc.endsWith(".jpg")) {
-      setPlateSrc(plateSrc.replace(/\.jpg$/i, ".svg"));
+    // Only bundled legacy JPGs have an SVG counterpart. Never rewrite remote/R2 JPGs to .svg.
+    if (/^\/wallpapers\/[^?]+\.jpg(?:\?.*)?$/i.test(plateSrc)) {
+      setPlateSrc(plateSrc.replace(/\.jpg(?=\?|$)/i, ".svg"));
       return;
     }
-    if (plateSrc.endsWith(".webp")) {
-      setPlateSrc(plateSrc.replace(/\/thumbs\/([^/.]+)\.webp$/i, "/$1.jpg"));
+    if (/^\/wallpapers\/thumbs\/[^?]+\.webp(?:\?.*)?$/i.test(plateSrc)) {
+      setPlateSrc(plateSrc.replace(/\/thumbs\/([^/.?]+)\.webp(?=\?|$)/i, "/$1.jpg"));
     }
   }
 
