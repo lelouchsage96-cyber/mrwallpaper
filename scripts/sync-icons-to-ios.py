@@ -11,7 +11,9 @@ import json
 import re
 from pathlib import Path
 
-from PIL import Image
+from PIL import Image, ImageFile
+
+ImageFile.LOAD_TRUNCATED_IMAGES = True
 
 ROOT = Path(__file__).resolve().parents[1]
 PUBLIC = ROOT / "public"
