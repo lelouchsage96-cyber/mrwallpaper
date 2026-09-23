@@ -1,7 +1,7 @@
-const VERSION = "mrwallpapers-v21";
+const VERSION = "mrwallpapers-v22";
 const SHELL_CACHE = `${VERSION}-shell`;
 const RUNTIME_CACHE = `${VERSION}-runtime`;
-const APP_SHELL = ["/app", "/manifest.webmanifest?v=14", "/favicon.ico", "/apple-touch-icon.png", "/icon-192.png", "/icon-512.png"];
+const APP_SHELL = ["/app", "/manifest.webmanifest?v=15", "/favicon.ico?v=15", "/apple-touch-icon.png?v=15", "/icon-192.png?v=15", "/icon-512.png?v=15"];
 
 self.addEventListener("install", (event) => {
   event.waitUntil((async () => {
@@ -44,8 +44,8 @@ self.addEventListener("push", (event) => {
 
   const options = {
     body: data.body || "A new wallpaper is ready.",
-    icon: "/icon-192.png",
-    badge: "/icon-192.png",
+    icon: "/icon-192.png?v=15",
+    badge: "/icon-192.png?v=15",
     tag: data.tag || "mrwallpapers",
     renotify: false,
     data: { url: targetUrl },

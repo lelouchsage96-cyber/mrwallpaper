@@ -28,7 +28,7 @@ export const Route = createRootRoute({
       { name: "apple-mobile-web-app-status-bar-style", content: "black-translucent" },
       { name: "msapplication-config", content: "/browserconfig.xml" },
       { name: "msapplication-TileColor", content: "#0a0a0b" },
-      { name: "msapplication-TileImage", content: "/icon-192.png" },
+      { name: "msapplication-TileImage", content: "/icon-192.png?v=15" },
     ] as Array<Record<string, string>>;
     if (seo.gscVerification) meta.push({ name: "google-site-verification", content: seo.gscVerification });
     const scripts: Array<Record<string, string>> = [];
@@ -40,12 +40,12 @@ export const Route = createRootRoute({
       meta,
       scripts,
       links: [
-        { rel: "icon", type: "image/x-icon", href: "/favicon.ico" },
-        { rel: "shortcut icon", type: "image/x-icon", href: "/favicon.ico" },
-        { rel: "apple-touch-icon", type: "image/png", sizes: "180x180", href: "/apple-touch-icon.png" },
-        { rel: "apple-touch-icon-precomposed", type: "image/png", sizes: "180x180", href: "/apple-touch-icon.png" },
+        { rel: "icon", type: "image/x-icon", href: "/favicon.ico?v=15" },
+        { rel: "shortcut icon", type: "image/x-icon", href: "/favicon.ico?v=15" },
+        { rel: "apple-touch-icon", type: "image/png", sizes: "180x180", href: "/apple-touch-icon.png?v=15" },
+        { rel: "apple-touch-icon-precomposed", type: "image/png", sizes: "180x180", href: "/apple-touch-icon.png?v=15" },
         { rel: "stylesheet", href: appCss },
-        { rel: "manifest", href: "/manifest.webmanifest?v=14" },
+        { rel: "manifest", href: "/manifest.webmanifest?v=15" },
         { rel: "sitemap", type: "application/xml", href: "/sitemap.xml" },
         { rel: "preconnect", href: "https://fonts.googleapis.com" },
         { rel: "preconnect", href: "https://fonts.gstatic.com", crossOrigin: "anonymous" },
@@ -74,7 +74,7 @@ const PWA_BOOT_SCRIPT = `
         window.location.reload();
       }
     });
-    if ('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js?v=21', { scope: '/', updateViaCache: 'none' }).catch(function(){});
+    if ('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js?v=22', { scope: '/', updateViaCache: 'none' }).catch(function(){});
   } catch (error) {}
 })();`;
 
