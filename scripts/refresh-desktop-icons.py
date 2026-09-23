@@ -13,7 +13,9 @@ import re
 import shutil
 from pathlib import Path
 
-from PIL import Image, ImageFilter
+from PIL import Image, ImageFile, ImageFilter
+
+ImageFile.LOAD_TRUNCATED_IMAGES = True
 
 ROOT = Path(__file__).resolve().parents[1]
 PUBLIC = ROOT / "public"
