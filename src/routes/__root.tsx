@@ -40,8 +40,7 @@ export const Route = createRootRoute({
       meta,
       scripts,
       links: [
-        { rel: "icon", type: "image/x-icon", href: "/favicon.ico?v=18" },
-        { rel: "shortcut icon", type: "image/x-icon", href: "/favicon.ico?v=18" },
+        { rel: "icon", type: "image/x-icon", href: "/mrwallpaper-favicon-v19.ico" },
         { rel: "apple-touch-icon", type: "image/png", sizes: "180x180", href: "/apple-touch-icon.png?v=18" },
         { rel: "apple-touch-icon-precomposed", type: "image/png", sizes: "180x180", href: "/apple-touch-icon.png?v=18" },
         { rel: "stylesheet", href: appCss },
@@ -74,7 +73,7 @@ const PWA_BOOT_SCRIPT = `
         window.location.reload();
       }
     });
-    if ('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js?v=25', { scope: '/', updateViaCache: 'none' }).catch(function(){});
+    if ('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js?v=26', { scope: '/', updateViaCache: 'none' }).catch(function(){});
   } catch (error) {}
 })();`;
 
