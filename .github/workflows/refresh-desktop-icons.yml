@@ -1,10 +1,11 @@
-name: Refresh desktop PWA icons
+name: Refresh canonical MrWallpaper icons
 
 on:
   push:
     branches: [main]
     paths:
       - "scripts/refresh-desktop-icons.py"
+      - "scripts/assets/brand-icon-master.png"
       - ".github/workflows/refresh-desktop-icons.yml"
 
 permissions:
@@ -22,18 +23,19 @@ jobs:
           python-version: "3.12"
       - name: Install Pillow
         run: python -m pip install --disable-pip-version-check Pillow==11.3.0
-      - name: Generate desktop and PWA icons
+      - name: Validate and generate icon set
         run: python scripts/refresh-desktop-icons.py
-      - name: Commit generated icon assets
+      - name: Commit canonical icon assets
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git rm --ignore-unmatch public/brand-icon-source.png
           git add \
-            public/brand-icon-source.png \
             public/favicon.ico \
             public/favicon-16.png \
             public/favicon-32.png \
             public/favicon-48.png \
+            public/apple-touch-icon.png \
             public/icon-192.png \
             public/icon-512.png \
             public/icon-maskable-192.png \
@@ -43,8 +45,8 @@ jobs:
             public/sw.js \
             src/routes/__root.tsx
           if git diff --cached --quiet; then
-            echo "Icon assets already current."
+            echo "Canonical icons already current."
             exit 0
           fi
-          git commit -m "Optimize desktop PWA icon framing"
+          git commit -m "Restore exact MrWallpaper icon artwork"
           git push origin HEAD:main
