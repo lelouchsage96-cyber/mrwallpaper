@@ -1,6 +1,6 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
-import { AlertTriangle, ImageUp, RotateCcw, Sparkles } from "lucide-react";
+import { AlertTriangle, Check, ImageUp, RotateCcw, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -73,6 +73,8 @@ function EditWallpaperPage() {
   const [altText, setAltText] = useState("");
   const [primaryKeyword, setPrimaryKeyword] = useState("");
   const [generatingSeo, setGeneratingSeo] = useState(false);
+  const [seoFeedback, setSeoFeedback] = useState("");
+  const [seoPreview, setSeoPreview] = useState<{ title: string; description: string; tags: string } | null>(null);
   const [conflicts, setConflicts] = useState<SeoConflict[]>([]);
   const [confirmedConflicts, setConfirmedConflicts] = useState(false);
   const [replacement, setReplacement] = useState<EncodedReplacement | null>(null);
@@ -312,6 +314,8 @@ function EditWallpaperPage() {
     const regenerate = true;
     seoGenerationPasses.current[field] = variationIndex;
     setGeneratingSeo(true);
+    setSeoFeedback("Analyzing wallpaper…");
+    setSeoPreview(null);
     setMessage("");
     try {
       const result = await generateWallpaperSeo({ data: {
@@ -319,7 +323,11 @@ function EditWallpaperPage() {
         categoryId, deviceType, width: wallpaper.width, height: wallpaper.height, field,
         regenerate, variationIndex,
       } });
-      if (!result.ok) { setMessage(result.error); return; }
+      if (!result.ok) {
+        setSeoFeedback(result.error);
+        setMessage(result.error);
+        return;
+      }
       if (field === "all" || field === "title") setTitle(result.seo.title);
       if (field === "all" || field === "description") setDescription(result.seo.description);
       if (field === "all" || field === "tags") setTags(result.seo.tags.join(", "));
@@ -328,15 +336,23 @@ function EditWallpaperPage() {
       if (field === "all") setCategoryId(result.seo.categoryId);
       setConflicts([]);
       setConfirmedConflicts(false);
-      setMessage(
+      if (field === "all") {
+        setSeoPreview({
+          title: result.seo.title,
+          description: result.seo.description,
+          tags: result.seo.tags.join(", "),
+        });
+      }
+      const successMessage =
         field === "all"
-          ? regenerate
-            ? "SEO regenerated with a different alternative. Review and save when ready."
-            : "SEO fields generated. Review and save when ready."
-          : "Field regenerated with a different alternative. Review and save when ready.",
-      );
+          ? "SEO regenerated and applied below. Review and save when ready."
+          : "Field regenerated and applied below. Review and save when ready.";
+      setSeoFeedback(successMessage);
+      setMessage(successMessage);
     } catch (error) {
-      setMessage(error instanceof Error ? error.message : "SEO generation failed. Please try again.");
+      const failureMessage = error instanceof Error ? error.message : "SEO generation failed. Please try again.";
+      setSeoFeedback(failureMessage);
+      setMessage(failureMessage);
     } finally { setGeneratingSeo(false); }
   }
 
@@ -419,6 +435,18 @@ function EditWallpaperPage() {
 
         <div className="space-y-4">
           <Button type="button" className="w-full" disabled={generatingSeo || processingImage || replacingImage || (!wallpaper.thumbnailUrl && !replacement?.ok)} onClick={() => void generateSeo("all")}><Sparkles className="size-4" />{generatingSeo ? "Analyzing wallpaper…" : "Generate SEO"}</Button>
+          {seoFeedback ? <p className="text-sm text-muted" aria-live="polite">{seoFeedback}</p> : null}
+          {seoPreview ? (
+            <div className="rounded-xl bg-surface p-4" aria-live="polite">
+              <p className="flex items-center gap-2 text-sm font-medium text-fg">
+                <Check className="size-4 text-success" aria-hidden="true" />
+                Generated SEO applied
+              </p>
+              <p className="mt-2 text-base font-medium text-fg">{seoPreview.title}</p>
+              <p className="mt-1 text-sm leading-6 text-muted">{seoPreview.description}</p>
+              <p className="mt-3 text-xs text-subtle">{seoPreview.tags}</p>
+            </div>
+          ) : null}
           <label className="block text-sm text-muted">
             <span className="flex items-center justify-between">Title <button type="button" disabled={generatingSeo} onClick={() => void generateSeo("title")} className="inline-flex items-center gap-1 text-xs text-subtle hover:text-fg"><RotateCcw className="size-3" /> Regenerate</button></span>
             <Input
