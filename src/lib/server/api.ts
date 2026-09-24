@@ -17,6 +17,7 @@ import {
   fetchPairBySlug,
   fetchPairForWallpaper,
   fetchSeoRedirect,
+  fetchSimilarCards,
   fetchSitemapEntries,
   lookupWallpaperRef,
   marketplaceEnabled,
@@ -507,28 +508,13 @@ export const getWallpaper = createServerFn({ method: "GET" })
     const detail = await fetchDetail(ref.id, context.userId);
     if (!detail) return { wallpaper: null, related: [] as WallpaperCard[], pair: null, status: "missing" as const };
     void recordView(context.userId, ref.id).catch(() => undefined);
-    const related = (
-      await fetchCardList(context.userId, {
-        order: "trending",
-        limit: 8,
-        categoryId: detail.categoryId,
-        device: detail.deviceType === "tablet" ? "tablet" : "phone",
-      })
-    ).filter((w) => w.id !== ref.id);
-    const extra =
-      related.length < 4
-        ? (
-            await fetchCardList(context.userId, {
-              order: "trending",
-              limit: 8,
-              device: detail.deviceType === "tablet" ? "tablet" : "phone",
-            })
-          ).filter((w) => w.id !== ref.id && !related.some((r) => r.id === w.id))
-        : [];
-    const pair = await fetchPairForWallpaper(ref.id, context.userId);
+    const [related, pair] = await Promise.all([
+      fetchSimilarCards(context.userId, detail, 8),
+      fetchPairForWallpaper(ref.id, context.userId),
+    ]);
     return {
       wallpaper: detail,
-      related: [...related, ...extra].slice(0, 8),
+      related,
       pair,
       status: "ok" as const,
       canonicalSlug: canonical,
