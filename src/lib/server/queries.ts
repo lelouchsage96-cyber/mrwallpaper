@@ -313,7 +313,7 @@ export async function fetchSimilarCards(
   let fav = "false as is_favorite";
   if (userId) {
     params.push(userId);
-    fav = `exists(select 1 from favorites f where f.wallpaper_id = w.id and f.user_id = ${params.length}) as is_favorite`;
+    fav = `exists(select 1 from favorites f where f.wallpaper_id = w.id and f.user_id = $${params.length}) as is_favorite`;
   }
 
   // Pull a wider candidate pool, rank it by metadata overlap, then only use
@@ -402,7 +402,7 @@ export async function fetchSimilarCards(
               text_hits desc,
               download_count desc,
               favorite_count desc
-     limit ${poolLimitAt}`,
+     limit $${poolLimitAt}`,
     params,
   );
 
