@@ -88,6 +88,7 @@ export type OpsWallpaperEditData = {
   deviceType: DeviceType;
   status: "draft" | "pending" | "approved" | "rejected" | "removed";
   thumbnailUrl: string | null;
+  seoImageUrl: string | null;
   tags: string[];
   altText: string;
   primaryKeyword: string;
@@ -110,6 +111,7 @@ export const getOpsWallpaperEdit = createServerFn({ method: "GET" })
       status: string;
       slug: string | null;
       thumbnail_url: string | null;
+      seo_media_id: string | null;
       alt_text: string | null;
       primary_keyword: string | null;
       width: number;
@@ -119,7 +121,11 @@ export const getOpsWallpaperEdit = createServerFn({ method: "GET" })
               w.device_type, w.status, w.slug,
               w.alt_text, w.primary_keyword, w.width, w.height,
               (select a.path from wallpaper_assets a
-                where a.wallpaper_id = w.id and a.kind = 'thumbnail' limit 1) as thumbnail_url
+                where a.wallpaper_id = w.id and a.kind = 'thumbnail' limit 1) as thumbnail_url,
+              coalesce(
+                (select mf.id from media_files mf where mf.id like w.id || '-prev-%' limit 1),
+                (select mf.id from media_files mf where mf.id like w.id || '-thumb-%' limit 1)
+              ) as seo_media_id
        from wallpapers w
        join categories c on c.id = w.category_id
        where w.id = $1
@@ -152,6 +158,7 @@ export const getOpsWallpaperEdit = createServerFn({ method: "GET" })
         deviceType: parseDeviceType(row.device_type),
         status,
         thumbnailUrl: resolveOwnedThumb(row.id, row.thumbnail_url, row.slug),
+        seoImageUrl: row.seo_media_id ? `/api/media/${row.seo_media_id}` : null,
         tags: tagRows.map((t) => t.name),
         altText: row.alt_text || "",
         primaryKeyword: row.primary_keyword || "",
