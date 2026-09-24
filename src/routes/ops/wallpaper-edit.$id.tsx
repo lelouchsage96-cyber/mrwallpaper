@@ -296,9 +296,10 @@ function EditWallpaperPage() {
 
   async function imageDataUrl(): Promise<string> {
     if (replacement?.ok) return replacement.plate.previewDataUrl;
-    if (!wallpaper?.thumbnailUrl) throw new Error("No image is available for analysis.");
-    const response = await fetch(wallpaper.thumbnailUrl);
-    if (!response.ok) throw new Error("The wallpaper image could not be loaded.");
+    const imageUrl = wallpaper?.seoImageUrl || wallpaper?.thumbnailUrl;
+    if (!imageUrl) throw new Error("No image is available for analysis.");
+    const response = await fetch(imageUrl);
+    if (!response.ok) throw new Error("The wallpaper image could not be loaded for SEO analysis.");
     const blob = await response.blob();
     return await new Promise((resolve, reject) => {
       const reader = new FileReader();
