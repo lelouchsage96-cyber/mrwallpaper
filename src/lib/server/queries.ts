@@ -253,6 +253,186 @@ export async function fetchDetail(id: string, userId: string | null): Promise<Wa
   };
 }
 
+
+const SIMILARITY_STOP_WORDS = new Set([
+  "wallpaper",
+  "wallpapers",
+  "background",
+  "backgrounds",
+  "phone",
+  "mobile",
+  "iphone",
+  "android",
+  "tablet",
+  "desktop",
+  "screen",
+  "lock",
+  "home",
+  "image",
+  "photo",
+  "free",
+  "download",
+  "4k",
+  "hd",
+  "uhd",
+  "with",
+  "from",
+  "this",
+  "that",
+  "your",
+  "the",
+  "and",
+  "for",
+]);
+
+function similarityTerms(source: WallpaperDetail): string[] {
+  const text = [source.primaryKeyword ?? "", source.title, ...source.tags]
+    .join(" ")
+    .toLowerCase()
+    .replace(/[^a-z0-9\s-]/g, " ");
+
+  return [...new Set(
+    text
+      .split(/\s+/)
+      .map((term) => term.trim())
+      .filter((term) => term.length >= 3 && !SIMILARITY_STOP_WORDS.has(term)),
+  )].slice(0, 12);
+}
+
+export async function fetchSimilarCards(
+  userId: string | null,
+  source: WallpaperDetail,
+  limit = 8,
+): Promise<WallpaperCard[]> {
+  const sql = await getSql();
+  const normalizedTags = [...new Set(source.tags.map((tag) => tag.trim().toLowerCase()).filter(Boolean))].slice(0, 16);
+  const patterns = similarityTerms(source).map((term) => `%${term}%`);
+  const primaryKeyword = source.primaryKeyword?.trim().toLowerCase() ?? "";
+
+  const params: unknown[] = [source.id, source.categoryId, normalizedTags, patterns, primaryKeyword];
+  let fav = "false as is_favorite";
+  if (userId) {
+    params.push(userId);
+    fav = `exists(select 1 from favorites f where f.wallpaper_id = w.id and f.user_id = $${params.length}) as is_favorite`;
+  }
+
+  // Pull a wider candidate pool, rank it by metadata overlap, then only use
+  // same-category cards as fallback. This intentionally avoids global trending
+  // fill-ins, which can make "More like this" feel unrelated.
+  params.push(Math.max(limit * 5, 24));
+  const poolLimitAt = params.length;
+  const deviceSql = deviceWhere(source.deviceType === "tablet" ? "tablet" : "phone");
+
+  type SimilarRow = CardRow & {
+    same_category: boolean | number;
+    shared_tags: number | string;
+    shared_collections: number | string;
+    text_hits: number | string;
+    keyword_match: number | string;
+    similarity_score: number | string;
+  };
+
+  const rows = await sql.query<SimilarRow>(
+    `with similarity_base as (
+       select ${CARD_SELECT}, ${fav},
+              (w.category_id = $2) as same_category,
+              (
+                select count(*)::int
+                from wallpaper_tags wt
+                join tags t on t.id = wt.tag_id
+                where wt.wallpaper_id = w.id
+                  and lower(t.name) = any($3::text[])
+              ) as shared_tags,
+              (
+                select count(*)::int
+                from collection_wallpapers candidate_cw
+                join collection_wallpapers source_cw
+                  on source_cw.collection_id = candidate_cw.collection_id
+                 and source_cw.wallpaper_id = $1
+                where candidate_cw.wallpaper_id = w.id
+              ) as shared_collections,
+              (
+                select count(*)::int
+                from unnest($4::text[]) as p(pattern)
+                where lower(
+                  coalesce(w.title, '') || ' ' ||
+                  coalesce(w.description, '') || ' ' ||
+                  coalesce(w.primary_keyword, '')
+                ) like p.pattern
+                   or exists (
+                     select 1
+                     from wallpaper_tags wt_text
+                     join tags t_text on t_text.id = wt_text.tag_id
+                     where wt_text.wallpaper_id = w.id
+                       and lower(t_text.name) like p.pattern
+                   )
+              ) as text_hits,
+              case
+                when $5 <> '' and lower(coalesce(w.primary_keyword, '')) = $5 then 1
+                else 0
+              end as keyword_match
+       from wallpapers w
+       join categories c on c.id = w.category_id
+       where w.status = 'approved'
+         and ${STILL_ONLY}
+         and w.id <> $1
+         and ${deviceSql}
+     ),
+     candidates as (
+       select similarity_base.*,
+              (
+                case when same_category then 35 else 0 end
+                + least(shared_tags, 3) * 28
+                + least(shared_collections, 2) * 35
+                + least(text_hits, 4) * 9
+                + keyword_match * 22
+              )::int as similarity_score
+       from similarity_base
+       where same_category
+          or shared_tags > 0
+          or shared_collections > 0
+          or text_hits > 0
+          or keyword_match > 0
+     )
+     select *
+     from candidates
+     order by similarity_score desc,
+              shared_tags desc,
+              shared_collections desc,
+              text_hits desc,
+              download_count desc,
+              favorite_count desc
+     limit $${poolLimitAt}`,
+    params,
+  );
+
+  const premiumOn = await premiumEnabled();
+  const strong: SimilarRow[] = [];
+  const sameCategoryFallback: SimilarRow[] = [];
+
+  for (const row of rows) {
+    const sameCategory = toBool(row.same_category);
+    const sharedTags = Number(row.shared_tags) || 0;
+    const sharedCollections = Number(row.shared_collections) || 0;
+    const textHits = Number(row.text_hits) || 0;
+    const keywordMatch = Number(row.keyword_match) || 0;
+
+    const hasStrongSignal =
+      sharedTags > 0 ||
+      sharedCollections > 0 ||
+      keywordMatch > 0 ||
+      (sameCategory && textHits > 0) ||
+      textHits >= 2;
+
+    if (hasStrongSignal) strong.push(row);
+    else if (sameCategory) sameCategoryFallback.push(row);
+  }
+
+  return [...strong, ...sameCategoryFallback]
+    .slice(0, limit)
+    .map((row) => mapCard(row, premiumOn));
+}
+
 export async function fetchCategories(): Promise<Category[]> {
   const sql = await getSql();
   type CatRow = {
