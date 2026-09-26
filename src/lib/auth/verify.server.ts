@@ -1,6 +1,7 @@
 import { getRequest } from "@tanstack/react-start/server";
 import { gateIdentityEnabled } from "./gate-identity.server";
-import { auth, authConfigured } from "./server";
+import { auth, authConfigured, SESSION_TOKEN_COOKIE } from "./server";
+import { GATE_IDENTITY_HEADER } from "./gate-identity.server";
 
 /**
  * Server-side session resolution (server-only).
@@ -67,6 +68,29 @@ export async function getSessionUser(
       return null;
     }
     if (!request) return null;
+
+    // Most public requests are anonymous. Avoid calling Better Auth (and
+    // therefore Postgres) when there is no credential to resolve. This fast
+    // path is important on Neon Free because otherwise every public server
+    // function request wakes the database just to discover that no session
+    // exists.
+    const inboundAuthorization = request.headers.get("authorization")?.trim();
+    const cookieHeader = request.headers.get("cookie") ?? "";
+    const hasSessionCookie = cookieHeader
+      .split(";")
+      .some((pair) => pair.trim().startsWith(`${SESSION_TOKEN_COOKIE}=`));
+    const hasGateIdentity = Boolean(
+      request.headers.get(GATE_IDENTITY_HEADER)?.trim(),
+    );
+    if (
+      !bearerToken &&
+      !inboundAuthorization &&
+      !hasSessionCookie &&
+      !hasGateIdentity
+    ) {
+      return null;
+    }
+
     let headers = request.headers;
     if (bearerToken) {
       headers = new Headers(request.headers);
