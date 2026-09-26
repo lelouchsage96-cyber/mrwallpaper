@@ -83,7 +83,17 @@ const grokTokenUrl = `${issuerBase}/api/auth/oauth2/token`;
 const grokUserInfoUrl = `${issuerBase}/api/auth/oauth2/userinfo`;
 
 const database = databaseUrl
-  ? new Pool({ connectionString: databaseUrl })
+  ? new Pool({
+      connectionString: databaseUrl,
+      // Keep auth lightweight on serverless/Neon Free. The pg default is 10
+      // connections per process, which can fan out quickly across warm Vercel
+      // instances and keep the database active longer than necessary.
+      max: 2,
+      min: 0,
+      idleTimeoutMillis: 5_000,
+      connectionTimeoutMillis: 10_000,
+      allowExitOnIdle: true,
+    })
   : { dialect: pgliteDialect(() => getPglite()), type: "postgres" as const };
 
 export const SESSION_TOKEN_COOKIE = "__Host-grok-auth.session_token";
