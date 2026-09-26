@@ -586,15 +586,22 @@ async function fetchCuratedPairs(userId: string | null): Promise<WallpaperPair[]
     .filter((p): p is WallpaperPair => Boolean(p));
 }
 
-export async function fetchHomeDuos(userId: string | null, tasteIds?: string[]): Promise<WallpaperPair[]> {
+export async function fetchHomeDuos(
+  userId: string | null,
+  tasteIds?: string[],
+  seedPool?: WallpaperCard[],
+): Promise<WallpaperPair[]> {
   try {
     const curated = await fetchCuratedPairs(userId);
-    const pool = await fetchCardList(userId, {
-      order: "trending",
-      limit: 40,
-      device: "phone",
-      categoryIds: tasteIds?.length ? tasteIds : undefined,
-    });
+    const pool =
+      seedPool?.length
+        ? seedPool
+        : await fetchCardList(userId, {
+            order: "trending",
+            limit: 40,
+            device: "phone",
+            categoryIds: tasteIds?.length ? tasteIds : undefined,
+          });
     const used = new Set(curated.flatMap((p) => [p.lock.id, p.home.id]));
     const suggested = suggestDuos(pool, { count: 6, seed: daySeed("home"), used });
     return mergeHomeDuos(curated, suggested, 6);
