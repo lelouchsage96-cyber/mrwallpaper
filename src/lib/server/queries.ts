@@ -614,29 +614,64 @@ export async function fetchHomeDuos(
 export async function fetchPairForWallpaper(
   wallpaperId: string,
   userId: string | null,
+  source?: WallpaperCard,
+  candidatePool?: WallpaperCard[],
 ): Promise<WallpaperPair | null> {
   try {
-    const curated = await fetchCuratedPairs(userId);
-    const hit = curated.find((p) => p.lock.id === wallpaperId || p.home.id === wallpaperId);
-    if (hit) return hit;
-    const plate = (await fetchCardsByIds([wallpaperId], userId))[0];
+    const sql = await getSql();
+    const rows = await tryRows<{
+      id: string;
+      slug: string;
+      name: string;
+      description: string;
+      lock_wallpaper_id: string;
+      home_wallpaper_id: string;
+    }>("pair-for-wallpaper.curated", () =>
+      sql.query(
+        `select id, slug, name, description, lock_wallpaper_id, home_wallpaper_id
+         from wallpaper_pairs
+         where is_visible is not false
+           and (lock_wallpaper_id = $1 or home_wallpaper_id = $1)
+         order by sort_order asc
+         limit 1`,
+        [wallpaperId],
+      ),
+    );
+
+    const curated = rows[0];
+    if (curated) {
+      const cards = await fetchCardsByIds(
+        [curated.lock_wallpaper_id, curated.home_wallpaper_id],
+        userId,
+      );
+      const byId = new Map(cards.map((w) => [w.id, w]));
+      const lock = byId.get(curated.lock_wallpaper_id);
+      const home = byId.get(curated.home_wallpaper_id);
+      if (lock && home) {
+        return {
+          id: curated.id,
+          slug: curated.slug,
+          name: curated.name,
+          description: curated.description,
+          lock,
+          home,
+        };
+      }
+    }
+
+    const plate = source ?? (await fetchCardsByIds([wallpaperId], userId))[0];
     if (!plate || plate.isLive || plate.deviceType === "tablet") return null;
-    const [sameCat, trending] = await Promise.all([
-      fetchCardList(userId, {
+
+    // getWallpaper already loads a similarity-ranked set. Reusing it avoids
+    // two additional broad trending/category queries on every wallpaper view.
+    const pool =
+      candidatePool?.filter((w) => w.id !== plate.id) ??
+      (await fetchCardList(userId, {
         order: "trending",
         limit: 24,
         device: "phone",
         categoryId: plate.categoryId,
-      }),
-      fetchCardList(userId, { order: "trending", limit: 32, device: "phone" }),
-    ]);
-    const seen = new Set<string>();
-    const pool: WallpaperCard[] = [];
-    for (const w of [...sameCat, ...trending]) {
-      if (seen.has(w.id)) continue;
-      seen.add(w.id);
-      pool.push(w);
-    }
+      }));
     return suggestCompanion(plate, pool);
   } catch (err) {
     console.error("[db] pair-for-wallpaper", err);
