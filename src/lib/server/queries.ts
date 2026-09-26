@@ -333,24 +333,29 @@ export async function fetchSimilarCards(
   };
 
   const rows = await sql.query<SimilarRow>(
-    `with similarity_base as (
+    `with source_collections as (
+       select collection_id
+       from collection_wallpapers
+       where wallpaper_id = $1
+     ),
+     collection_matches as (
+       select cw.wallpaper_id, count(*)::int as shared_collections
+       from collection_wallpapers cw
+       join source_collections sc on sc.collection_id = cw.collection_id
+       group by cw.wallpaper_id
+     ),
+     tag_matches as (
+       select wt.wallpaper_id, count(*)::int as shared_tags
+       from wallpaper_tags wt
+       join tags t on t.id = wt.tag_id
+       where lower(t.name) = any($3::text[])
+       group by wt.wallpaper_id
+     ),
+     similarity_base as (
        select ${CARD_SELECT}, ${fav},
               (w.category_id = $2) as same_category,
-              (
-                select count(*)::int
-                from wallpaper_tags wt
-                join tags t on t.id = wt.tag_id
-                where wt.wallpaper_id = w.id
-                  and lower(t.name) = any($3::text[])
-              ) as shared_tags,
-              (
-                select count(*)::int
-                from collection_wallpapers candidate_cw
-                join collection_wallpapers source_cw
-                  on source_cw.collection_id = candidate_cw.collection_id
-                 and source_cw.wallpaper_id = $1
-                where candidate_cw.wallpaper_id = w.id
-              ) as shared_collections,
+              coalesce(tm.shared_tags, 0)::int as shared_tags,
+              coalesce(cm.shared_collections, 0)::int as shared_collections,
               (
                 select count(*)::int
                 from unnest($4::text[]) as p(pattern)
@@ -373,6 +378,8 @@ export async function fetchSimilarCards(
               end as keyword_match
        from wallpapers w
        join categories c on c.id = w.category_id
+       left join tag_matches tm on tm.wallpaper_id = w.id
+       left join collection_matches cm on cm.wallpaper_id = w.id
        where w.status = 'approved'
          and ${STILL_ONLY}
          and w.id <> $1
