@@ -329,26 +329,60 @@ export const getHomeFeed = createServerFn({ method: "GET" })
 
   });
 
-export const getAppConfig = createServerFn({ method: "GET" })
-  .middleware([optionalAuthMiddleware])
-  .handler(async ({ context }): Promise<AppConfig> => {
-    const flags = await readFlags();
-    const mode = await setting<string>("free_download_mode", "direct");
-    return {
-      freeDownloadMode: mode === "rewarded_ad" ? "rewarded_ad" : "direct",
-      maintenanceMode: await setting<boolean>("maintenance_mode", false),
-      adsEnabled: await setting<boolean>("ads_enabled", false),
-      rewardedDownloadsEnabled: flags.rewarded_downloads_enabled,
-      dailyDownloadLimit: await setting<number>("daily_download_limit", 40),
-      featureFlags: flags,
-      premiumPlans: PREMIUM_PLANS,
-      isPremium: await isPremiumUser(context.userId),
-      adsenseClient: await setting<string>("adsense_client", ""),
-      adsenseBannerSlot: await setting<string>("adsense_banner_slot", ""),
-      adsenseFeedSlot: await setting<string>("adsense_feed_slot", ""),
-      adsenseAnchorSlot: await setting<string>("adsense_anchor_slot", ""),
-    };
-  });
+export const getAppConfig = createServerFn({ method: "GET" }).handler(
+  async (): Promise<AppConfig> =>
+    cachedPublicRead("app-config", 300_000, async () => {
+      // Premium is disabled, so this payload is fully public. Read all config in
+      // one round-trip instead of waking Postgres for each individual setting.
+      const sql = await getSql();
+      const keys = [
+        "feature_flags",
+        "free_download_mode",
+        "maintenance_mode",
+        "ads_enabled",
+        "daily_download_limit",
+        "adsense_client",
+        "adsense_banner_slot",
+        "adsense_feed_slot",
+        "adsense_anchor_slot",
+      ];
+      const rows = await sql.query<{ key: string; value: unknown }>(
+        `select key, value from app_settings where key = any($1::text[])`,
+        [keys],
+      );
+      const values = new Map(rows.map((row) => [row.key, row.value]));
+      const flags = {
+        ...parseJson<FeatureFlags>(values.get("feature_flags"), {
+          creator_marketplace_enabled: false,
+          premium_enabled: false,
+          rewarded_downloads_enabled: false,
+          notifications_enabled: true,
+          recommendations_enabled: true,
+          lifetime_purchase_enabled: false,
+        }),
+        creator_marketplace_enabled: false,
+        premium_enabled: false,
+        lifetime_purchase_enabled: false,
+      };
+      const read = <T,>(key: string, fallback: T): T =>
+        parseJson<T>(values.get(key), fallback);
+      const mode = read<string>("free_download_mode", "direct");
+      return {
+        freeDownloadMode: mode === "rewarded_ad" ? "rewarded_ad" : "direct",
+        maintenanceMode: read<boolean>("maintenance_mode", false),
+        adsEnabled: read<boolean>("ads_enabled", false),
+        rewardedDownloadsEnabled: flags.rewarded_downloads_enabled,
+        dailyDownloadLimit: read<number>("daily_download_limit", 40),
+        featureFlags: flags,
+        premiumPlans: PREMIUM_PLANS,
+        isPremium: false,
+        adsenseClient: read<string>("adsense_client", ""),
+        adsenseBannerSlot: read<string>("adsense_banner_slot", ""),
+        adsenseFeedSlot: read<string>("adsense_feed_slot", ""),
+        adsenseAnchorSlot: read<string>("adsense_anchor_slot", ""),
+      };
+    }),
+);
 
 export const getExploreMeta = createServerFn({ method: "GET" }).handler(async (): Promise<ExploreMeta> => cachedPublicRead("explore-meta", 300_000, async () => {
   try {
