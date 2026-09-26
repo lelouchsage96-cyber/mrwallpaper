@@ -10,7 +10,6 @@ import {
   fetchCardsByIds,
   fetchCategories,
   fetchCollections,
-  fetchCreators,
   fetchDetail,
   fetchFeaturedIds,
   fetchHomeDuos,
@@ -215,7 +214,9 @@ export const getHomeFeed = createServerFn({ method: "GET" })
     const userId = context.userId;
     let tasteIds = data?.tasteIds ?? [];
     const none: WallpaperCard[] = [];
-    const [categories, collections, trendingRaw, freshRaw, tabletRaw, wotdIds, editorIds, creators, marketOn] =
+    const marketOn = await marketplaceEnabled();
+    const creators = [];
+    const [categories, collections, trendingRaw, freshRaw, tabletRaw, wotdIds, editorIds] =
       await Promise.all([
         settle("categories", fetchCategories(), []),
         settle("collections", fetchCollections(), []),
@@ -224,8 +225,6 @@ export const getHomeFeed = createServerFn({ method: "GET" })
         settle("tablet", fetchCardList(userId, { order: "fresh", limit: 6, device: "tablet" }), none),
         settle("wotd", fetchFeaturedIds("wotd"), []),
         settle("editors", fetchFeaturedIds("editors_choice"), []),
-        settle("creators", fetchCreators(8), []),
-        settle("market", marketplaceEnabled(), false),
       ]);
     if (userId) {
       try {
@@ -242,7 +241,15 @@ export const getHomeFeed = createServerFn({ method: "GET" })
     const [wotd, editors, pairs, recommended] = await Promise.all([
       settle("wotdCards", fetchCardsByIds(wotdIds.slice(0, 1), userId), none),
       settle("editorCards", fetchCardsByIds(editorIds, userId), none),
-      settle("duos", fetchHomeDuos(userId, tasteIds), []),
+      settle(
+        "duos",
+        fetchHomeDuos(
+          userId,
+          tasteIds,
+          !userId && tasteIds.length === 0 ? trendingRaw : undefined,
+        ),
+        [],
+      ),
       tasteIds.length >= 3
         ? settle(
             "recommended",
