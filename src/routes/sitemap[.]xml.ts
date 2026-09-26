@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { absUrl, categoryPath, DEVICE_HUBS, wallpaperPath } from "@/lib/seo";
+import { absUrl, categoryPath, wallpaperPath } from "@/lib/seo";
 import { getSitemapData } from "@/lib/server/api";
 
 function esc(value: string) {
@@ -41,7 +41,6 @@ export const Route = createFileRoute("/sitemap.xml")({
           "/legal/copyright",
           "/legal/guidelines",
         ];
-        const devicePages = Object.keys(DEVICE_HUBS).map((slug) => categoryPath(slug));
         const seen = new Set<string>();
         const add = (path: string, extra = "") => {
           const canonical = absUrl(path);
@@ -56,7 +55,6 @@ export const Route = createFileRoute("/sitemap.xml")({
             add(p.path, `<changefreq>daily</changefreq><priority>${p.priority}</priority>`),
           ),
           ...staticPages.map((p) => add(p, "<changefreq>weekly</changefreq><priority>0.5</priority>")),
-          ...devicePages.map((p) => add(p, "<changefreq>daily</changefreq><priority>0.8</priority>")),
           ...data.categories.map((c) =>
             add(categoryPath(c.slug), "<changefreq>daily</changefreq><priority>0.8</priority>"),
           ),
