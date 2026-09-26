@@ -549,10 +549,8 @@ export const getWallpaper = createServerFn({ method: "GET" })
     const detail = await fetchDetail(ref.id, context.userId);
     if (!detail) return { wallpaper: null, related: [] as WallpaperCard[], pair: null, status: "missing" as const };
     void recordView(context.userId, ref.id).catch(() => undefined);
-    const [related, pair] = await Promise.all([
-      fetchSimilarCards(context.userId, detail, 8),
-      fetchPairForWallpaper(ref.id, context.userId),
-    ]);
+    const related = await fetchSimilarCards(context.userId, detail, 8);
+    const pair = await fetchPairForWallpaper(ref.id, context.userId, detail, related);
     return {
       wallpaper: detail,
       related,
