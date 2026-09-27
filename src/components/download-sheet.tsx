@@ -12,6 +12,28 @@ import type { AccessType } from "@/lib/types";
 
 type DownloadFile = { data: Uint8Array; filename: string; mime: string };
 
+const GUEST_DOWNLOAD_KEY = "mrwallpapers.download.guest.v1";
+let memoryGuestId: string | null = null;
+
+function getGuestDownloadId(): string {
+  try {
+    const current = window.localStorage.getItem(GUEST_DOWNLOAD_KEY);
+    if (current && /^[a-zA-Z0-9_-]{8,64}$/.test(current)) return current;
+
+    const next = `g_${crypto.randomUUID().replaceAll("-", "")}`.slice(0, 64);
+    window.localStorage.setItem(GUEST_DOWNLOAD_KEY, next);
+    return next;
+  } catch {
+    if (memoryGuestId) return memoryGuestId;
+    const random =
+      typeof crypto !== "undefined" && typeof crypto.randomUUID === "function"
+        ? crypto.randomUUID().replaceAll("-", "")
+        : `${Date.now().toString(36)}${Math.random().toString(36).slice(2)}`;
+    memoryGuestId = `g_${random}`.slice(0, 64);
+    return memoryGuestId;
+  }
+}
+
 function wait(ms: number) {
   return new Promise((resolve) => window.setTimeout(resolve, ms));
 }
@@ -95,7 +117,7 @@ export function DownloadSheet({
   deviceType?: DeviceType;
 }) {
   const navigate = useNavigate();
-  const [phase, setPhase] = useState<"idle" | "saving" | "ready" | "guide" | "error">("idle");
+  const [phase, setPhase] = useState<"idle" | "saving" | "ready" | "guide" | "auth" | "error">("idle");
   const [adSessionId, setAdSessionId] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
   const [readyFile, setReadyFile] = useState<DownloadFile | null>(null);
@@ -149,11 +171,12 @@ export function DownloadSheet({
           wallpaperId,
           source: "details",
           adSessionId: sessionId ?? adSessionId ?? undefined,
+          guestId: getGuestDownloadId(),
         },
       });
 
       if (res.status === "needs_auth") {
-        void navigate({ to: "/login", search: { next: `/wallpaper/${wallpaperId}` } });
+        setPhase("auth");
         return;
       }
       if (res.status === "needs_premium") {
@@ -314,6 +337,28 @@ export function DownloadSheet({
             </Button>
             <Button variant="ghost" className="w-full" onClick={onClose}>
               {t.cancel}
+            </Button>
+          </div>
+        ) : phase === "auth" ? (
+          <div className="mt-4 space-y-4">
+            <div>
+              <p className="text-sm text-fg">
+                You’ve used your 3 free downloads in the last 24 hours.
+              </p>
+              <p className="mt-1 text-sm text-muted">
+                Sign in or create a free account for unlimited downloads.
+              </p>
+            </div>
+            <Button
+              className="w-full"
+              onClick={() =>
+                void navigate({ to: "/login", search: { next: `/wallpaper/${wallpaperId}` } })
+              }
+            >
+              Sign in for unlimited downloads
+            </Button>
+            <Button variant="ghost" className="w-full" onClick={onClose}>
+              Not now
             </Button>
           </div>
         ) : phase === "error" ? (
