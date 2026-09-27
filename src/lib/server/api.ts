@@ -658,6 +658,7 @@ export const requestDownload = createServerFn({ method: "POST" })
       wallpaperId: z.string(),
       source: z.string().optional(),
       adSessionId: z.string().optional(),
+      guestId: z.string().max(64).optional(),
     }),
   )
   .handler(async ({ context, data }): Promise<DownloadRequestResult> => {
@@ -669,13 +670,16 @@ export const requestDownload = createServerFn({ method: "POST" })
     const premium = await isPremiumUser(userId);
     const mode = await setting<string>("free_download_mode", "direct");
     const flags = await readFlags();
+    const guestId = !userId ? data.guestId?.trim() : undefined;
+    const guestUserId =
+      guestId && /^[a-zA-Z0-9_-]{8,64}$/.test(guestId) ? `guest:${guestId}` : null;
 
     if (detail.accessType === "premium" && !premium && flags.premium_enabled) {
       return { status: userId ? "needs_premium" : "needs_auth" };
     }
 
     // Free wallpapers are intentionally downloadable without an account.
-    // Signed-in users keep rewarded-ad, authorization, and account rate-limit behavior.
+    // Signed-in users keep rewarded-ad and authorization behavior, with no daily download cap.
     if (userId) {
       if (!premium && mode === "rewarded_ad" && flags.rewarded_downloads_enabled && !data.adSessionId) {
         return { status: "needs_ad" };
@@ -693,13 +697,16 @@ export const requestDownload = createServerFn({ method: "POST" })
         await sql.query(`update download_authorizations set consumed_at = now() where id = $1`, [auth[0].id]);
       }
 
-      const limit = await setting<number>("daily_download_limit", 40);
-      const today = await sql.query<{ n: number }>(
+    }
+
+    if (!userId) {
+      if (!guestUserId) return { status: "needs_auth" };
+      const recent = await sql.query<{ n: number }>(
         `select count(*)::int as n from downloads
          where user_id = $1 and downloaded_at > now() - interval '1 day'`,
-        [userId],
+        [guestUserId],
       );
-      if ((today[0]?.n ?? 0) >= limit && !premium) return { status: "rate_limited" };
+      if ((recent[0]?.n ?? 0) >= 3) return { status: "needs_auth" };
     }
 
     const assets = await sql.query<{ path: string; mime: string }>(
@@ -724,6 +731,12 @@ export const requestDownload = createServerFn({ method: "POST" })
           premium,
           data.adSessionId ?? null,
         ],
+      );
+    } else if (guestUserId) {
+      await sql.query(
+        `insert into downloads (id, user_id, wallpaper_id, download_type, source, is_premium_user, authorization_id)
+         values ($1, $2, $3, 'free', $4, false, null)`,
+        [crypto.randomUUID(), guestUserId, data.wallpaperId, data.source ?? "details"],
       );
     }
 
