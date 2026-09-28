@@ -37,8 +37,8 @@ export function FavoriteButton({
       aria-pressed={local}
       disabled={busy}
       className={cn(
-        "grid size-11 place-items-center rounded-full bg-bg/55 text-fg backdrop-blur-sm",
-        "transition-[transform,background-color,opacity] duration-150 ease-out hover:bg-bg/75 active:scale-[0.96] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring",
+        "mw-glass-button grid size-11 place-items-center rounded-full text-fg",
+        "transition-[transform,background-color,opacity] duration-150 ease-out active:scale-[0.96] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring",
         className,
       )}
       onClick={async (e) => {

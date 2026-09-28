@@ -211,21 +211,21 @@ function ExplorePage() {
     <div className="px-4 pt-5 lg:px-6 lg:pt-5 xl:px-8">
       <h1 className="font-display text-3xl text-fg lg:hidden">{t.explore.title}</h1>
 
-      <div className="sticky top-[env(safe-area-inset-top)] z-30 -mx-4 mt-4 border-y border-border/70 bg-bg/95 px-4 py-3 backdrop-blur-xl lg:hidden">
+      <div className="sticky top-[env(safe-area-inset-top)] z-30 -mx-4 mt-4 border-y border-border/60 bg-bg/94 px-4 py-3 backdrop-blur-xl lg:hidden">
         <Input
           value={q}
           onChange={(event) => setQ(event.target.value)}
           placeholder={t.explore.placeholder}
           aria-label={t.explore.placeholder}
           type="search"
-          className="text-base sm:text-sm"
+          className="mw-glass-button text-base sm:text-sm"
         />
 
         <div className="mt-3 flex items-center justify-between gap-3">
           <button
             type="button"
             onClick={() => setFiltersOpen(true)}
-            className="inline-flex h-10 items-center gap-2 rounded-full border border-border bg-elevated/65 px-4 text-sm font-medium text-fg transition-colors active:bg-surface"
+            className="mw-glass-button inline-flex h-10 items-center gap-2 rounded-full px-4 text-sm font-medium text-fg transition-colors active:scale-[0.98]"
           >
             <SlidersHorizontal className="size-4" strokeWidth={1.8} />
             Filters
@@ -240,7 +240,7 @@ function ExplorePage() {
         </div>
       </div>
 
-      <div className="hidden lg:sticky lg:top-[4.5rem] lg:z-30 lg:block lg:rounded-2xl lg:border lg:border-border/70 lg:bg-bg/94 lg:p-2 lg:shadow-[0_8px_24px_rgba(0,0,0,0.12)] lg:backdrop-blur-xl">
+      <div className="mw-glass hidden lg:sticky lg:top-[4.5rem] lg:z-30 lg:block lg:rounded-2xl lg:p-2">
         <div className="flex items-center gap-3">
           <div className="flex shrink-0 items-center gap-1 rounded-xl bg-elevated/55 p-1">
             {deviceChips.map((filter) => (
@@ -345,7 +345,7 @@ function ExplorePage() {
             className="absolute inset-0 bg-black/55 backdrop-blur-[2px]"
           />
 
-          <div className="mw-sheet absolute inset-x-0 bottom-0 max-h-[82dvh] overflow-y-auto rounded-t-[28px] border-t border-border bg-bg px-4 pb-[max(1rem,env(safe-area-inset-bottom))] pt-4 shadow-[0_-24px_60px_rgba(0,0,0,0.35)]">
+          <div className="mw-sheet mw-glass mw-glass-panel absolute inset-x-0 bottom-0 max-h-[82dvh] overflow-y-auto rounded-t-[28px] px-4 pb-[max(1rem,env(safe-area-inset-bottom))] pt-4">
             <div className="mx-auto mb-4 h-1 w-10 rounded-full bg-muted/35" aria-hidden="true" />
 
             <div className="flex items-center justify-between gap-3">
@@ -356,7 +356,7 @@ function ExplorePage() {
               <button
                 type="button"
                 onClick={() => setFiltersOpen(false)}
-                className="grid size-10 place-items-center rounded-full bg-elevated text-muted"
+                className="mw-glass-button grid size-10 place-items-center rounded-full text-muted"
                 aria-label="Close filters"
               >
                 <X className="size-4" />

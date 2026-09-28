@@ -88,16 +88,6 @@ function PfpIndexPage() {
   const { categories, items, q, sort, page, hasMore } = Route.useLoaderData();
   const prev = page > 1 ? page - 1 : null;
   const next = hasMore ? page + 1 : null;
-  const sectionTitle = q
-    ? `${q} PFPs`
-    : sort === "latest"
-      ? "Latest PFPs"
-      : sort === "downloads"
-        ? "Most Downloaded PFPs"
-        : sort === "favorites"
-          ? "Most Favorited PFPs"
-          : "Popular PFPs";
-
   function pageHref(target: number) {
     const params = new URLSearchParams();
     if (q) params.set("q", q);
@@ -113,7 +103,7 @@ function PfpIndexPage() {
       <main className="mx-auto max-w-7xl px-4 pb-28 pt-[calc(env(safe-area-inset-top)+1.25rem)] lg:pb-20 lg:px-6 lg:pt-5 xl:px-8">
       <h1 className="font-display text-3xl text-fg lg:hidden">PFPs</h1>
 
-      <div className="sticky top-[env(safe-area-inset-top)] z-30 -mx-4 mt-4 border-y border-border/70 bg-bg/95 px-4 py-3 backdrop-blur-xl lg:hidden">
+      <div className="sticky top-[env(safe-area-inset-top)] z-30 -mx-4 mt-4 border-y border-border/60 bg-bg/94 px-4 py-3 backdrop-blur-xl lg:hidden">
         <form action="/pfps" method="get">
           <Input
             type="search"
@@ -121,7 +111,7 @@ function PfpIndexPage() {
             defaultValue={q || ""}
             placeholder="Search PFPs"
             aria-label="Search PFPs"
-            className="text-base sm:text-sm"
+            className="mw-glass-button text-base sm:text-sm"
           />
           {sort !== "trending" ? <input type="hidden" name="sort" value={sort} /> : null}
         </form>
@@ -129,16 +119,9 @@ function PfpIndexPage() {
         <PfpMobileFilters categories={categories} sort={sort} q={q} />
       </div>
 
-      <div className="mt-2 lg:mt-5">
-        <PfpDesktopFilters categories={categories} sort={sort} />
-      </div>
+      <PfpDesktopFilters categories={categories} sort={sort} />
 
-      <section className="mt-5 lg:mt-5" aria-labelledby="pfp-results-heading">
-        <div className="mb-4 hidden lg:block">
-          <h2 id="pfp-results-heading" className="font-display text-2xl text-fg">
-            {sectionTitle}
-          </h2>
-        </div>
+      <section className="mt-5" aria-label="PFP results">
         {items.length > 0 ? (
           <PfpGrid items={items} eager={6} />
         ) : (
