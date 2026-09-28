@@ -193,7 +193,10 @@ function CatalogRow({
               defaultValue={w.canonicalPath}
               placeholder={t.ops.seoCanonical}
               aria-label={t.ops.seoCanonical}
-              onBlur={(e) => onPatch({ canonicalPath: e.target.value })}
+              disabled={w.contentType === "pfp"}
+              onBlur={(e) => {
+                if (w.contentType === "wallpaper") onPatch({ canonicalPath: e.target.value });
+              }}
             />
           </Field>
           <div className="flex items-end">
