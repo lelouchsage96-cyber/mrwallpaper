@@ -96,8 +96,14 @@ function OpsBulkUploadPage() {
   useEffect(() => {
     void getOpsUploadMeta()
       .then((result) => {
+        const firstCategoryId = result.categories[0]?.id ?? "";
         setCategories(result.categories);
-        setBatchCategoryId(result.categories[0]?.id ?? "");
+        setBatchCategoryId(firstCategoryId);
+        if (firstCategoryId) {
+          setItems((current) =>
+            current.map((item) => (item.categoryId ? item : { ...item, categoryId: firstCategoryId })),
+          );
+        }
       })
       .catch(() => setMessage("Could not load upload settings."));
   }, []);
