@@ -13,11 +13,13 @@ export function FavoriteButton({
   isFavorite,
   onChange,
   className,
+  loginNext,
 }: {
   wallpaperId: string;
   isFavorite: boolean;
   onChange?: (next: boolean) => void;
   className?: string;
+  loginNext?: string;
 }) {
   const { user, isPending } = useCurrentUserState();
   const navigate = useNavigate();
@@ -44,7 +46,7 @@ export function FavoriteButton({
         e.stopPropagation();
         if (isPending) return;
         if (!user) {
-          void navigate({ to: "/login", search: { next: `/wallpaper/${wallpaperId}` } });
+          void navigate({ to: "/login", search: { next: loginNext || `/wallpaper/${wallpaperId}` } });
           return;
         }
         setBusy(true);
