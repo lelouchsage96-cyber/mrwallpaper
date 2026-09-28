@@ -41,6 +41,7 @@ import type {
   DownloadRequestResult,
   ExploreMeta,
   FeatureFlags,
+  FavoriteItem,
   HomePayload,
   PremiumPlan,
   WallpaperCard,
@@ -727,11 +728,17 @@ export const listFavorites = createServerFn({ method: "GET" })
        order by created_at desc limit 24 offset $2`,
       [context.userId, offset],
     );
-    const items = await fetchCardsByIds(
-      rows.map((r) => r.wallpaper_id),
-      context.userId,
-    );
-    return { items, offset: offset + items.length, hasMore: rows.length === 24 };
+    const ids = rows.map((row) => row.wallpaper_id);
+    const [wallpapers, pfps] = await Promise.all([
+      fetchCardsByIds(ids, context.userId),
+      fetchPfpCardsByIds(ids, context.userId),
+    ]);
+    const byId = new Map<string, FavoriteItem>([
+      ...wallpapers.map((item) => [item.id, { ...item, contentType: "wallpaper" as const }] as const),
+      ...pfps.map((item) => [item.id, { ...item, contentType: "pfp" as const }] as const),
+    ]);
+    const items = ids.map((id) => byId.get(id)).filter((item): item is FavoriteItem => Boolean(item));
+    return { items, offset: offset + rows.length, hasMore: rows.length === 24 };
   });
 
 export const getPremiumStatus = createServerFn({ method: "GET" })
