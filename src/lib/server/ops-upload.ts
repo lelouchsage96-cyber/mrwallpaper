@@ -744,7 +744,7 @@ export const uploadOpsWallpaper = createServerFn({ method: "POST" })
     }
     if (contentType === "pfp") {
       const ratio = width / height;
-      if (ratio < 0.9 || ratio > 1.1) {
+      if (ratio < 0.98 || ratio > 1.02) {
         return { ok: false as const, error: "pfp_shape" as const };
       }
     }
