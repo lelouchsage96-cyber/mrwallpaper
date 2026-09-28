@@ -86,6 +86,7 @@ export type OpsWallpaperEditData = {
   categoryId: string;
   categoryName: string;
   deviceType: DeviceType;
+  contentType: "wallpaper" | "pfp";
   status: "draft" | "pending" | "approved" | "rejected" | "removed";
   thumbnailUrl: string | null;
   seoImageUrl: string | null;
@@ -116,10 +117,17 @@ export const getOpsWallpaperEdit = createServerFn({ method: "GET" })
       primary_keyword: string | null;
       width: number;
       height: number;
+      is_pfp: boolean | number;
     }>(
       `select w.id, w.title, w.description, w.category_id, c.name as category_name,
               w.device_type, w.status, w.slug,
               w.alt_text, w.primary_keyword, w.width, w.height,
+              exists (
+                select 1
+                from collection_wallpapers pfp_cw
+                join collections pfp_c on pfp_c.id = pfp_cw.collection_id
+                where pfp_cw.wallpaper_id = w.id and pfp_c.slug = 'pfps'
+              ) as is_pfp,
               (select a.path from wallpaper_assets a
                 where a.wallpaper_id = w.id and a.kind = 'thumbnail' limit 1) as thumbnail_url,
               coalesce(
@@ -156,6 +164,7 @@ export const getOpsWallpaperEdit = createServerFn({ method: "GET" })
         categoryId: row.category_id,
         categoryName: row.category_name,
         deviceType: parseDeviceType(row.device_type),
+        contentType: row.is_pfp === true || row.is_pfp === 1 ? "pfp" : "wallpaper",
         status,
         thumbnailUrl: resolveOwnedThumb(row.id, row.thumbnail_url, row.slug),
         seoImageUrl: row.seo_media_id ? `/api/media/${row.seo_media_id}` : null,
@@ -190,7 +199,23 @@ export const updateOpsWallpaperMetadata = createServerFn({ method: "POST" })
       return { ok: false as const, error: "category" as const };
     }
     const tags = normalizeTags(data.tags);
-    const seo = buildWallpaperSeoFields({ title: data.title, description: data.description, primaryKeyword: data.primaryKeyword });
+    const contentRows = await sql.query<{ is_pfp: boolean | number }>(
+      `select exists (
+         select 1
+         from collection_wallpapers pfp_cw
+         join collections pfp_c on pfp_c.id = pfp_cw.collection_id
+         where pfp_cw.wallpaper_id = $1 and pfp_c.slug = 'pfps'
+       ) as is_pfp`,
+      [data.wallpaperId],
+    );
+    const contentType =
+      contentRows[0]?.is_pfp === true || contentRows[0]?.is_pfp === 1 ? "pfp" : "wallpaper";
+    const seo = buildWallpaperSeoFields({
+      title: data.title,
+      description: data.description,
+      primaryKeyword: data.primaryKeyword,
+      contentType,
+    });
     await sql.query(
       `update wallpapers
        set title = $1,
@@ -269,8 +294,17 @@ export const replaceOpsWallpaperImage = createServerFn({ method: "POST" })
     const wallpaperId = editFormString(data, "wallpaperId");
     if (!wallpaperId) return { ok: false as const, error: "not_found" as const };
 
-    const current = await sql.query<{ id: string }>(
-      `select id from wallpapers where id = $1 limit 1`,
+    const current = await sql.query<{ id: string; is_pfp: boolean | number }>(
+      `select w.id,
+              exists (
+                select 1
+                from collection_wallpapers pfp_cw
+                join collections pfp_c on pfp_c.id = pfp_cw.collection_id
+                where pfp_cw.wallpaper_id = w.id and pfp_c.slug = 'pfps'
+              ) as is_pfp
+       from wallpapers w
+       where w.id = $1
+       limit 1`,
       [wallpaperId],
     );
     if (!current[0]) return { ok: false as const, error: "not_found" as const };
@@ -327,6 +361,13 @@ export const replaceOpsWallpaperImage = createServerFn({ method: "POST" })
         format,
       });
       return { ok: false as const, error: "image" as const, stage: "validation" as const };
+    }
+
+    if (current[0].is_pfp === true || current[0].is_pfp === 1) {
+      const ratio = width / height;
+      if (ratio < 0.9 || ratio > 1.1) {
+        return { ok: false as const, error: "pfp_shape" as const, stage: "validation" as const };
+      }
     }
 
     const fileSha = editFormHex(data, "fileSha256") ?? sha256Buffer(preview);
