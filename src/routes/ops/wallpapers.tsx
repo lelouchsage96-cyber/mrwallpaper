@@ -123,19 +123,21 @@ function CatalogRow({
               </option>
             ))}
           </Select>
-          <Select
-            value=""
-            aria-label={t.ops.placeOn}
-            onChange={(v) => {
-              if (v === "wotd" || v === "editors_choice") onPlace(v);
-            }}
-          >
-            <option value="" disabled>
-              {t.ops.placeOn}
-            </option>
-            <option value="wotd">{t.ops.placeWotd}</option>
-            <option value="editors_choice">{t.ops.placeEditors}</option>
-          </Select>
+          {w.contentType === "wallpaper" ? (
+            <Select
+              value=""
+              aria-label={t.ops.placeOn}
+              onChange={(v) => {
+                if (v === "wotd" || v === "editors_choice") onPlace(v);
+              }}
+            >
+              <option value="" disabled>
+                {t.ops.placeOn}
+              </option>
+              <option value="wotd">{t.ops.placeWotd}</option>
+              <option value="editors_choice">{t.ops.placeEditors}</option>
+            </Select>
+          ) : null}
         </div>
       </div>
       <details className="group mt-3">
