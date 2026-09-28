@@ -58,6 +58,14 @@ const CARD_SELECT = `
 `;
 
 const STILL_ONLY = `(w.format is null or w.format not in ('mp4', 'mov', 'webm'))`;
+const PFP_COLLECTION_SLUG = "pfps";
+const PFP_MEMBERSHIP = `exists (
+  select 1
+  from collection_wallpapers pfp_cw
+  join collections pfp_c on pfp_c.id = pfp_cw.collection_id
+  where pfp_cw.wallpaper_id = w.id and pfp_c.slug = '${PFP_COLLECTION_SLUG}'
+)`;
+const WALLPAPER_ONLY = `not (${PFP_MEMBERSHIP})`;
 
 async function tryRows<T>(label: string, run: () => Promise<T[]>, fallback: T[] = []): Promise<T[]> {
   try {
@@ -121,7 +129,7 @@ export async function fetchCardList(
     params.push(userId);
     fav = `exists(select 1 from favorites f where f.wallpaper_id = w.id and f.user_id = $${params.length}) as is_favorite`;
   }
-  const where = [`w.status = 'approved'`, STILL_ONLY];
+  const where = [`w.status = 'approved'`, STILL_ONLY, WALLPAPER_ONLY];
   if (opts.categoryId) {
     params.push(opts.categoryId);
     where.push(`w.category_id = $${params.length}`);
@@ -183,7 +191,7 @@ export async function fetchCardsByIds(ids: string[], userId: string | null): Pro
     `select ${CARD_SELECT}, ${fav}
      from wallpapers w
      join categories c on c.id = w.category_id
-     where w.id = any($1) and w.status = 'approved' and ${STILL_ONLY}`,
+     where w.id = any($1) and w.status = 'approved' and ${STILL_ONLY} and ${WALLPAPER_ONLY}`,
     params,
   );
   const premiumOn = await premiumEnabled();
@@ -217,7 +225,7 @@ export async function fetchDetail(id: string, userId: string | null): Promise<Wa
      join categories c on c.id = w.category_id
      left join creator_profiles cp
        on cp.user_id = w.creator_id and cp.status = 'approved'
-     where w.status = 'approved' and ${STILL_ONLY} and (w.id = $1 or w.slug = $1)
+     where w.status = 'approved' and ${STILL_ONLY} and ${WALLPAPER_ONLY} and (w.id = $1 or w.slug = $1)
      limit 1`,
     params,
   );
@@ -382,6 +390,7 @@ export async function fetchSimilarCards(
        left join collection_matches cm on cm.wallpaper_id = w.id
        where w.status = 'approved'
          and ${STILL_ONLY}
+         and ${WALLPAPER_ONLY}
          and w.id <> $1
          and ${deviceSql}
      ),
@@ -440,6 +449,159 @@ export async function fetchSimilarCards(
     .map((row) => mapCard(row, premiumOn));
 }
 
+export async function fetchPfpCardList(
+  userId: string | null,
+  opts: {
+    order?: "trending" | "fresh" | "downloads";
+    limit: number;
+    offset?: number;
+    categoryId?: string;
+    search?: string;
+  },
+): Promise<WallpaperCard[]> {
+  const sql = await getSql();
+  const params: unknown[] = [];
+  let fav = "false as is_favorite";
+  if (userId) {
+    params.push(userId);
+    fav = `exists(select 1 from favorites f where f.wallpaper_id = w.id and f.user_id = ${params.length}) as is_favorite`;
+  }
+  const where = [`w.status = 'approved'`, STILL_ONLY, PFP_MEMBERSHIP];
+  if (opts.categoryId) {
+    params.push(opts.categoryId);
+    where.push(`w.category_id = ${params.length}`);
+  }
+  if (opts.search?.trim()) {
+    params.push(`%${opts.search.trim().toLowerCase()}%`);
+    where.push(
+      `(lower(w.title) like ${params.length} or lower(c.name) like ${params.length} or exists (
+          select 1 from wallpaper_tags wt join tags t on t.id = wt.tag_id
+          where wt.wallpaper_id = w.id and lower(t.name) like ${params.length}
+        ))`,
+    );
+  }
+  const order =
+    opts.order === "fresh"
+      ? "w.published_at desc nulls last, w.created_at desc"
+      : opts.order === "downloads"
+        ? "w.download_count desc, w.published_at desc"
+        : "w.download_count desc, w.favorite_count desc, w.published_at desc";
+  params.push(opts.limit);
+  const limitAt = params.length;
+  params.push(opts.offset ?? 0);
+  const offsetAt = params.length;
+  const rows = await sql.query<CardRow>(
+    `select ${CARD_SELECT}, ${fav}
+     from wallpapers w
+     join categories c on c.id = w.category_id
+     where ${where.join(" and ")}
+     order by ${order}
+     limit ${limitAt} offset ${offsetAt}`,
+    params,
+  );
+  const premiumOn = await premiumEnabled();
+  return rows.map((row) => mapPfpCard(row, premiumOn));
+}
+
+function mapPfpCard(row: CardRow, premiumOn = true): WallpaperCard {
+  const card = mapCard(row, premiumOn);
+  const customAlt = row.alt_text?.trim();
+  return {
+    ...card,
+    altText: customAlt || `${row.title} profile picture in ${row.category_name}`,
+  };
+}
+
+export async function fetchPfpDetail(id: string, userId: string | null): Promise<WallpaperDetail | null> {
+  const sql = await getSql();
+  const params: unknown[] = [id];
+  let fav = "false as is_favorite";
+  if (userId) {
+    params.push(userId);
+    fav = `exists(select 1 from favorites f where f.wallpaper_id = w.id and f.user_id = ${params.length}) as is_favorite`;
+  }
+  const rows = await sql.query<DetailRow>(
+    `select ${CARD_SELECT}, ${fav},
+            w.description, w.width, w.height, w.file_size_bytes, w.format, w.creator_id,
+            w.seo_title, w.seo_description, w.primary_keyword, w.canonical_path, w.robots,
+            (select a.path from wallpaper_assets a
+              where a.wallpaper_id = w.id and a.kind = 'preview' limit 1) as preview_url,
+            (select a.width from wallpaper_assets a
+              where a.wallpaper_id = w.id and a.kind = 'preview' limit 1) as preview_width,
+            (select a.height from wallpaper_assets a
+              where a.wallpaper_id = w.id and a.kind = 'preview' limit 1) as preview_height,
+            (select a.path from wallpaper_assets a
+              where a.wallpaper_id = w.id and a.kind = 'original' limit 1) as original_url,
+            cp.display_name as creator_name, cp.slug as creator_slug
+     from wallpapers w
+     join categories c on c.id = w.category_id
+     left join creator_profiles cp
+       on cp.user_id = w.creator_id and cp.status = 'approved'
+     where w.status = 'approved' and ${STILL_ONLY} and ${PFP_MEMBERSHIP}
+       and (w.id = $1 or w.slug = $1)
+     limit 1`,
+    params,
+  );
+  const row = rows[0];
+  if (!row) return null;
+  const tagRows = await sql.query<{ name: string }>(
+    `select t.name from wallpaper_tags wt
+     join tags t on t.id = wt.tag_id
+     where wt.wallpaper_id = $1`,
+    [row.id],
+  );
+  const premiumOn = await premiumEnabled();
+  return {
+    ...mapPfpCard(row, premiumOn),
+    description: row.description,
+    previewUrl: resolvePreview(row.id, row.preview_url, row.slug),
+    previewWidth: Number(row.preview_width) || Number(row.width),
+    previewHeight: Number(row.preview_height) || Number(row.height),
+    width: Number(row.width),
+    height: Number(row.height),
+    fileSizeBytes: Number(row.file_size_bytes) || 0,
+    format: row.format || "jpg",
+    tags: tagRows.map((tag) => tag.name),
+    creatorName: row.creator_name,
+    creatorSlug: row.creator_slug,
+    videoUrl: null,
+    seoTitle: row.seo_title ?? null,
+    seoDescription: row.seo_description ?? null,
+    primaryKeyword: row.primary_keyword ?? null,
+    canonicalPath: row.canonical_path ?? null,
+    robots: row.robots === "noindex" ? "noindex" : "index",
+  };
+}
+
+export async function fetchSimilarPfpCards(
+  userId: string | null,
+  source: WallpaperDetail,
+  limit = 8,
+): Promise<WallpaperCard[]> {
+  const sql = await getSql();
+  const params: unknown[] = [source.id, source.categoryId];
+  let fav = "false as is_favorite";
+  if (userId) {
+    params.push(userId);
+    fav = `exists(select 1 from favorites f where f.wallpaper_id = w.id and f.user_id = ${params.length}) as is_favorite`;
+  }
+  params.push(limit);
+  const limitAt = params.length;
+  const rows = await sql.query<CardRow>(
+    `select ${CARD_SELECT}, ${fav}
+     from wallpapers w
+     join categories c on c.id = w.category_id
+     where w.status = 'approved' and ${STILL_ONLY} and ${PFP_MEMBERSHIP}
+       and w.id <> $1
+     order by case when w.category_id = $2 then 0 else 1 end,
+              w.download_count desc, w.favorite_count desc, w.published_at desc
+     limit ${limitAt}`,
+    params,
+  );
+  const premiumOn = await premiumEnabled();
+  return rows.map((row) => mapPfpCard(row, premiumOn));
+}
+
 export async function fetchCategories(): Promise<Category[]> {
   const sql = await getSql();
   type CatRow = {
@@ -495,7 +657,7 @@ export async function fetchCategories(): Promise<Category[]> {
                   select a.path
                   from wallpapers w
                   join wallpaper_assets a on a.wallpaper_id = w.id and a.kind = 'thumbnail'
-                  where w.category_id = categories.id and w.status = 'approved' and ${STILL_ONLY}
+                  where w.category_id = categories.id and w.status = 'approved' and ${STILL_ONLY} and ${WALLPAPER_ONLY}
                   order by w.download_count desc, w.published_at desc nulls last
                   limit 1
                 )) as cover_url,
@@ -504,6 +666,36 @@ export async function fetchCategories(): Promise<Category[]> {
       ),
     )
   ).map(map);
+}
+
+export async function fetchPfpCategories(): Promise<Category[]> {
+  const sql = await getSql();
+  const base = await fetchCategories();
+  const rows = await sql.query<{ id: string; cover_url: string | null }>(
+    `select c.id,
+            (select a.path
+             from wallpapers w
+             join wallpaper_assets a on a.wallpaper_id = w.id and a.kind = 'thumbnail'
+             where w.category_id = c.id and w.status = 'approved' and ${STILL_ONLY}
+               and ${PFP_MEMBERSHIP}
+             order by w.download_count desc, w.published_at desc nulls last
+             limit 1) as cover_url
+     from categories c
+     where c.is_visible = true
+       and exists (
+         select 1
+         from wallpapers w
+         where w.category_id = c.id and w.status = 'approved' and ${STILL_ONLY}
+           and ${PFP_MEMBERSHIP}
+       )`,
+  );
+  const covers = new Map(rows.map((row) => [row.id, row.cover_url]));
+  return base
+    .filter((category) => covers.has(category.id))
+    .map((category) => ({
+      ...category,
+      coverUrl: asCardThumb(covers.get(category.id) || category.coverUrl),
+    }));
 }
 
 export async function fetchCollections(): Promise<Collection[]> {
@@ -778,7 +970,22 @@ export async function premiumEnabled(): Promise<boolean> {
 export async function lookupWallpaperRef(key: string) {
   const sql = await getSql();
   const rows = await sql.query<{ id: string; slug: string | null; status: string }>(
-    `select id, slug, status from wallpapers where id = $1 or slug = $1 limit 1`,
+    `select w.id, w.slug, w.status
+     from wallpapers w
+     where (w.id = $1 or w.slug = $1) and ${WALLPAPER_ONLY}
+     limit 1`,
+    [key],
+  );
+  return rows[0] ?? null;
+}
+
+export async function lookupPfpRef(key: string) {
+  const sql = await getSql();
+  const rows = await sql.query<{ id: string; slug: string | null; status: string }>(
+    `select w.id, w.slug, w.status
+     from wallpapers w
+     where (w.id = $1 or w.slug = $1) and ${PFP_MEMBERSHIP}
+     limit 1`,
     [key],
   );
   return rows[0] ?? null;
@@ -844,6 +1051,7 @@ export async function fetchSitemapEntries(): Promise<{
      from wallpapers w
      where w.status = 'approved'
        and (w.format is null or w.format not in ('mp4', 'mov', 'webm'))
+       and ${WALLPAPER_ONLY}
      order by w.updated_at desc
      limit 5000`;
   const wallpapers = await tryRows<PlateRow>("sitemap.wallpapers", () =>
@@ -854,6 +1062,7 @@ export async function fetchSitemapEntries(): Promise<{
        from wallpapers w
        where w.status = 'approved' and (w.robots is null or w.robots = 'index')
          and (w.format is null or w.format not in ('mp4', 'mov', 'webm'))
+         and ${WALLPAPER_ONLY}
        order by w.updated_at desc
        limit 5000`,
     ),
@@ -892,6 +1101,44 @@ export async function fetchSitemapEntries(): Promise<{
     collections,
     creators,
     pairs,
+  };
+}
+
+export async function fetchPfpSitemapEntries(): Promise<{
+  pfps: { slug: string; updated: string; image: string; title: string }[];
+  categories: { slug: string }[];
+}> {
+  const sql = await getSql();
+  type Row = {
+    id: string;
+    slug: string | null;
+    updated_at: string;
+    title: string;
+    thumbnail_url: string | null;
+  };
+  const rows = await sql.query<Row>(
+    `select w.id, w.slug, w.title, w.updated_at,
+            (select a.path from wallpaper_assets a
+             where a.wallpaper_id = w.id and a.kind = 'thumbnail' limit 1) as thumbnail_url
+     from wallpapers w
+     where w.status = 'approved'
+       and (w.robots is null or w.robots = 'index')
+       and ${STILL_ONLY}
+       and ${PFP_MEMBERSHIP}
+     order by w.updated_at desc
+     limit 5000`,
+  );
+  const categories = await fetchPfpCategories();
+  return {
+    pfps: rows.map((row) => ({
+      slug: row.slug || row.id,
+      updated: row.updated_at,
+      image: resolveThumb(row.id, row.thumbnail_url, row.slug),
+      title: row.title,
+    })),
+    categories: categories
+      .filter((category) => category.robots !== "noindex")
+      .map((category) => ({ slug: category.slug })),
   };
 }
 
