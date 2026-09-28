@@ -20,6 +20,7 @@ import {
   generateWallpaperSeo,
   getOpsUploadMeta,
   uploadOpsWallpaper,
+  type CatalogContentType,
 } from "@/lib/server/ops-upload";
 import type { Category } from "@/lib/types";
 
@@ -42,6 +43,7 @@ type BatchItem = {
   altText: string;
   primaryKeyword: string;
   deviceType: DeviceType;
+  contentType: CatalogContentType;
   status: ItemStatus;
   message: string | null;
   allowSeoConflict: boolean;
@@ -90,6 +92,7 @@ function OpsBulkUploadPage() {
   const [items, setItems] = useState<BatchItem[]>([]);
   const [batchCategoryId, setBatchCategoryId] = useState("");
   const [batchDevice, setBatchDevice] = useState<"auto" | DeviceType>("auto");
+  const [batchContentType, setBatchContentType] = useState<CatalogContentType>("wallpaper");
   const [working, setWorking] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
 
@@ -133,6 +136,7 @@ function OpsBulkUploadPage() {
         altText: "",
         primaryKeyword: "",
         deviceType: "phone",
+        contentType: batchContentType,
         status: "processing",
         message: null,
         allowSeoConflict: false,
@@ -159,6 +163,15 @@ function OpsBulkUploadPage() {
             batchDevice === "auto"
               ? inferDeviceType(encoded.plate.width, encoded.plate.height)
               : batchDevice,
+          ...(batchContentType === "pfp" &&
+          (encoded.plate.width / encoded.plate.height < 0.9 ||
+            encoded.plate.width / encoded.plate.height > 1.1)
+            ? {
+                status: "error" as const,
+                selected: false,
+                message: "PFPs should be square (1:1). Choose a square image or mark this item as Wallpaper.",
+              }
+            : {}),
         });
       } catch {
         updateItem(id, {
@@ -196,6 +209,7 @@ function OpsBulkUploadPage() {
           field: "all",
           regenerate: false,
           variationIndex: 1,
+          contentType: item.contentType,
         },
       });
 
@@ -251,7 +265,11 @@ function OpsBulkUploadPage() {
 
     if (!item.allowSeoConflict) {
       const check = await checkWallpaperSeoConflicts({
-        data: { title: item.title, primaryKeyword: item.primaryKeyword },
+        data: {
+          title: item.title,
+          primaryKeyword: item.primaryKeyword,
+          contentType: item.contentType,
+        },
       });
       if (check.conflicts.length) {
         updateItem(id, {
@@ -280,6 +298,7 @@ function OpsBulkUploadPage() {
       form.set("altText", item.altText.trim());
       form.set("primaryKeyword", item.primaryKeyword.trim());
       form.set("deviceType", item.deviceType);
+      form.set("contentType", item.contentType);
       form.set("originalKey", originalKey);
       form.set("preview", plate.previewBlob, "preview.jpg");
       form.set("thumb", plate.thumbBlob, "thumb.jpg");
@@ -300,8 +319,10 @@ function OpsBulkUploadPage() {
           status: "error",
           message:
             result.error === "duplicate"
-              ? "This wallpaper is already in the catalog."
-              : "Upload failed. Review this item and try again.",
+              ? "This image is already in the catalog."
+              : result.error === "pfp_shape"
+                ? "PFPs should be square (1:1)."
+                : "Upload failed. Review this item and try again.",
         });
         return false;
       }
@@ -353,6 +374,33 @@ function OpsBulkUploadPage() {
     );
   }
 
+  function applyContentType() {
+    setItems((current) =>
+      current.map((item) => {
+        if (!item.selected || item.status === "published") return item;
+        if (batchContentType === "pfp" && item.encoded?.ok) {
+          const ratio = item.encoded.plate.width / item.encoded.plate.height;
+          if (ratio < 0.9 || ratio > 1.1) {
+            return {
+              ...item,
+              contentType: "pfp" as const,
+              status: "error" as const,
+              selected: false,
+              message: "PFPs should be square (1:1). Choose a square image or mark this item as Wallpaper.",
+            };
+          }
+        }
+        return {
+          ...item,
+          contentType: batchContentType,
+          status: item.status === "error" ? "ready" as const : item.status,
+          message: null,
+          allowSeoConflict: false,
+        };
+      }),
+    );
+  }
+
   function applyDevice() {
     setItems((current) =>
       current.map((item) => {
@@ -379,7 +427,7 @@ function OpsBulkUploadPage() {
           <p className="text-xs font-medium tracking-widest text-subtle uppercase">Admin</p>
           <h1 className="mt-1 font-display text-4xl text-fg">Bulk upload</h1>
           <p className="mt-2 max-w-2xl text-sm text-muted">
-            Prepare, review and publish up to {MAX_BATCH} wallpapers in one batch. Nothing publishes
+            Prepare, review and publish up to {MAX_BATCH} wallpapers or PFPs in one batch. Nothing publishes
             until you choose Publish selected.
           </p>
         </div>
@@ -412,7 +460,7 @@ function OpsBulkUploadPage() {
       >
         <span className="flex flex-col items-center gap-2 text-sm text-muted">
           <Images className="size-8" />
-          <span className="font-medium text-fg">Choose multiple wallpapers</span>
+          <span className="font-medium text-fg">Choose multiple images</span>
           <span>JPG, PNG or WebP · {items.length}/{MAX_BATCH} added</span>
         </span>
       </button>
@@ -420,7 +468,7 @@ function OpsBulkUploadPage() {
       {items.length ? (
         <>
           <section className="rounded-2xl bg-elevated p-4 shadow-[var(--shadow-border)] sm:p-5">
-            <div className="grid gap-4 lg:grid-cols-[1fr_1fr_auto] lg:items-end">
+            <div className="grid gap-4 lg:grid-cols-[1fr_1fr_1fr_auto] lg:items-end">
               <label className="text-sm text-muted">
                 Category for selected
                 <select
@@ -433,6 +481,18 @@ function OpsBulkUploadPage() {
                       {category.name}
                     </option>
                   ))}
+                </select>
+              </label>
+
+              <label className="text-sm text-muted">
+                Content type for selected
+                <select
+                  className="mt-1 h-11 w-full rounded-md bg-surface px-3 text-sm text-fg shadow-[var(--shadow-border)]"
+                  value={batchContentType}
+                  onChange={(event) => setBatchContentType(event.target.value as CatalogContentType)}
+                >
+                  <option value="wallpaper">Wallpaper</option>
+                  <option value="pfp">PFP / profile picture</option>
                 </select>
               </label>
 
@@ -453,6 +513,9 @@ function OpsBulkUploadPage() {
               <div className="flex flex-wrap gap-2">
                 <Button variant="secondary" disabled={working || !selectedCount} onClick={applyCategory}>
                   Apply category
+                </Button>
+                <Button variant="secondary" disabled={working || !selectedCount} onClick={applyContentType}>
+                  Apply type
                 </Button>
                 <Button variant="secondary" disabled={working || !selectedCount} onClick={applyDevice}>
                   Apply device
@@ -535,7 +598,7 @@ function OpsBulkUploadPage() {
                           <img
                             src={plate.previewDataUrl}
                             alt=""
-                            className="aspect-[9/16] w-full object-cover"
+                            className={item.contentType === "pfp" ? "aspect-square w-full object-cover" : "aspect-[9/16] w-full object-cover"}
                           />
                         ) : (
                           <div className="grid aspect-[9/16] place-items-center text-xs text-subtle">
@@ -577,13 +640,12 @@ function OpsBulkUploadPage() {
 
                         <div className="flex items-center gap-2">
                           {item.slug ? (
-                            <Link
-                              to="/wallpaper/$id"
-                              params={{ id: item.slug }}
+                            <a
+                              href={item.contentType === "pfp" ? `/pfp/${item.slug}` : `/wallpaper/${item.slug}`}
                               className="text-xs text-muted hover:text-fg"
                             >
                               View
-                            </Link>
+                            </a>
                           ) : null}
                           <button
                             type="button"
@@ -637,6 +699,39 @@ function OpsBulkUploadPage() {
                                 {category.name}
                               </option>
                             ))}
+                          </select>
+                        </label>
+
+                        <label className="text-sm text-muted">
+                          Content type
+                          <select
+                            className="mt-1 h-11 w-full rounded-md bg-surface px-3 text-sm text-fg shadow-[var(--shadow-border)]"
+                            value={item.contentType}
+                            disabled={item.status === "published"}
+                            onChange={(event) => {
+                              const contentType = event.target.value as CatalogContentType;
+                              if (contentType === "pfp" && item.encoded?.ok) {
+                                const ratio = item.encoded.plate.width / item.encoded.plate.height;
+                                if (ratio < 0.9 || ratio > 1.1) {
+                                  updateItem(item.id, {
+                                    contentType,
+                                    status: "error",
+                                    selected: false,
+                                    message: "PFPs should be square (1:1).",
+                                  });
+                                  return;
+                                }
+                              }
+                              updateItem(item.id, {
+                                contentType,
+                                status: item.status === "error" ? "ready" : item.status,
+                                message: null,
+                                allowSeoConflict: false,
+                              });
+                            }}
+                          >
+                            <option value="wallpaper">Wallpaper</option>
+                            <option value="pfp">PFP / profile picture</option>
                           </select>
                         </label>
 
@@ -767,7 +862,7 @@ function OpsBulkUploadPage() {
         </>
       ) : (
         <div className="rounded-2xl bg-elevated p-6 text-sm text-muted">
-          Add a batch to begin. The existing single-wallpaper uploader remains available separately.
+          Add a batch to begin. Choose Wallpaper or PFP before generating SEO or publishing.
         </div>
       )}
     </div>
