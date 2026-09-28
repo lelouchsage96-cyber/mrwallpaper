@@ -29,6 +29,18 @@ export type GeneratedWallpaperSeo = {
 };
 
 export type SeoField = "all" | "title" | "description" | "tags" | "altText" | "primaryKeyword";
+export type CatalogContentType = "wallpaper" | "pfp";
+
+const PFP_COLLECTION_SLUG = "pfps";
+
+function pfpMembershipSql(alias = "w") {
+  return `exists (
+    select 1
+    from collection_wallpapers pfp_cw
+    join collections pfp_c on pfp_c.id = pfp_cw.collection_id
+    where pfp_cw.wallpaper_id = ${alias}.id and pfp_c.slug = '${PFP_COLLECTION_SLUG}'
+  )`;
+}
 
 export type SeoConflict = { kind: "keyword" | "title"; message: string; wallpaperId: string };
 
@@ -86,6 +98,10 @@ function formDevice(form: FormData, width: number, height: number): DeviceType {
   return inferDeviceType(width, height);
 }
 
+function formContentType(form: FormData): CatalogContentType {
+  return formString(form, "contentType") === "pfp" ? "pfp" : "wallpaper";
+}
+
 function aspectLabel(w: number, h: number): string {
   if (!w || !h) return "1:1";
   const r = w / h;
@@ -141,6 +157,30 @@ async function attachTags(sql: Sql, wallpaperId: string, names: string[]) {
       [wallpaperId, tagId],
     );
   }
+}
+
+async function attachPfpCollection(sql: Sql, wallpaperId: string) {
+  await sql.query(
+    `insert into collections (id, slug, name, description, is_visible)
+     values ('collection-pfps', $1, 'Profile Pictures', 'Square profile pictures and PFPs.', false)
+     on conflict (slug) do update
+       set name = excluded.name,
+           description = excluded.description,
+           is_visible = false`,
+    [PFP_COLLECTION_SLUG],
+  );
+  const rows = await sql.query<{ id: string }>(
+    `select id from collections where slug = $1 limit 1`,
+    [PFP_COLLECTION_SLUG],
+  );
+  const collectionId = rows[0]?.id;
+  if (!collectionId) return;
+  await sql.query(
+    `insert into collection_wallpapers (collection_id, wallpaper_id, sort_order)
+     values ($1, $2, 0)
+     on conflict (collection_id, wallpaper_id) do nothing`,
+    [collectionId, wallpaperId],
+  );
 }
 
 export const getOpsUploadMeta = createServerFn({ method: "GET" })
@@ -301,6 +341,7 @@ export const generateWallpaperSeo = createServerFn({ method: "POST" })
     field?: SeoField;
     regenerate?: boolean;
     variationIndex?: number;
+    contentType?: CatalogContentType;
   }) => input)
   .handler(async ({ context, data }) => {
     const { sql, role } = await requireActiveUser(context.userId);
@@ -330,11 +371,14 @@ export const generateWallpaperSeo = createServerFn({ method: "POST" })
     const categoryOptions = categories.map((category) => `${category.id}: ${category.name}`).join("\n");
     const supports4k = Math.max(data.width, data.height) >= 3840 && Math.min(data.width, data.height) >= 2160;
     const field = data.field || "all";
+    const contentType: CatalogContentType = data.contentType === "pfp" ? "pfp" : "wallpaper";
+    const membership = pfpMembershipSql("w");
     const catalogRows = await sql.query<{ title: string; primary_keyword: string | null }>(
-      `select title, primary_keyword
-       from wallpapers
-       where status = 'approved'
-       order by published_at desc nulls last
+      `select w.title, w.primary_keyword
+       from wallpapers w
+       where w.status = 'approved'
+         and ${contentType === "pfp" ? membership : `not (${membership})`}
+       order by w.published_at desc nulls last
        limit 120`,
     );
     const catalogContext = buildWallpaperSeoCatalogContext(
@@ -348,8 +392,9 @@ export const generateWallpaperSeo = createServerFn({ method: "POST" })
       catalogContext,
       regenerate: Boolean(data.regenerate),
       variationIndex,
+      contentType,
     });
-    const userText = `Resolution: ${data.width} × ${data.height}.\nDevice: ${data.deviceType || "unknown"}\n${data.regenerate ? "The current requested field value below was rejected. Treat it as an example to avoid repeating, not as the desired answer.\n" : ""}Title: ${data.title?.trim() || ""}\nDescription: ${data.description?.trim() || ""}\nTags: ${data.tags?.trim() || ""}\nAlt text: ${data.altText?.trim() || ""}\nPrimary keyword: ${data.primaryKeyword?.trim() || ""}\nCategory ID: ${data.categoryId || ""}\n\nAllowed categories:\n${categoryOptions}`;
+    const userText = `Content type: ${contentType === "pfp" ? "profile picture (PFP)" : "wallpaper"}.\nResolution: ${data.width} × ${data.height}.\nDevice: ${data.deviceType || "unknown"}\n${data.regenerate ? "The current requested field value below was rejected. Treat it as an example to avoid repeating, not as the desired answer.\n" : ""}Title: ${data.title?.trim() || ""}\nDescription: ${data.description?.trim() || ""}\nTags: ${data.tags?.trim() || ""}\nAlt text: ${data.altText?.trim() || ""}\nPrimary keyword: ${data.primaryKeyword?.trim() || ""}\nCategory ID: ${data.categoryId || ""}\n\nAllowed categories:\n${categoryOptions}`;
 
     try {
       let modelCall = await requestWallpaperSeoCandidate({
@@ -381,6 +426,7 @@ export const generateWallpaperSeo = createServerFn({ method: "POST" })
             catalogContext,
             regenerate: true,
             variationIndex: Math.min(20, variationIndex + 1),
+            contentType,
           }) +
           "\n\nAUTOMATIC DIVERSITY RETRY\n- The previous regeneration candidate was still too similar to the rejected value. Produce a clearly different alternative now.\n- Change the phrasing, structure, and search angle more substantially while remaining faithful to the image.\n- Do not merely swap one adjective, reorder words, or repeat most of the same tags.";
 
@@ -481,11 +527,21 @@ function wordSimilarity(a: string, b: string): number {
 
 export const checkWallpaperSeoConflicts = createServerFn({ method: "POST" })
   .middleware([authMiddleware])
-  .validator((input: { title: string; primaryKeyword: string; excludeWallpaperId?: string }) => input)
+  .validator((input: {
+    title: string;
+    primaryKeyword: string;
+    excludeWallpaperId?: string;
+    contentType?: CatalogContentType;
+  }) => input)
   .handler(async ({ context, data }): Promise<{ conflicts: SeoConflict[] }> => {
     const sql = await requireAdmin(context.userId);
+    const contentType: CatalogContentType = data.contentType === "pfp" ? "pfp" : "wallpaper";
+    const membership = pfpMembershipSql("w");
     const rows = await sql.query<{ id: string; title: string; primary_keyword: string | null }>(
-      `select id, title, primary_keyword from wallpapers where ($1 = '' or id <> $1)`,
+      `select w.id, w.title, w.primary_keyword
+       from wallpapers w
+       where ($1 = '' or w.id <> $1)
+         and ${contentType === "pfp" ? membership : `not (${membership})`}`,
       [data.excludeWallpaperId || ""],
     );
     const conflicts: SeoConflict[] = [];
@@ -692,6 +748,7 @@ export const uploadOpsWallpaper = createServerFn({ method: "POST" })
     const seo = buildWallpaperSeoFields({ title, description, primaryKeyword: formString(data, "primaryKeyword") });
     const categoryId = formString(data, "categoryId");
     const tagNames = parseTags(data);
+    const contentType = formContentType(data);
     if (title.length < 2 || title.length > 60) return { ok: false as const, error: "title" };
 
     const cats = await fetchCategories();
@@ -712,6 +769,12 @@ export const uploadOpsWallpaper = createServerFn({ method: "POST" })
     const thumbMeta = sniffImage(thumb);
     if (width < 8 || height < 8 || !previewMeta || !thumbMeta) {
       return { ok: false as const, error: "image" };
+    }
+    if (contentType === "pfp") {
+      const ratio = width / height;
+      if (ratio < 0.9 || ratio > 1.1) {
+        return { ok: false as const, error: "pfp_shape" as const };
+      }
     }
 
     const fileSha = formHex(data, "fileSha256") ?? sha256Buffer(preview);
@@ -772,8 +835,11 @@ export const uploadOpsWallpaper = createServerFn({ method: "POST" })
     );
 
     await attachTags(sql, wallpaperId, tagNames);
+    if (contentType === "pfp") {
+      await attachPfpCollection(sql, wallpaperId);
+    }
     const category = cats.find((item) => item.id === categoryId);
-    if (category) {
+    if (category && contentType === "wallpaper") {
       await notifyTasteSubscribersForWallpaper({
         wallpaperId,
         categoryId,
@@ -781,6 +847,6 @@ export const uploadOpsWallpaper = createServerFn({ method: "POST" })
         categorySlug: category.slug,
       }).catch((error) => console.error("[push] new wallpaper", error));
     }
-    return { ok: true as const, id: wallpaperId, slug };
+    return { ok: true as const, id: wallpaperId, slug, contentType };
   });
 
