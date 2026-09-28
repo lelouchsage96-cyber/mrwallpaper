@@ -1,5 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { Breadcrumbs } from "@/components/breadcrumbs";
+import { BottomNav } from "@/components/bottom-nav";
 import { PfpGrid } from "@/components/pfp-grid";
 import { Input } from "@/components/ui/input";
 import {
@@ -84,8 +85,9 @@ function PfpIndexPage() {
   }
 
   return (
-    <main className="mx-auto max-w-7xl px-4 pb-20 pt-6">
-      <Breadcrumbs items={[{ name: "Home", href: "/" }, { name: "PFPs" }]} />
+    <>
+      <main className="mx-auto max-w-7xl px-4 pb-28 pt-6 lg:pb-20">
+      <Breadcrumbs items={[{ name: "Home", href: "/app" }, { name: "PFPs" }]} />
 
       <div className="mt-6 max-w-3xl">
         <p className="text-xs font-medium tracking-[0.18em] text-subtle uppercase">Profile pictures</p>
@@ -152,6 +154,8 @@ function PfpIndexPage() {
           )}
         </nav>
       ) : null}
-    </main>
+      </main>
+      <BottomNav />
+    </>
   );
 }
