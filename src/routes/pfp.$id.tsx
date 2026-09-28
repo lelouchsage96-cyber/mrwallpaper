@@ -1,10 +1,12 @@
-import { createFileRoute, notFound, redirect } from "@tanstack/react-router";
-import { Download, Share2 } from "lucide-react";
-import { useState } from "react";
+import { createFileRoute, notFound, redirect, useNavigate } from "@tanstack/react-router";
+import { ChevronDown, ChevronLeft, Coffee, Download, Share2 } from "lucide-react";
+import { useEffect, useState } from "react";
 import { Breadcrumbs } from "@/components/breadcrumbs";
 import { BottomNav } from "@/components/bottom-nav";
 import { DownloadSheet } from "@/components/download-sheet";
+import { FavoriteButton } from "@/components/favorite-button";
 import { PfpGrid } from "@/components/pfp-grid";
+import { Button } from "@/components/ui/button";
 import { showActionToast } from "@/components/action-toast";
 import { brand } from "@/lib/brand";
 import {
@@ -17,7 +19,7 @@ import {
   pfpPath,
 } from "@/lib/seo";
 import { getPfp, getSeoRedirect } from "@/lib/server/api";
-import { formatBytes } from "@/lib/utils";
+import { formatBytes, formatCount } from "@/lib/utils";
 
 export const Route = createFileRoute("/pfp/$id")({
   loader: async ({ params }) => {
@@ -110,9 +112,23 @@ export const Route = createFileRoute("/pfp/$id")({
 
 function PfpDetailPage() {
   const { pfp, related } = Route.useLoaderData();
+  const navigate = useNavigate();
   const [downloadOpen, setDownloadOpen] = useState(false);
+  const [isFavorite, setIsFavorite] = useState(Boolean(pfp?.isFavorite));
+
+  useEffect(() => {
+    setIsFavorite(Boolean(pfp?.isFavorite));
+  }, [pfp?.id, pfp?.isFavorite]);
 
   if (!pfp) return null;
+
+  function goBack() {
+    if (typeof window !== "undefined" && window.history.length > 1) {
+      window.history.back();
+      return;
+    }
+    void navigate({ to: "/pfps" });
+  }
 
   async function share() {
     const url = `${window.location.origin}${pfpPath(pfp.slug || pfp.id)}`;
@@ -136,18 +152,50 @@ function PfpDetailPage() {
 
   return (
     <>
-      <main className="mx-auto max-w-6xl px-4 pb-28 pt-6 lg:pb-20">
-      <Breadcrumbs
-        items={[
-          { name: "Home", href: "/app" },
-          { name: "PFPs", href: "/pfps" },
-          { name: pfp.categoryName, href: pfpCategoryPath(pfp.categorySlug) },
-          { name: pfp.title },
-        ]}
-      />
+      <main className="mx-auto max-w-7xl pb-28 pt-[env(safe-area-inset-top)] lg:pb-16">
+        <div className="px-4 pt-3 lg:px-6 lg:pt-5">
+          <div className="flex items-center justify-between">
+            <button
+              type="button"
+              onClick={goBack}
+              aria-label="Back"
+              className="grid size-11 place-items-center rounded-full bg-elevated text-fg"
+            >
+              <ChevronLeft className="size-5" />
+            </button>
+            <div className="flex items-center gap-1">
+              <button
+                type="button"
+                onClick={() => void share()}
+                aria-label="Share PFP"
+                className="grid size-11 place-items-center rounded-full bg-elevated text-fg"
+              >
+                <Share2 className="size-5" strokeWidth={1.75} />
+              </button>
+              <FavoriteButton
+                wallpaperId={pfp.id}
+                isFavorite={isFavorite}
+                loginNext={pfpPath(pfp.slug || pfp.id)}
+                onChange={setIsFavorite}
+                className="bg-elevated backdrop-blur-none"
+              />
+            </div>
+          </div>
 
-      <div className="mt-6 grid gap-8 lg:grid-cols-[minmax(0,1fr)_minmax(320px,420px)] lg:items-start">
-        <section>
+          <div className="mt-3 hidden lg:block">
+            <Breadcrumbs
+              items={[
+                { name: "Home", href: "/app" },
+                { name: "PFPs", href: "/pfps" },
+                { name: pfp.categoryName, href: pfpCategoryPath(pfp.categorySlug) },
+                { name: pfp.title },
+              ]}
+            />
+          </div>
+        </div>
+
+      <div className="mt-4 grid gap-8 px-4 lg:mt-8 lg:grid-cols-[minmax(0,1.05fr)_minmax(360px,0.95fr)] lg:items-start lg:gap-12 lg:px-6 xl:gap-20">
+        <section className="min-w-0">
           <div className="mx-auto max-w-2xl overflow-hidden rounded-[24px] bg-elevated ring-1 ring-border">
             <img
               src={pfp.previewUrl}
@@ -163,7 +211,7 @@ function PfpDetailPage() {
 
         <aside className="lg:sticky lg:top-6">
           <p className="text-xs font-medium tracking-[0.18em] text-subtle uppercase">Profile picture</p>
-          <h1 className="mt-2 font-display text-4xl leading-tight text-fg">{pfp.title}</h1>
+          <h1 className="mt-2 font-display text-3xl leading-tight text-fg lg:text-4xl">{pfp.title}</h1>
           <a
             href={pfpCategoryPath(pfp.categorySlug)}
             className="mt-2 inline-flex text-sm text-muted hover:text-fg"
@@ -180,57 +228,63 @@ function PfpDetailPage() {
               <div>
                 <p className="text-sm font-medium text-fg">Circular crop preview</p>
                 <p className="mt-1 text-xs leading-relaxed text-muted">
-                  See how the square image reads when a profile app displays it as a circle.
+                  Preview how this square image looks when an app displays your profile photo as a circle.
                 </p>
               </div>
             </div>
           </div>
 
-          {pfp.description ? (
-            <p className="mt-5 text-sm leading-relaxed text-muted">{pfp.description}</p>
-          ) : null}
-
-          <p className="mt-4 text-xs text-subtle">
-            {pfp.width}×{pfp.height} · {formatBytes(pfp.fileSizeBytes)}
-          </p>
-
-          <div className="mt-6 flex gap-2">
-            <button
-              type="button"
-              onClick={() => setDownloadOpen(true)}
-              className="inline-flex h-12 flex-1 items-center justify-center gap-2 rounded-full bg-fg px-5 text-sm font-medium text-bg transition-opacity hover:opacity-90"
-            >
+          <div className="mt-5 flex flex-wrap items-center gap-2">
+            <Button className="min-w-0 flex-1 sm:flex-none sm:min-w-52" onClick={() => setDownloadOpen(true)}>
               <Download className="size-4" />
               Download PFP
-            </button>
-            <button
-              type="button"
-              onClick={() => void share()}
-              aria-label="Share PFP"
-              className="grid size-12 shrink-0 place-items-center rounded-full bg-elevated text-fg ring-1 ring-border/70 hover:bg-surface"
+            </Button>
+            <a
+              href={brand.support.kofi}
+              target="_blank"
+              rel="noreferrer"
+              aria-label="Support MrWallpaper on Ko-fi"
+              className="mw-support-button group relative inline-flex h-11 shrink-0 items-center justify-center gap-2 overflow-hidden rounded-full px-4 text-sm font-semibold text-fg transition-[transform,background-color,border-color,box-shadow] duration-200 hover:-translate-y-0.5 active:translate-y-0 active:scale-[0.98]"
             >
-              <Share2 className="size-4" />
-            </button>
+              <Coffee className="mw-support-cup relative z-10 size-4" />
+              <span className="relative z-10">Support</span>
+            </a>
           </div>
 
-          {pfp.tags.length > 0 ? (
-            <div className="mt-5 flex flex-wrap gap-2">
-              {pfp.tags.map((tag) => (
-                <a
-                  key={tag}
-                  href={`/pfps?q=${encodeURIComponent(tag)}`}
-                  className="rounded-full bg-elevated px-3 py-1.5 text-xs text-muted hover:text-fg"
-                >
-                  {tag}
-                </a>
-              ))}
+          <details className="group mt-6 border-t border-border pt-2">
+            <summary className="flex min-h-11 cursor-pointer list-none items-center justify-between gap-3 text-sm font-medium text-muted hover:text-fg [&::-webkit-details-marker]:hidden">
+              <span>PFP details</span>
+              <ChevronDown className="size-4 transition-transform duration-150 group-open:rotate-180" />
+            </summary>
+            <div className="pb-2 pt-2">
+              {pfp.description ? (
+                <p className="max-w-xl text-sm leading-relaxed text-muted lg:text-base">{pfp.description}</p>
+              ) : null}
+
+              <p className="mt-3 text-xs text-subtle">
+                {pfp.width}×{pfp.height} · {formatBytes(pfp.fileSizeBytes)} · {formatCount(pfp.downloadCount)} downloads
+              </p>
+
+              {pfp.tags.length > 0 ? (
+                <div className="mt-4 flex flex-wrap gap-2">
+                  {pfp.tags.map((tag) => (
+                    <a
+                      key={tag}
+                      href={`/pfps?q=${encodeURIComponent(tag)}`}
+                      className="rounded-full bg-elevated px-3 py-1.5 text-xs text-muted hover:text-fg"
+                    >
+                      {tag}
+                    </a>
+                  ))}
+                </div>
+              ) : null}
             </div>
-          ) : null}
+          </details>
         </aside>
       </div>
 
       {related.length > 0 ? (
-        <section className="mt-14 border-t border-border pt-8">
+        <section className="mt-14 border-t border-border px-4 pt-8 lg:px-6">
           <div className="mb-4 flex items-end justify-between gap-3">
             <div>
               <p className="text-xs font-medium tracking-[0.18em] text-subtle uppercase">More like this</p>
