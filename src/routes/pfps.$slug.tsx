@@ -1,5 +1,6 @@
 import { createFileRoute, notFound } from "@tanstack/react-router";
 import { Breadcrumbs } from "@/components/breadcrumbs";
+import { BottomNav } from "@/components/bottom-nav";
 import { PfpGrid } from "@/components/pfp-grid";
 import {
   breadcrumbJsonLd,
@@ -80,10 +81,11 @@ function PfpCategoryPage() {
   const next = hasMore ? page + 1 : null;
 
   return (
-    <main className="mx-auto max-w-7xl px-4 pb-20 pt-6">
+    <>
+      <main className="mx-auto max-w-7xl px-4 pb-28 pt-6 lg:pb-20">
       <Breadcrumbs
         items={[
-          { name: "Home", href: "/" },
+          { name: "Home", href: "/app" },
           { name: "PFPs", href: "/pfps" },
           { name: category.name },
         ]}
@@ -129,6 +131,8 @@ function PfpCategoryPage() {
           )}
         </nav>
       ) : null}
-    </main>
+      </main>
+      <BottomNav />
+    </>
   );
 }
