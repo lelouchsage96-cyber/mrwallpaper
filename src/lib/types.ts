@@ -211,6 +211,7 @@ export type HomePayload = {
 };
 
 export type DownloadHistoryItem = WallpaperCard & {
+  contentType: "wallpaper" | "pfp";
   downloadedAt: string;
   downloadType: string;
 };
