@@ -230,9 +230,9 @@ export function categoryMeta(opts: {
   return { title, description };
 }
 
-export const HOME_TITLE = "MrWallpaper – Free HD & 4K Wallpapers";
+export const HOME_TITLE = "MrWallpaper – Free HD & 4K Wallpapers & PFPs";
 export const HOME_DESCRIPTION =
-  "Download free HD and 4K wallpapers for iPhone, Android, iPad and tablets. Explore motivational, Bible verse, minimalist, aesthetic and more from MrWallpaper.";
+  "Free HD & 4K wallpapers and PFPs for iPhone, Android, iPad and more. Browse aesthetic, anime, motivational, Bible verse and minimal designs on MrWallpaper.";
 
 export const DEVICE_HUBS: Record<
   string,
