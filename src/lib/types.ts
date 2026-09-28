@@ -210,6 +210,10 @@ export type HomePayload = {
   marketplaceOn: boolean;
 };
 
+export type FavoriteItem = WallpaperCard & {
+  contentType: "wallpaper" | "pfp";
+};
+
 export type DownloadHistoryItem = WallpaperCard & {
   contentType: "wallpaper" | "pfp";
   downloadedAt: string;

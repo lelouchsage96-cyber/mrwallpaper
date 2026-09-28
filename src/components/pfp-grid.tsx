@@ -1,4 +1,5 @@
 import { Link } from "@tanstack/react-router";
+import { FavoriteButton } from "@/components/favorite-button";
 import { LazyImage } from "@/components/lazy";
 import { cardSource, highQualityPreview } from "@/lib/wallpaper-card-media";
 import { pfpAlt } from "@/lib/seo";
@@ -9,9 +10,11 @@ const GRID_CLASSES = "grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 xl:gr
 export function PfpGrid({
   items,
   eager = 0,
+  onFavorite,
 }: {
   items: WallpaperCard[];
   eager?: number;
+  onFavorite?: (id: string, next: boolean) => void;
 }) {
   return (
     <div className={GRID_CLASSES}>
@@ -28,7 +31,7 @@ export function PfpGrid({
         return (
           <article
             key={pfp.id}
-            className="group overflow-hidden rounded-[18px] bg-elevated ring-1 ring-border/70 transition-[transform,box-shadow] duration-200 lg:hover:-translate-y-0.5 lg:hover:shadow-[0_14px_32px_rgba(0,0,0,0.18)] lg:hover:ring-fg/20"
+            className="group relative overflow-hidden rounded-[18px] bg-elevated ring-1 ring-border/70 transition-[transform,box-shadow] duration-200 lg:hover:-translate-y-0.5 lg:hover:shadow-[0_14px_32px_rgba(0,0,0,0.18)] lg:hover:ring-fg/20"
           >
             <Link to="/pfp/$id" params={{ id: pfp.slug || pfp.id }} className="block">
               <div className="relative aspect-square overflow-hidden">
@@ -49,6 +52,13 @@ export function PfpGrid({
                 </div>
               </div>
             </Link>
+            <FavoriteButton
+              wallpaperId={pfp.id}
+              isFavorite={pfp.isFavorite}
+              loginNext={`/pfp/${pfp.slug || pfp.id}`}
+              onChange={(next) => onFavorite?.(pfp.id, next)}
+              className="absolute right-1.5 top-1.5 size-10 bg-bg/70 lg:opacity-70 lg:group-hover:opacity-100 lg:group-focus-within:opacity-100"
+            />
           </article>
         );
       })}
