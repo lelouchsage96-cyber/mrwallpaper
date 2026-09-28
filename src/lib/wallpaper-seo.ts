@@ -50,11 +50,17 @@ function wallpaperDescriptor(title: string, keyword: string): string {
   return "";
 }
 
+function pfpDescriptor(title: string): string {
+  if (/\b(?:pfp|profile picture|avatar|display picture)\b/i.test(title)) return "";
+  return " PFP";
+}
+
 export function buildWallpaperSeoFields(input: {
   title: string;
   description: string;
   primaryKeyword: string;
   brandName?: string;
+  contentType?: "wallpaper" | "pfp";
 }) {
   const title = input.title.replace(/\s+/g, " ").trim();
   const description = input.description.replace(/\s+/g, " ").trim();
@@ -68,7 +74,9 @@ export function buildWallpaperSeoFields(input: {
 
   // Keep the search title anchored to the human-visible page title (H1).
   // This also preserves apostrophes/capitalization instead of turning "It's" into "It'S".
-  const subjectWithDescriptor = `${title || keyword}${wallpaperDescriptor(title, keyword)}`
+  const descriptor =
+    input.contentType === "pfp" ? pfpDescriptor(title || keyword) : wallpaperDescriptor(title, keyword);
+  const subjectWithDescriptor = `${title || keyword}${descriptor}`
     .replace(/\bwallpaper\s+(?:phone\s+)?wallpaper\b/gi, "phone wallpaper")
     .replace(/\s+/g, " ")
     .trim();
@@ -79,7 +87,10 @@ export function buildWallpaperSeoFields(input: {
     : trimAtWord(subjectWithDescriptor, 80 - suffix.length);
   const seoTitle = `${subject}${suffix}`;
   const seoDescription = completeMetaDescription(
-    description || `Download ${keyword || title} for phone and tablet.`,
+    description ||
+      (input.contentType === "pfp"
+        ? `Download ${keyword || title} as a free profile picture or PFP.`
+        : `Download ${keyword || title} for phone and tablet.`),
   );
   return { seoTitle, seoDescription, primaryKeyword: keyword };
 }

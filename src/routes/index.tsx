@@ -100,12 +100,20 @@ function HomePage() {
           <MwMark className="size-9" />
           <span className="font-display text-xl text-fg">{brand.name}</span>
         </a>
-        <a
-          href="/app"
-          className="grid h-11 place-items-center rounded-full bg-fg px-4 text-sm font-medium text-bg transition-opacity hover:opacity-90"
-        >
-          Open app
-        </a>
+        <div className="flex items-center gap-2">
+          <a
+            href="/pfps"
+            className="grid h-11 place-items-center rounded-full bg-elevated px-4 text-sm text-fg transition-colors hover:bg-surface"
+          >
+            PFPs
+          </a>
+          <a
+            href="/app"
+            className="grid h-11 place-items-center rounded-full bg-fg px-4 text-sm font-medium text-bg transition-opacity hover:opacity-90"
+          >
+            Open app
+          </a>
+        </div>
       </header>
 
       <section className="mt-10 grid gap-10 lg:grid-cols-2 lg:items-center">

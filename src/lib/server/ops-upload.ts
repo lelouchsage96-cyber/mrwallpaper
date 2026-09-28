@@ -29,6 +29,7 @@ export type GeneratedWallpaperSeo = {
 };
 
 export type SeoField = "all" | "title" | "description" | "tags" | "altText" | "primaryKeyword";
+export type CatalogContentType = "wallpaper" | "pfp";
 
 export type SeoConflict = { kind: "keyword" | "title"; message: string; wallpaperId: string };
 
@@ -84,6 +85,10 @@ function formDevice(form: FormData, width: number, height: number): DeviceType {
   const raw = formString(form, "deviceType");
   if (raw === "phone" || raw === "tablet" || raw === "both") return raw;
   return inferDeviceType(width, height);
+}
+
+function formContentType(form: FormData): CatalogContentType {
+  return formString(form, "contentType") === "pfp" ? "pfp" : "wallpaper";
 }
 
 function aspectLabel(w: number, h: number): string {
@@ -301,6 +306,7 @@ export const generateWallpaperSeo = createServerFn({ method: "POST" })
     field?: SeoField;
     regenerate?: boolean;
     variationIndex?: number;
+    contentType?: CatalogContentType;
   }) => input)
   .handler(async ({ context, data }) => {
     const { sql, role } = await requireActiveUser(context.userId);
@@ -330,11 +336,15 @@ export const generateWallpaperSeo = createServerFn({ method: "POST" })
     const categoryOptions = categories.map((category) => `${category.id}: ${category.name}`).join("\n");
     const supports4k = Math.max(data.width, data.height) >= 3840 && Math.min(data.width, data.height) >= 2160;
     const field = data.field || "all";
+    const contentType: CatalogContentType = data.contentType === "pfp" ? "pfp" : "wallpaper";
     const catalogRows = await sql.query<{ title: string; primary_keyword: string | null }>(
-      `select title, primary_keyword
-       from wallpapers
-       where status = 'approved'
-       order by published_at desc nulls last
+      `select w.title, w.primary_keyword
+       from wallpapers w
+       where w.status = 'approved'
+         and ${contentType === "pfp"
+           ? "w.canonical_path like '/pfp/%'"
+           : "(w.canonical_path is null or w.canonical_path not like '/pfp/%')"}
+       order by w.published_at desc nulls last
        limit 120`,
     );
     const catalogContext = buildWallpaperSeoCatalogContext(
@@ -348,8 +358,9 @@ export const generateWallpaperSeo = createServerFn({ method: "POST" })
       catalogContext,
       regenerate: Boolean(data.regenerate),
       variationIndex,
+      contentType,
     });
-    const userText = `Resolution: ${data.width} × ${data.height}.\nDevice: ${data.deviceType || "unknown"}\n${data.regenerate ? "The current requested field value below was rejected. Treat it as an example to avoid repeating, not as the desired answer.\n" : ""}Title: ${data.title?.trim() || ""}\nDescription: ${data.description?.trim() || ""}\nTags: ${data.tags?.trim() || ""}\nAlt text: ${data.altText?.trim() || ""}\nPrimary keyword: ${data.primaryKeyword?.trim() || ""}\nCategory ID: ${data.categoryId || ""}\n\nAllowed categories:\n${categoryOptions}`;
+    const userText = `Content type: ${contentType === "pfp" ? "profile picture (PFP)" : "wallpaper"}.\nResolution: ${data.width} × ${data.height}.\nDevice: ${data.deviceType || "unknown"}\n${data.regenerate ? "The current requested field value below was rejected. Treat it as an example to avoid repeating, not as the desired answer.\n" : ""}Title: ${data.title?.trim() || ""}\nDescription: ${data.description?.trim() || ""}\nTags: ${data.tags?.trim() || ""}\nAlt text: ${data.altText?.trim() || ""}\nPrimary keyword: ${data.primaryKeyword?.trim() || ""}\nCategory ID: ${data.categoryId || ""}\n\nAllowed categories:\n${categoryOptions}`;
 
     try {
       let modelCall = await requestWallpaperSeoCandidate({
@@ -381,6 +392,7 @@ export const generateWallpaperSeo = createServerFn({ method: "POST" })
             catalogContext,
             regenerate: true,
             variationIndex: Math.min(20, variationIndex + 1),
+            contentType,
           }) +
           "\n\nAUTOMATIC DIVERSITY RETRY\n- The previous regeneration candidate was still too similar to the rejected value. Produce a clearly different alternative now.\n- Change the phrasing, structure, and search angle more substantially while remaining faithful to the image.\n- Do not merely swap one adjective, reorder words, or repeat most of the same tags.";
 
@@ -481,11 +493,22 @@ function wordSimilarity(a: string, b: string): number {
 
 export const checkWallpaperSeoConflicts = createServerFn({ method: "POST" })
   .middleware([authMiddleware])
-  .validator((input: { title: string; primaryKeyword: string; excludeWallpaperId?: string }) => input)
+  .validator((input: {
+    title: string;
+    primaryKeyword: string;
+    excludeWallpaperId?: string;
+    contentType?: CatalogContentType;
+  }) => input)
   .handler(async ({ context, data }): Promise<{ conflicts: SeoConflict[] }> => {
     const sql = await requireAdmin(context.userId);
+    const contentType: CatalogContentType = data.contentType === "pfp" ? "pfp" : "wallpaper";
     const rows = await sql.query<{ id: string; title: string; primary_keyword: string | null }>(
-      `select id, title, primary_keyword from wallpapers where ($1 = '' or id <> $1)`,
+      `select w.id, w.title, w.primary_keyword
+       from wallpapers w
+       where ($1 = '' or w.id <> $1)
+         and ${contentType === "pfp"
+           ? "w.canonical_path like '/pfp/%'"
+           : "(w.canonical_path is null or w.canonical_path not like '/pfp/%')"}`,
       [data.excludeWallpaperId || ""],
     );
     const conflicts: SeoConflict[] = [];
@@ -689,9 +712,15 @@ export const uploadOpsWallpaper = createServerFn({ method: "POST" })
     const title = formString(data, "title");
     const description = formString(data, "description").slice(0, 280);
     const altText = formString(data, "altText").slice(0, 180) || title;
-    const seo = buildWallpaperSeoFields({ title, description, primaryKeyword: formString(data, "primaryKeyword") });
     const categoryId = formString(data, "categoryId");
     const tagNames = parseTags(data);
+    const contentType = formContentType(data);
+    const seo = buildWallpaperSeoFields({
+      title,
+      description,
+      primaryKeyword: formString(data, "primaryKeyword"),
+      contentType,
+    });
     if (title.length < 2 || title.length > 60) return { ok: false as const, error: "title" };
 
     const cats = await fetchCategories();
@@ -712,6 +741,12 @@ export const uploadOpsWallpaper = createServerFn({ method: "POST" })
     const thumbMeta = sniffImage(thumb);
     if (width < 8 || height < 8 || !previewMeta || !thumbMeta) {
       return { ok: false as const, error: "image" };
+    }
+    if (contentType === "pfp") {
+      const ratio = width / height;
+      if (ratio < 0.98 || ratio > 1.02) {
+        return { ok: false as const, error: "pfp_shape" as const };
+      }
     }
 
     const fileSha = formHex(data, "fileSha256") ?? sha256Buffer(preview);
@@ -745,14 +780,15 @@ export const uploadOpsWallpaper = createServerFn({ method: "POST" })
       `insert into wallpapers
          (id, title, description, category_id, creator_id, access_type, status,
           width, height, file_size_bytes, format, aspect_ratio, device_type,
-          sha256, source_sha256, published_at, slug, alt_text, primary_keyword, seo_title, seo_description, robots)
+          sha256, source_sha256, published_at, slug, canonical_path, alt_text, primary_keyword, seo_title, seo_description, robots)
        values
          ($1, $2, $3, $4, null, 'free', 'approved', $5, $6, $7, $8, $9, $10,
-          $11, $12, now(), $13, $14, $15, $16, $17, 'index')`,
+          $11, $12, now(), $13, $14, $15, $16, $17, $18, 'index')`,
       [
         wallpaperId, title, description, categoryId, width, height, originalBytes,
         format, aspectLabel(width, height), formDevice(data, width, height), fileSha,
-        sourceSha, slug, altText, seo.primaryKeyword, seo.seoTitle, seo.seoDescription,
+        sourceSha, slug, contentType === "pfp" ? `/pfp/${slug}` : null,
+        altText, seo.primaryKeyword, seo.seoTitle, seo.seoDescription,
       ],
     );
 
@@ -773,7 +809,7 @@ export const uploadOpsWallpaper = createServerFn({ method: "POST" })
 
     await attachTags(sql, wallpaperId, tagNames);
     const category = cats.find((item) => item.id === categoryId);
-    if (category) {
+    if (category && contentType === "wallpaper") {
       await notifyTasteSubscribersForWallpaper({
         wallpaperId,
         categoryId,
@@ -781,6 +817,6 @@ export const uploadOpsWallpaper = createServerFn({ method: "POST" })
         categorySlug: category.slug,
       }).catch((error) => console.error("[push] new wallpaper", error));
     }
-    return { ok: true as const, id: wallpaperId, slug };
+    return { ok: true as const, id: wallpaperId, slug, contentType };
   });
 

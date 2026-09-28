@@ -15,9 +15,16 @@ import {
   fetchHomeDuos,
   fetchPairBySlug,
   fetchPairForWallpaper,
+  fetchPfpCardList,
+  fetchPfpCardsByIds,
+  fetchPfpCategories,
+  fetchPfpDetail,
+  fetchPfpSitemapEntries,
   fetchSeoRedirect,
   fetchSimilarCards,
+  fetchSimilarPfpCards,
   fetchSitemapEntries,
+  lookupPfpRef,
   lookupWallpaperRef,
   marketplaceEnabled,
   readSeoSettings,
@@ -567,6 +574,105 @@ export const getWallpaper = createServerFn({ method: "GET" })
 
   });
 
+export const getPfpIndex = createServerFn({ method: "GET" })
+  .middleware([optionalAuthMiddleware])
+  .validator(
+    z.object({
+      q: z.string().optional(),
+      page: z.number().int().min(1).optional(),
+    }).optional(),
+  )
+  .handler(async ({ context, data }) => {
+    const page = data?.page ?? 1;
+    const offset = (page - 1) * PAGE_SIZE;
+    const run = async () => {
+      const [categories, items, extra] = await Promise.all([
+        fetchPfpCategories(),
+        fetchPfpCardList(context.userId, {
+          order: "trending",
+          limit: PAGE_SIZE,
+          offset,
+          search: data?.q,
+        }),
+        fetchPfpCardList(context.userId, {
+          order: "trending",
+          limit: 1,
+          offset: offset + PAGE_SIZE,
+          search: data?.q,
+        }),
+      ]);
+      return { categories, items, page, q: data?.q, hasMore: extra.length > 0 };
+    };
+    return context.userId
+      ? run()
+      : cachedPublicRead(`pfps:index:${JSON.stringify(data ?? {})}`, 120_000, run);
+  });
+
+export const getPfpCategoryPage = createServerFn({ method: "GET" })
+  .middleware([optionalAuthMiddleware])
+  .validator(
+    z.object({
+      slug: z.string(),
+      page: z.number().int().min(1).optional(),
+    }),
+  )
+  .handler(async ({ context, data }) => {
+    const page = data.page ?? 1;
+    const offset = (page - 1) * PAGE_SIZE;
+    const run = async () => {
+      const categories = await fetchPfpCategories();
+      const category = categories.find((item) => item.slug === data.slug) ?? null;
+      if (!category) return { category: null, items: [] as WallpaperCard[], page, hasMore: false };
+      const [items, extra] = await Promise.all([
+        fetchPfpCardList(context.userId, {
+          order: "trending",
+          limit: PAGE_SIZE,
+          offset,
+          categoryId: category.id,
+        }),
+        fetchPfpCardList(context.userId, {
+          order: "trending",
+          limit: 1,
+          offset: offset + PAGE_SIZE,
+          categoryId: category.id,
+        }),
+      ]);
+      return { category, items, page, hasMore: extra.length > 0 };
+    };
+    return context.userId
+      ? run()
+      : cachedPublicRead(`pfps:category:${data.slug}:${page}`, 120_000, run);
+  });
+
+export const getPfp = createServerFn({ method: "GET" })
+  .middleware([optionalAuthMiddleware])
+  .validator(z.object({ id: z.string() }))
+  .handler(async ({ context, data }) => {
+    const run = async () => {
+      const ref = await lookupPfpRef(data.id);
+      if (!ref) return { pfp: null, related: [] as WallpaperCard[], status: "missing" as const };
+      if (ref.status === "removed" || ref.status === "rejected") {
+        return { pfp: null, related: [] as WallpaperCard[], status: "gone" as const };
+      }
+      const pfp = await fetchPfpDetail(ref.id, context.userId);
+      if (!pfp) return { pfp: null, related: [] as WallpaperCard[], status: "missing" as const };
+      const related = await fetchSimilarPfpCards(context.userId, pfp, 8);
+      return {
+        pfp,
+        related,
+        status: "ok" as const,
+        canonicalSlug: ref.slug || ref.id,
+      };
+    };
+    return context.userId
+      ? run()
+      : cachedPublicRead(`pfp:${data.id}`, 300_000, run);
+  });
+
+export const getPfpSitemapData = createServerFn({ method: "GET" }).handler(async () =>
+  cachedPublicRead("pfp-sitemap", 600_000, fetchPfpSitemapEntries),
+);
+
 export const getPublicSeo = createServerFn({ method: "GET" }).handler(async () => cachedPublicRead("public-seo", 600_000, readSeoSettings));
 
 export const getSitemapData = createServerFn({ method: "GET" }).handler(async () => cachedPublicRead("sitemap", 600_000, async () => {
@@ -663,7 +769,9 @@ export const requestDownload = createServerFn({ method: "POST" })
   )
   .handler(async ({ context, data }): Promise<DownloadRequestResult> => {
     const userId = context.userId;
-    const detail = await fetchDetail(data.wallpaperId, userId);
+    const detail =
+      (await fetchDetail(data.wallpaperId, userId)) ??
+      (await fetchPfpDetail(data.wallpaperId, userId));
     if (!detail) return { status: "error", message: "Not found" };
 
     const sql = await getSql();
@@ -813,17 +921,26 @@ export const listDownloads = createServerFn({ method: "GET" })
        from downloads where user_id = $1 order by downloaded_at desc limit 40`,
       [context.userId],
     );
-    const cards = await fetchCardsByIds(
-      rows.map((r) => r.wallpaper_id),
-      context.userId,
-    );
-    const byId = new Map(cards.map((c) => [c.id, c]));
+    const ids = rows.map((row) => row.wallpaper_id);
+    const [wallpapers, pfps] = await Promise.all([
+      fetchCardsByIds(ids, context.userId),
+      fetchPfpCardsByIds(ids, context.userId),
+    ]);
+    const byId = new Map([
+      ...wallpapers.map((card) => [card.id, { card, contentType: "wallpaper" as const }] as const),
+      ...pfps.map((card) => [card.id, { card, contentType: "pfp" as const }] as const),
+    ]);
     return {
       items: rows
         .map((r) => {
-          const card = byId.get(r.wallpaper_id);
-          if (!card) return null;
-          return { ...card, downloadedAt: r.downloaded_at, downloadType: r.download_type };
+          const hit = byId.get(r.wallpaper_id);
+          if (!hit) return null;
+          return {
+            ...hit.card,
+            contentType: hit.contentType,
+            downloadedAt: r.downloaded_at,
+            downloadType: r.download_type,
+          };
         })
         .filter((x): x is DownloadHistoryItem => Boolean(x)),
     };

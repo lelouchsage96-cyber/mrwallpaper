@@ -185,7 +185,8 @@ export const getOpsOverview = createServerFn({ method: "GET" })
                 count(*) filter (where status = 'approved')::int as approved,
                 count(*) filter (where access_type = 'premium')::int as premium,
                 count(*) filter (where status in ('pending', 'draft'))::int as pending
-         from wallpapers`,
+         from wallpapers
+         where canonical_path is null or canonical_path not like '/pfp/%'`,
       ),
       sql.query<{ today: number; yesterday: number; all: number }>(
         `select
@@ -240,6 +241,7 @@ export const getOpsOverview = createServerFn({ method: "GET" })
                   where a.wallpaper_id = w.id and a.kind = 'thumbnail' limit 1) as thumbnail_url
          from wallpapers w
          where w.status = 'approved'
+           and (w.canonical_path is null or w.canonical_path not like '/pfp/%')
          order by w.download_count desc
          limit 6`,
       ),
@@ -341,10 +343,12 @@ export const listOpsWallpapers = createServerFn({ method: "GET" })
       alt_text?: string | null;
       canonical_path?: string | null;
       robots?: string | null;
+      is_pfp: boolean | number;
     }>(
       `select w.id, w.slug, w.title, c.name as category_name, w.access_type, w.status,
               w.download_count, w.favorite_count, w.device_type,
               w.seo_title, w.seo_description, w.alt_text, w.canonical_path, w.robots,
+              (w.canonical_path like '/pfp/%') as is_pfp,
               (select a.path from wallpaper_assets a
                 where a.wallpaper_id = w.id and a.kind = 'thumbnail' limit 1) as thumbnail_url
        from wallpapers w
@@ -370,6 +374,7 @@ export const listOpsWallpapers = createServerFn({ method: "GET" })
         downloadCount: Number(r.download_count) || 0,
         favoriteCount: Number(r.favorite_count) || 0,
         deviceType: parseDeviceType(r.device_type),
+        contentType: r.is_pfp === true || r.is_pfp === 1 ? "pfp" : "wallpaper",
         seoTitle: r.seo_title || "",
         seoDescription: r.seo_description || "",
         altText: r.alt_text || "",
@@ -423,16 +428,31 @@ export const updateWallpaperOps = createServerFn({ method: "POST" })
       );
     }
     if (data.slug !== undefined) {
-      const current = await sql.query<{ slug: string | null }>(
-        `select slug from wallpapers where id = $1 limit 1`,
+      const current = await sql.query<{ slug: string | null; is_pfp: boolean | number }>(
+        `select w.slug, (w.canonical_path like '/pfp/%') as is_pfp
+         from wallpapers w
+         where w.id = $1
+         limit 1`,
         [data.wallpaperId],
       );
       const next = await uniqueWallpaperSlug(slugify(data.slug || "wallpaper"), data.wallpaperId);
       const prev = current[0]?.slug;
       if (prev && prev !== next) {
-        await recordSeoRedirect(`/wallpaper/${prev}`, `/wallpaper/${next}`);
+        const base = current[0]?.is_pfp === true || current[0]?.is_pfp === 1 ? "/pfp/" : "/wallpaper/";
+        await recordSeoRedirect(`${base}${prev}`, `${base}${next}`);
       }
-      await sql.query(`update wallpapers set slug = $1, updated_at = now() where id = $2`, [next, data.wallpaperId]);
+      const isPfp = current[0]?.is_pfp === true || current[0]?.is_pfp === 1;
+      if (isPfp) {
+        await sql.query(
+          `update wallpapers set slug = $1, canonical_path = $2, updated_at = now() where id = $3`,
+          [next, `/pfp/${next}`, data.wallpaperId],
+        );
+      } else {
+        await sql.query(`update wallpapers set slug = $1, updated_at = now() where id = $2`, [
+          next,
+          data.wallpaperId,
+        ]);
+      }
     }
     if (data.seoTitle !== undefined) {
       await sql.query(`update wallpapers set seo_title = $1, updated_at = now() where id = $2`, [

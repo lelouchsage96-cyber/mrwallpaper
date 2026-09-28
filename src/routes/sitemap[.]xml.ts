@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { absUrl, categoryPath, wallpaperPath } from "@/lib/seo";
-import { getSitemapData } from "@/lib/server/api";
+import { absUrl, categoryPath, pfpCategoryPath, pfpPath, wallpaperPath } from "@/lib/seo";
+import { getPfpSitemapData, getSitemapData } from "@/lib/server/api";
 
 function esc(value: string) {
   return [...value]
@@ -28,10 +28,14 @@ export const Route = createFileRoute("/sitemap.xml")({
   server: {
     handlers: {
       GET: async () => {
-        const data = await getSitemapData();
+        const [data, pfpData] = await Promise.all([
+          getSitemapData(),
+          getPfpSitemapData().catch(() => ({ pfps: [], categories: [] })),
+        ]);
         const primaryPages = [
           { path: "/", priority: "1.0" },
           { path: "/wallpapers", priority: "0.9" },
+          { path: "/pfps", priority: "0.9" },
         ];
         const staticPages = [
           "/about",
@@ -58,6 +62,9 @@ export const Route = createFileRoute("/sitemap.xml")({
           ...data.categories.map((c) =>
             add(categoryPath(c.slug), "<changefreq>daily</changefreq><priority>0.8</priority>"),
           ),
+          ...pfpData.categories.map((c) =>
+            add(pfpCategoryPath(c.slug), "<changefreq>daily</changefreq><priority>0.8</priority>"),
+          ),
           ...data.collections.map((c) =>
             add(`/collection/${c.slug}`, "<changefreq>weekly</changefreq><priority>0.7</priority>"),
           ),
@@ -71,6 +78,15 @@ export const Route = createFileRoute("/sitemap.xml")({
             return add(
               wallpaperPath(w.slug),
               `${safeLastmod(w.updated)}<changefreq>weekly</changefreq><priority>0.8</priority>${image}`,
+            );
+          }),
+          ...pfpData.pfps.map((pfp) => {
+            const image = pfp.image
+              ? `<image:image><image:loc>${esc(absUrl(pfp.image))}</image:loc></image:image>`
+              : "";
+            return add(
+              pfpPath(pfp.slug),
+              `${safeLastmod(pfp.updated)}<changefreq>weekly</changefreq><priority>0.8</priority>${image}`,
             );
           }),
           `</urlset>`,

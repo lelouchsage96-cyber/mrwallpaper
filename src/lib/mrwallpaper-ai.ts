@@ -48,7 +48,20 @@ export function buildWallpaperSeoDeveloperPrompt(input: {
   catalogContext?: string;
   regenerate?: boolean;
   variationIndex?: number;
+  contentType?: "wallpaper" | "pfp";
 }) {
+  const contentTypeRules =
+    input.contentType === "pfp"
+      ? [
+          "CONTENT TYPE",
+          "- This image is being published as a profile picture (PFP), not as a wallpaper.",
+          "- Write titles, descriptions, tags and primary keywords for profile-picture search intent.",
+          "- Use natural terms such as PFP, profile picture, avatar or display picture only when they fit the image and search intent.",
+          "- Do not describe it as a phone wallpaper, lock screen, home screen, tablet wallpaper or 4K wallpaper.",
+          "- Keep metadata useful for platforms where square profile images are common, without inventing a specific platform unless it is visible or explicitly supplied.",
+        ].join("\n")
+      : "";
+
   const taskRules = [
     "TASK RULES",
     "- Title: 4-10 words, human-readable, no unnecessary brand suffix, maximum 60 characters.",
@@ -59,7 +72,11 @@ export function buildWallpaperSeoDeveloperPrompt(input: {
     "- Category: choose exactly one supplied category ID.",
     "- If a central Bible reference, quote, person or named subject is clearly visible and important to search intent, keep it consistent across title and primary keyword.",
     "- Avoid filler such as visible unless it improves clarity.",
-    input.supports4k ? "- You may mention 4K only when it is useful and accurate." : "- Never claim or imply 4K for this image.",
+    input.contentType === "pfp"
+      ? "- Do not use 4K as a PFP selling point; focus on the subject, mood and profile-picture search intent."
+      : input.supports4k
+        ? "- You may mention 4K only when it is useful and accurate."
+        : "- Never claim or imply 4K for this image.",
     input.field === "all"
       ? "- Generate all fields."
       : "- Generate only the " + input.field + " field and copy the supplied values for every other field.",
@@ -93,7 +110,9 @@ export function buildWallpaperSeoDeveloperPrompt(input: {
       ].join("\n")
     : "";
 
-  return [MRWALLPAPER_AI_KNOWLEDGE, "", taskRules, regeneration, catalog].filter(Boolean).join("\n");
+  return [MRWALLPAPER_AI_KNOWLEDGE, "", contentTypeRules, taskRules, regeneration, catalog]
+    .filter(Boolean)
+    .join("\n");
 }
 
 export function buildWallpaperSeoCatalogContext(entries: WallpaperSeoCatalogEntry[], limit = 80): string {

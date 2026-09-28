@@ -211,6 +211,7 @@ export type HomePayload = {
 };
 
 export type DownloadHistoryItem = WallpaperCard & {
+  contentType: "wallpaper" | "pfp";
   downloadedAt: string;
   downloadType: string;
 };
@@ -294,6 +295,7 @@ export type OpsWallpaperRow = {
   downloadCount: number;
   favoriteCount: number;
   deviceType: DeviceType;
+  contentType: "wallpaper" | "pfp";
   seoTitle: string;
   seoDescription: string;
   altText: string;

@@ -78,9 +78,8 @@ function CatalogRow({
       <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:gap-4">
         <div className="flex min-w-0 flex-1 items-center gap-3">
           <OpsThumb src={w.thumbnailUrl} alt={w.title} id={w.id} />
-          <Link
-            to="/wallpaper/$id"
-            params={{ id: w.id }}
+          <a
+            href={w.contentType === "pfp" ? `/pfp/${w.slug || w.id}` : `/wallpaper/${w.slug || w.id}`}
             className="min-w-0 flex-1"
           >
             <span className="flex min-w-0 items-center gap-2">
@@ -90,20 +89,22 @@ function CatalogRow({
             <span className="mt-0.5 block truncate text-xs text-muted">
               {w.categoryName}
               {" · "}
-              {t.ops.device[w.deviceType]}
+              {w.contentType === "pfp" ? "PFP" : t.ops.device[w.deviceType]}
               {" · "}
               {formatCount(w.downloadCount)} {t.wallpaper.downloads}
             </span>
-          </Link>
+          </a>
         </div>
         <div className="flex flex-wrap items-center gap-2 lg:max-w-xl lg:justify-end">
-          <Link
-            to="/ops/wallpaper-edit/$id"
-            params={{ id: w.id }}
-            className="inline-flex h-11 items-center justify-center rounded-full bg-surface px-4 text-sm font-medium text-fg shadow-[var(--shadow-border)] transition-opacity hover:opacity-80"
-          >
-            Edit
-          </Link>
+          {w.contentType === "wallpaper" ? (
+            <Link
+              to="/ops/wallpaper-edit/$id"
+              params={{ id: w.id }}
+              className="inline-flex h-11 items-center justify-center rounded-full bg-surface px-4 text-sm font-medium text-fg shadow-[var(--shadow-border)] transition-opacity hover:opacity-80"
+            >
+              Edit
+            </Link>
+          ) : null}
           <Select
             value={w.deviceType}
             aria-label={t.ops.device.phone}
@@ -124,19 +125,21 @@ function CatalogRow({
               </option>
             ))}
           </Select>
-          <Select
-            value=""
-            aria-label={t.ops.placeOn}
-            onChange={(v) => {
-              if (v === "wotd" || v === "editors_choice") onPlace(v);
-            }}
-          >
-            <option value="" disabled>
-              {t.ops.placeOn}
-            </option>
-            <option value="wotd">{t.ops.placeWotd}</option>
-            <option value="editors_choice">{t.ops.placeEditors}</option>
-          </Select>
+          {w.contentType === "wallpaper" ? (
+            <Select
+              value=""
+              aria-label={t.ops.placeOn}
+              onChange={(v) => {
+                if (v === "wotd" || v === "editors_choice") onPlace(v);
+              }}
+            >
+              <option value="" disabled>
+                {t.ops.placeOn}
+              </option>
+              <option value="wotd">{t.ops.placeWotd}</option>
+              <option value="editors_choice">{t.ops.placeEditors}</option>
+            </Select>
+          ) : null}
         </div>
       </div>
       <details className="group mt-3">
@@ -190,7 +193,10 @@ function CatalogRow({
               defaultValue={w.canonicalPath}
               placeholder={t.ops.seoCanonical}
               aria-label={t.ops.seoCanonical}
-              onBlur={(e) => onPatch({ canonicalPath: e.target.value })}
+              disabled={w.contentType === "pfp"}
+              onBlur={(e) => {
+                if (w.contentType === "wallpaper") onPatch({ canonicalPath: e.target.value });
+              }}
             />
           </Field>
           <div className="flex items-end">
