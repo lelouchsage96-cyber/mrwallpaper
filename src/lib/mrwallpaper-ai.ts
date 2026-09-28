@@ -106,7 +106,7 @@ export function buildWallpaperSeoDeveloperPrompt(input: {
       ].join("\n")
     : "";
 
-  return [MRWALLPAPER_AI_KNOWLEDGE, "", contentTypeRules, contentTypeRules ? "" : "", taskRules, regeneration, catalog]
+  return [MRWALLPAPER_AI_KNOWLEDGE, "", contentTypeRules, taskRules, regeneration, catalog]
     .filter(Boolean)
     .join("\n");
 }
