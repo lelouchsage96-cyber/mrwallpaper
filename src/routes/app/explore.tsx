@@ -209,7 +209,15 @@ function ExplorePage() {
 
   return (
     <div className="px-4 pt-5 lg:px-6 lg:pt-5 xl:px-8">
-      <h1 className="font-display text-3xl text-fg lg:hidden">{t.explore.title}</h1>
+      <div className="flex items-center justify-between gap-3 lg:hidden">
+        <h1 className="font-display text-3xl text-fg">{t.explore.title}</h1>
+        <a
+          href="/pfps"
+          className="grid h-10 place-items-center rounded-full bg-elevated px-4 text-sm font-medium text-fg"
+        >
+          PFPs
+        </a>
+      </div>
 
       <div className="sticky top-[env(safe-area-inset-top)] z-30 -mx-4 mt-4 border-y border-border/70 bg-bg/95 px-4 py-3 backdrop-blur-xl lg:hidden">
         <Input
@@ -242,6 +250,12 @@ function ExplorePage() {
 
       <div className="hidden lg:sticky lg:top-[4.5rem] lg:z-30 lg:block lg:rounded-2xl lg:border lg:border-border/70 lg:bg-bg/94 lg:p-2 lg:shadow-[0_8px_24px_rgba(0,0,0,0.12)] lg:backdrop-blur-xl">
         <div className="flex items-center gap-3">
+          <a
+            href="/pfps"
+            className="grid h-10 shrink-0 place-items-center rounded-xl bg-elevated/55 px-3 text-xs font-medium text-fg transition-colors hover:bg-elevated"
+          >
+            PFPs
+          </a>
           <div className="flex shrink-0 items-center gap-1 rounded-xl bg-elevated/55 p-1">
             {deviceChips.map((filter) => (
               <button
