@@ -1,6 +1,6 @@
 import { createFileRoute, notFound } from "@tanstack/react-router";
 import { Breadcrumbs } from "@/components/breadcrumbs";
-import { BottomNav } from "@/components/bottom-nav";
+import { BottomNav, DesktopNav } from "@/components/bottom-nav";
 import { PfpGrid } from "@/components/pfp-grid";
 import {
   breadcrumbJsonLd,
@@ -82,6 +82,7 @@ function PfpCategoryPage() {
 
   return (
     <>
+      <DesktopNav />
       <main className="mx-auto max-w-7xl px-4 pb-28 pt-6 lg:pb-20">
       <Breadcrumbs
         items={[
