@@ -2,6 +2,7 @@ import { createFileRoute, notFound, redirect } from "@tanstack/react-router";
 import { Download, Share2 } from "lucide-react";
 import { useState } from "react";
 import { Breadcrumbs } from "@/components/breadcrumbs";
+import { BottomNav } from "@/components/bottom-nav";
 import { DownloadSheet } from "@/components/download-sheet";
 import { PfpGrid } from "@/components/pfp-grid";
 import { showActionToast } from "@/components/action-toast";
@@ -134,10 +135,11 @@ function PfpDetailPage() {
   });
 
   return (
-    <main className="mx-auto max-w-6xl px-4 pb-20 pt-6">
+    <>
+      <main className="mx-auto max-w-6xl px-4 pb-28 pt-6 lg:pb-20">
       <Breadcrumbs
         items={[
-          { name: "Home", href: "/" },
+          { name: "Home", href: "/app" },
           { name: "PFPs", href: "/pfps" },
           { name: pfp.categoryName, href: pfpCategoryPath(pfp.categorySlug) },
           { name: pfp.title },
@@ -250,6 +252,8 @@ function PfpDetailPage() {
         isPremiumUser={false}
         deviceType={pfp.deviceType}
       />
-    </main>
+      </main>
+      <BottomNav />
+    </>
   );
 }
