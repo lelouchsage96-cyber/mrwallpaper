@@ -7,7 +7,6 @@ import {
   collectionPageJsonLd,
   itemListJsonLd,
   pageHead,
-  PAGE_SIZE,
   pfpCategoryPath,
   pfpPath,
 } from "@/lib/seo";
