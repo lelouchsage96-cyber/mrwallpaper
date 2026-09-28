@@ -769,7 +769,9 @@ export const requestDownload = createServerFn({ method: "POST" })
   )
   .handler(async ({ context, data }): Promise<DownloadRequestResult> => {
     const userId = context.userId;
-    const detail = await fetchDetail(data.wallpaperId, userId);
+    const detail =
+      (await fetchDetail(data.wallpaperId, userId)) ??
+      (await fetchPfpDetail(data.wallpaperId, userId));
     if (!detail) return { status: "error", message: "Not found" };
 
     const sql = await getSql();
