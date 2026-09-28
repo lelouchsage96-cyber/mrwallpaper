@@ -5,7 +5,7 @@ import { cardSource, highQualityPreview } from "@/lib/wallpaper-card-media";
 import { pfpAlt } from "@/lib/seo";
 import type { WallpaperCard } from "@/lib/types";
 
-const GRID_CLASSES = "grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6";
+const GRID_CLASSES = "grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-5";
 
 export function PfpGrid({
   items,
@@ -42,7 +42,7 @@ export function PfpGrid({
                   alt={alt}
                   width={pfp.width}
                   height={pfp.height}
-                  sizes="(min-width: 1280px) 220px, (min-width: 1024px) 24vw, (min-width: 640px) 33vw, 50vw"
+                  sizes="(min-width: 1280px) 250px, (min-width: 1024px) 24vw, (min-width: 640px) 33vw, 50vw"
                   priority={index < eager}
                   className="size-full object-cover transition-transform duration-300 ease-out lg:group-hover:scale-[1.025]"
                 />
