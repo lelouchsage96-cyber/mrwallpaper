@@ -1,5 +1,5 @@
 import { Link, useRouterState } from "@tanstack/react-router";
-import { Bell, ChevronLeft, ChevronRight, Compass, Heart, Home, User } from "lucide-react";
+import { Bell, ChevronLeft, ChevronRight, CircleUserRound, Compass, Heart, Home, User } from "lucide-react";
 import { useRef } from "react";
 import { DesktopSearch } from "@/components/smart-search";
 import { brand } from "@/lib/brand";
@@ -9,6 +9,7 @@ import { cn } from "@/lib/utils";
 const items = [
   { to: "/app", label: t.nav.home, icon: Home, exact: true },
   { to: "/app/explore", label: t.nav.explore, icon: Compass },
+  { to: "/pfps", label: "PFPs", icon: CircleUserRound },
   { to: "/app/favorites", label: t.nav.favorites, icon: Heart },
   { to: "/app/profile", label: t.nav.profile, icon: User },
 ] as const;
@@ -18,6 +19,9 @@ function useActivePath() {
 }
 
 function isActivePath(pathname: string, item: (typeof items)[number]) {
+  if (item.to === "/pfps") {
+    return pathname === "/pfps" || pathname.startsWith("/pfps/") || pathname.startsWith("/pfp/");
+  }
   return "exact" in item && item.exact
     ? pathname === item.to
     : pathname === item.to || pathname.startsWith(`${item.to}/`);
@@ -155,7 +159,7 @@ export function BottomNav() {
       aria-label="Main"
       className="fixed inset-x-0 bottom-0 z-40 border-t border-border/80 bg-bg/92 shadow-[0_-10px_30px_rgba(0,0,0,0.08)] backdrop-blur-xl lg:hidden"
     >
-      <ul className="mx-auto grid max-w-lg grid-cols-4 px-2 pb-[max(0.5rem,env(safe-area-inset-bottom))] pt-1">
+      <ul className="mx-auto grid max-w-lg grid-cols-5 px-1 pb-[max(0.5rem,env(safe-area-inset-bottom))] pt-1">
         {items.map((item) => {
           const active = isActivePath(pathname, item);
           const Icon = item.icon;
