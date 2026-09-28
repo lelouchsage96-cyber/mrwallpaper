@@ -463,6 +463,7 @@ export const getCategoryPage = createServerFn({ method: "GET" })
   .validator(
     z.object({
       slug: z.string(),
+      sort: z.enum(["trending", "latest", "downloads", "favorites"]).optional(),
       page: z.number().int().min(1).optional(),
       offset: z.number().int().min(0).optional(),
     }),
@@ -575,34 +576,45 @@ export const getWallpaper = createServerFn({ method: "GET" })
 
   });
 
+type PfpSort = "trending" | "latest" | "downloads" | "favorites";
+
+function pfpOrder(sort?: PfpSort): "trending" | "fresh" | "downloads" | "favorites" {
+  if (sort === "latest") return "fresh";
+  if (sort === "downloads") return "downloads";
+  if (sort === "favorites") return "favorites";
+  return "trending";
+}
+
 export const getPfpIndex = createServerFn({ method: "GET" })
   .middleware([optionalAuthMiddleware])
   .validator(
     z.object({
       q: z.string().optional(),
+      sort: z.enum(["trending", "latest", "downloads", "favorites"]).optional(),
       page: z.number().int().min(1).optional(),
     }).optional(),
   )
   .handler(async ({ context, data }) => {
     const page = data?.page ?? 1;
+    const sort: PfpSort = data?.sort ?? "trending";
     const offset = (page - 1) * PAGE_SIZE;
     const run = async () => {
-      const [categories, items, extra] = await Promise.all([
-        fetchPfpCategories(),
+      const categories = await fetchPfpCategories();
+      const [items, extra] = await Promise.all([
         fetchPfpCardList(context.userId, {
-          order: "trending",
+          order: pfpOrder(sort),
           limit: PAGE_SIZE,
           offset,
           search: data?.q,
         }),
         fetchPfpCardList(context.userId, {
-          order: "trending",
+          order: pfpOrder(sort),
           limit: 1,
           offset: offset + PAGE_SIZE,
           search: data?.q,
         }),
       ]);
-      return { categories, items, page, q: data?.q, hasMore: extra.length > 0 };
+      return { categories, items, page, q: data?.q, sort, hasMore: extra.length > 0 };
     };
     return context.userId
       ? run()
@@ -614,35 +626,37 @@ export const getPfpCategoryPage = createServerFn({ method: "GET" })
   .validator(
     z.object({
       slug: z.string(),
+      sort: z.enum(["trending", "latest", "downloads", "favorites"]).optional(),
       page: z.number().int().min(1).optional(),
     }),
   )
   .handler(async ({ context, data }) => {
     const page = data.page ?? 1;
+    const sort: PfpSort = data.sort ?? "trending";
     const offset = (page - 1) * PAGE_SIZE;
     const run = async () => {
       const categories = await fetchPfpCategories();
       const category = categories.find((item) => item.slug === data.slug) ?? null;
-      if (!category) return { category: null, items: [] as WallpaperCard[], page, hasMore: false };
+      if (!category) return { category: null, categories, items: [] as WallpaperCard[], page, sort, hasMore: false };
       const [items, extra] = await Promise.all([
         fetchPfpCardList(context.userId, {
-          order: "trending",
+          order: pfpOrder(sort),
           limit: PAGE_SIZE,
           offset,
           categoryId: category.id,
         }),
         fetchPfpCardList(context.userId, {
-          order: "trending",
+          order: pfpOrder(sort),
           limit: 1,
           offset: offset + PAGE_SIZE,
           categoryId: category.id,
         }),
       ]);
-      return { category, items, page, hasMore: extra.length > 0 };
+      return { category, categories, items, page, sort, hasMore: extra.length > 0 };
     };
     return context.userId
       ? run()
-      : cachedPublicRead(`pfps:category:${data.slug}:${page}`, 120_000, run);
+      : cachedPublicRead(`pfps:category:${data.slug}:${page}:${sort}`, 120_000, run);
   });
 
 export const getPfp = createServerFn({ method: "GET" })

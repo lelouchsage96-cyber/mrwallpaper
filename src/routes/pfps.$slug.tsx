@@ -1,7 +1,9 @@
 import { createFileRoute, notFound } from "@tanstack/react-router";
 import { Breadcrumbs } from "@/components/breadcrumbs";
 import { BottomNav, DesktopNav } from "@/components/bottom-nav";
+import { PfpDesktopFilters, type PfpSort } from "@/components/pfp-desktop-filters";
 import { PfpGrid } from "@/components/pfp-grid";
+import { SiteFooter } from "@/components/site-footer";
 import {
   breadcrumbJsonLd,
   collectionPageJsonLd,
@@ -12,21 +14,29 @@ import {
 } from "@/lib/seo";
 import { getPfpCategoryPage } from "@/lib/server/api";
 
-type Search = { page?: number };
+type Search = { sort?: PfpSort; page?: number };
 
 export const Route = createFileRoute("/pfps/$slug")({
   validateSearch: (search: Record<string, unknown>): Search => ({
+    sort:
+      search.sort === "latest" || search.sort === "downloads" || search.sort === "favorites"
+        ? search.sort
+        : undefined,
     page: typeof search.page === "number" && search.page > 1 ? Math.floor(search.page) : undefined,
   }),
-  loaderDeps: ({ search }) => ({ page: search.page ?? 1 }),
+  loaderDeps: ({ search }) => ({ sort: search.sort ?? "trending", page: search.page ?? 1 }),
   loader: async ({ params, deps }) => {
-    const data = await getPfpCategoryPage({ data: { slug: params.slug, page: deps.page } });
+    const data = await getPfpCategoryPage({
+      data: { slug: params.slug, sort: deps.sort, page: deps.page },
+    });
     if (!data.category) throw notFound();
     return data;
   },
   staleTime: 30_000,
   head: ({ loaderData, params, match }) => {
-    const page = (match.search as Search).page ?? 1;
+    const search = match.search as Search;
+    const sort = search.sort ?? "trending";
+    const page = search.page ?? 1;
     const category = loaderData?.category;
     const name = category?.name ?? params.slug;
     const pageBit = page > 1 ? ` – Page ${page}` : "";
@@ -40,15 +50,17 @@ export const Route = createFileRoute("/pfps/$slug")({
       title: `${name} PFPs & Profile Pictures${pageBit} | MrWallpaper`,
       description,
       path,
+      noindex: sort !== "trending",
       prev:
-        page > 1
+        sort === "trending" && page > 1
           ? page === 2
             ? pfpCategoryPath(params.slug)
             : `${pfpCategoryPath(params.slug)}?page=${page - 1}`
           : undefined,
-      next: loaderData?.hasMore
-        ? `${pfpCategoryPath(params.slug)}?page=${page + 1}`
-        : undefined,
+      next:
+        sort === "trending" && loaderData?.hasMore
+          ? `${pfpCategoryPath(params.slug)}?page=${page + 1}`
+          : undefined,
       jsonLd: [
         breadcrumbJsonLd([
           { name: "Home", path: "/" },
@@ -76,7 +88,7 @@ export const Route = createFileRoute("/pfps/$slug")({
 
 function PfpCategoryPage() {
   const { slug } = Route.useParams();
-  const { category, items, page, hasMore } = Route.useLoaderData();
+  const { category, categories, items, sort, page, hasMore } = Route.useLoaderData();
   const prev = page > 1 ? page - 1 : null;
   const next = hasMore ? page + 1 : null;
 
@@ -100,7 +112,11 @@ function PfpCategoryPage() {
         </p>
       </div>
 
-      <section className="mt-8">
+      <div className="mt-6">
+        <PfpDesktopFilters categories={categories} categorySlug={category.slug} sort={sort} />
+      </div>
+
+      <section className="mt-8 lg:mt-5">
         {items.length > 0 ? (
           <PfpGrid items={items} eager={6} />
         ) : (
@@ -114,7 +130,13 @@ function PfpCategoryPage() {
         <nav className="mt-10 flex items-center gap-4 text-sm" aria-label="Pagination">
           {prev ? (
             <a
-              href={prev === 1 ? `/pfps/${slug}` : `/pfps/${slug}?page=${prev}`}
+              href={
+                prev === 1
+                  ? sort === "trending"
+                    ? `/pfps/${slug}`
+                    : `/pfps/${slug}?sort=${sort}`
+                  : `/pfps/${slug}?page=${prev}${sort === "trending" ? "" : `&sort=${sort}`}`
+              }
               className="text-muted hover:text-fg"
             >
               Previous
@@ -124,7 +146,10 @@ function PfpCategoryPage() {
           )}
           <span className="text-muted">Page {page}</span>
           {next ? (
-            <a href={`/pfps/${slug}?page=${next}`} className="text-muted hover:text-fg">
+            <a
+              href={`/pfps/${slug}?page=${next}${sort === "trending" ? "" : `&sort=${sort}`}`}
+              className="text-muted hover:text-fg"
+            >
               Next
             </a>
           ) : (
@@ -132,6 +157,8 @@ function PfpCategoryPage() {
           )}
         </nav>
       ) : null}
+
+      <SiteFooter faqHref="/app/faq" />
       </main>
       <BottomNav />
     </>

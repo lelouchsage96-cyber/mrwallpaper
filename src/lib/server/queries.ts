@@ -446,7 +446,7 @@ export async function fetchSimilarCards(
 export async function fetchPfpCardList(
   userId: string | null,
   opts: {
-    order?: "trending" | "fresh" | "downloads";
+    order?: "trending" | "fresh" | "downloads" | "favorites";
     limit: number;
     offset?: number;
     categoryId?: string;
@@ -479,7 +479,9 @@ export async function fetchPfpCardList(
       ? "w.published_at desc nulls last, w.created_at desc"
       : opts.order === "downloads"
         ? "w.download_count desc, w.published_at desc"
-        : "w.download_count desc, w.favorite_count desc, w.published_at desc";
+        : opts.order === "favorites"
+          ? "w.favorite_count desc, w.download_count desc, w.published_at desc"
+          : "w.download_count desc, w.favorite_count desc, w.published_at desc";
   params.push(opts.limit);
   const limitAt = params.length;
   params.push(opts.offset ?? 0);

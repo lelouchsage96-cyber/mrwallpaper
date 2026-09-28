@@ -1,6 +1,8 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { BottomNav, DesktopNav } from "@/components/bottom-nav";
+import { PfpDesktopFilters, type PfpSort } from "@/components/pfp-desktop-filters";
 import { PfpGrid } from "@/components/pfp-grid";
+import { SiteFooter } from "@/components/site-footer";
 import { Input } from "@/components/ui/input";
 import {
   breadcrumbJsonLd,
@@ -12,7 +14,7 @@ import {
 } from "@/lib/seo";
 import { getPfpIndex } from "@/lib/server/api";
 
-type Search = { q?: string; page?: number };
+type Search = { q?: string; sort?: PfpSort; page?: number };
 
 const PFP_TITLE = "PFPs & Profile Pictures | MrWallpaper";
 const PFP_DESCRIPTION =
@@ -21,13 +23,18 @@ const PFP_DESCRIPTION =
 export const Route = createFileRoute("/pfps/")({
   validateSearch: (search: Record<string, unknown>): Search => ({
     q: typeof search.q === "string" && search.q.trim() ? search.q.trim().slice(0, 80) : undefined,
+    sort:
+      search.sort === "latest" || search.sort === "downloads" || search.sort === "favorites"
+        ? search.sort
+        : undefined,
     page: typeof search.page === "number" && search.page > 1 ? Math.floor(search.page) : undefined,
   }),
-  loaderDeps: ({ search }) => ({ q: search.q, page: search.page ?? 1 }),
-  loader: ({ deps }) => getPfpIndex({ data: { q: deps.q, page: deps.page } }),
+  loaderDeps: ({ search }) => ({ q: search.q, sort: search.sort ?? "trending", page: search.page ?? 1 }),
+  loader: ({ deps }) => getPfpIndex({ data: { q: deps.q, sort: deps.sort, page: deps.page } }),
   staleTime: 30_000,
   head: ({ loaderData }) => {
     const q = loaderData?.q;
+    const sort = loaderData?.sort ?? "trending";
     const page = loaderData?.page ?? 1;
     const pageBit = page > 1 ? ` – Page ${page}` : "";
     const path = page > 1 ? `/pfps?page=${page}` : "/pfps";
@@ -39,9 +46,17 @@ export const Route = createFileRoute("/pfps/")({
       title: q ? `${q} PFPs | MrWallpaper${pageBit}` : `${PFP_TITLE}${pageBit}`,
       description: PFP_DESCRIPTION,
       path,
-      noindex: Boolean(q),
-      prev: !q && page > 1 ? (page === 2 ? "/pfps" : `/pfps?page=${page - 1}`) : undefined,
-      next: !q && loaderData?.hasMore ? `/pfps?page=${page + 1}` : undefined,
+      noindex: Boolean(q) || sort !== "trending",
+      prev:
+        !q && sort === "trending" && page > 1
+          ? page === 2
+            ? "/pfps"
+            : `/pfps?page=${page - 1}`
+          : undefined,
+      next:
+        !q && sort === "trending" && loaderData?.hasMore
+          ? `/pfps?page=${page + 1}`
+          : undefined,
       jsonLd: q
         ? [
             breadcrumbJsonLd([
@@ -71,13 +86,23 @@ export const Route = createFileRoute("/pfps/")({
 });
 
 function PfpIndexPage() {
-  const { categories, items, q, page, hasMore } = Route.useLoaderData();
+  const { categories, items, q, sort, page, hasMore } = Route.useLoaderData();
   const prev = page > 1 ? page - 1 : null;
   const next = hasMore ? page + 1 : null;
+  const sectionTitle = q
+    ? `${q} PFPs`
+    : sort === "latest"
+      ? "Latest PFPs"
+      : sort === "downloads"
+        ? "Most Downloaded PFPs"
+        : sort === "favorites"
+          ? "Most Favorited PFPs"
+          : "Popular PFPs";
 
   function pageHref(target: number) {
     const params = new URLSearchParams();
     if (q) params.set("q", q);
+    if (sort !== "trending") params.set("sort", sort);
     if (target > 1) params.set("page", String(target));
     const query = params.toString();
     return query ? `/pfps?${query}` : "/pfps";
@@ -118,26 +143,14 @@ function PfpIndexPage() {
         ) : null}
       </div>
 
-      {categories.length > 0 ? (
-        <nav className="mt-2 hidden overflow-x-auto pb-1 lg:block [scrollbar-width:none] [&::-webkit-scrollbar]:hidden" aria-label="PFP categories">
-          <div className="flex w-max gap-2">
-            {categories.map((category) => (
-              <a
-                key={category.id}
-                href={pfpCategoryPath(category.slug)}
-                className="grid h-9 shrink-0 place-items-center rounded-full bg-elevated/70 px-4 text-sm font-medium text-muted transition-colors hover:bg-elevated hover:text-fg"
-              >
-                {category.name}
-              </a>
-            ))}
-          </div>
-        </nav>
-      ) : null}
+      <div className="mt-2 lg:mt-5">
+        <PfpDesktopFilters categories={categories} sort={sort} />
+      </div>
 
-      <section className="mt-5 lg:mt-6" aria-labelledby="pfp-results-heading">
+      <section className="mt-5 lg:mt-5" aria-labelledby="pfp-results-heading">
         <div className="mb-4">
           <h2 id="pfp-results-heading" className="font-display text-2xl text-fg">
-            {q ? `${q} PFPs` : "Popular PFPs"}
+            {sectionTitle}
           </h2>
         </div>
         {items.length > 0 ? (
@@ -166,6 +179,8 @@ function PfpIndexPage() {
           )}
         </nav>
       ) : null}
+
+      <SiteFooter faqHref="/app/faq" />
       </main>
       <BottomNav />
     </>
