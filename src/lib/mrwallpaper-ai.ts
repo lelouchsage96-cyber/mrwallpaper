@@ -72,7 +72,11 @@ export function buildWallpaperSeoDeveloperPrompt(input: {
     "- Category: choose exactly one supplied category ID.",
     "- If a central Bible reference, quote, person or named subject is clearly visible and important to search intent, keep it consistent across title and primary keyword.",
     "- Avoid filler such as visible unless it improves clarity.",
-    input.supports4k ? "- You may mention 4K only when it is useful and accurate." : "- Never claim or imply 4K for this image.",
+    input.contentType === "pfp"
+      ? "- Do not use 4K as a PFP selling point; focus on the subject, mood and profile-picture search intent."
+      : input.supports4k
+        ? "- You may mention 4K only when it is useful and accurate."
+        : "- Never claim or imply 4K for this image.",
     input.field === "all"
       ? "- Generate all fields."
       : "- Generate only the " + input.field + " field and copy the supplied values for every other field.",
