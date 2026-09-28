@@ -89,6 +89,15 @@ function PfpIndexPage() {
   const { categories, items, q, sort, page, hasMore } = Route.useLoaderData();
   const prev = page > 1 ? page - 1 : null;
   const next = hasMore ? page + 1 : null;
+  const sectionTitle = q
+    ? `${q} PFPs`
+    : sort === "latest"
+      ? "Latest PFPs"
+      : sort === "downloads"
+        ? "Most Downloaded PFPs"
+        : sort === "favorites"
+          ? "Most Favorited PFPs"
+          : "Popular PFPs";
 
   function pageHref(target: number) {
     const params = new URLSearchParams();
@@ -141,7 +150,7 @@ function PfpIndexPage() {
       <section className="mt-5 lg:mt-5" aria-labelledby="pfp-results-heading">
         <div className="mb-4">
           <h2 id="pfp-results-heading" className="font-display text-2xl text-fg">
-            {q ? `${q} PFPs` : "Popular PFPs"}
+            {sectionTitle}
           </h2>
         </div>
         {items.length > 0 ? (
