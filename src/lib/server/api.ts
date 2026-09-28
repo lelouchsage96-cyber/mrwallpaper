@@ -626,6 +626,7 @@ export const getPfpCategoryPage = createServerFn({ method: "GET" })
   .validator(
     z.object({
       slug: z.string(),
+      sort: z.enum(["trending", "latest", "downloads", "favorites"]).optional(),
       page: z.number().int().min(1).optional(),
     }),
   )
@@ -655,7 +656,7 @@ export const getPfpCategoryPage = createServerFn({ method: "GET" })
     };
     return context.userId
       ? run()
-      : cachedPublicRead(`pfps:category:${data.slug}:${page}`, 120_000, run);
+      : cachedPublicRead(`pfps:category:${data.slug}:${page}:${sort}`, 120_000, run);
   });
 
 export const getPfp = createServerFn({ method: "GET" })
