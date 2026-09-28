@@ -1,4 +1,3 @@
-import { Link } from "@tanstack/react-router";
 import { LazyImage } from "@/components/lazy";
 import { t } from "@/lib/i18n/en";
 import type { DownloadHistoryItem } from "@/lib/types";
@@ -15,9 +14,8 @@ export function DownloadHistoryList({ items }: { items: DownloadHistoryItem[] })
     <ul className="divide-y divide-border overflow-hidden rounded-[20px] bg-elevated">
       {items.map((item) => (
         <li key={`${item.id}-${item.downloadedAt}`}>
-          <Link
-            to="/wallpaper/$id"
-            params={{ id: item.id }}
+          <a
+            href={item.contentType === "pfp" ? `/pfp/${item.slug || item.id}` : `/wallpaper/${item.slug || item.id}`}
             className="flex min-h-16 items-center gap-3 px-3 py-2.5"
           >
             <LazyImage
@@ -25,7 +23,7 @@ export function DownloadHistoryList({ items }: { items: DownloadHistoryItem[] })
               alt=""
               width={40}
               height={71}
-              className="wallpaper-img h-14 w-8 shrink-0 rounded-[8px] object-cover"
+              className={item.contentType === "pfp" ? "size-11 shrink-0 rounded-[10px] object-cover" : "wallpaper-img h-14 w-8 shrink-0 rounded-[8px] object-cover"}
             />
             <span className="min-w-0 flex-1">
               <span className="block truncate text-sm font-medium text-fg">{item.title}</span>
@@ -35,7 +33,7 @@ export function DownloadHistoryList({ items }: { items: DownloadHistoryItem[] })
                 {typeLabel(item.downloadType)}
               </span>
             </span>
-          </Link>
+          </a>
         </li>
       ))}
     </ul>
