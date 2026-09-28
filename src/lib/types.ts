@@ -294,6 +294,7 @@ export type OpsWallpaperRow = {
   downloadCount: number;
   favoriteCount: number;
   deviceType: DeviceType;
+  contentType: "wallpaper" | "pfp";
   seoTitle: string;
   seoDescription: string;
   altText: string;
