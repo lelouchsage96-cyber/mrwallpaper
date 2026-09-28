@@ -128,15 +128,6 @@ function EditWallpaperPage() {
         setMessage("Please use a JPG, PNG or WebP wallpaper within the upload limit.");
         return;
       }
-      if (wallpaper?.contentType === "pfp") {
-        const ratio = result.plate.width / result.plate.height;
-        if (ratio < 0.9 || ratio > 1.1) {
-          setReplacement(null);
-          setReplacementSource(null);
-          setMessage("PFP replacements should be square (1:1).");
-          return;
-        }
-      }
       setReplacement(result);
       setReplacementSource(file);
       setMessage("Replacement ready. Review the preview, then use the new image.");
@@ -189,8 +180,6 @@ function EditWallpaperPage() {
           setMessage("This wallpaper is missing one of its stored image assets, so it was left unchanged.");
         } else if (result.error === "image") {
           setMessage("The replacement image failed validation before it could be saved. Please choose the file again.");
-        } else if (result.error === "pfp_shape") {
-          setMessage("PFP replacements should be square (1:1).");
         } else if (result.error === "replace_failed") {
           const label = result.stage === "storage" ? "media storage" : "database update";
           setMessage(`Replacement failed during ${label}. The current wallpaper was left unchanged. Ref: ${attemptId}`);
@@ -257,14 +246,7 @@ function EditWallpaperPage() {
       .filter(Boolean)
       .slice(0, 18);
     if (!confirmedConflicts) {
-      const check = await checkWallpaperSeoConflicts({
-        data: {
-          title,
-          primaryKeyword,
-          excludeWallpaperId: id,
-          contentType: wallpaper.contentType,
-        },
-      });
+      const check = await checkWallpaperSeoConflicts({ data: { title, primaryKeyword, excludeWallpaperId: id } });
       setConflicts(check.conflicts);
       if (check.conflicts.length) {
         setMessage("Review the possible duplicate SEO, then save again if it is intentional.");
@@ -333,14 +315,14 @@ function EditWallpaperPage() {
     const regenerate = true;
     seoGenerationPasses.current[field] = variationIndex;
     setGeneratingSeo(true);
-    setSeoFeedback(wallpaper.contentType === "pfp" ? "Analyzing PFP…" : "Analyzing wallpaper…");
+    setSeoFeedback("Analyzing wallpaper…");
     setSeoPreview(null);
     setMessage("");
     try {
       const result = await generateWallpaperSeo({ data: {
         imageDataUrl: await imageDataUrl(), title, description, tags, altText, primaryKeyword,
         categoryId, deviceType, width: wallpaper.width, height: wallpaper.height, field,
-        regenerate, variationIndex, contentType: wallpaper.contentType,
+        regenerate, variationIndex,
       } });
       if (!result.ok) {
         setSeoFeedback(result.error);
@@ -379,15 +361,9 @@ function EditWallpaperPage() {
     <div className="mx-auto max-w-3xl space-y-6">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <p className="text-xs font-medium uppercase tracking-widest text-subtle">
-            {wallpaper.contentType === "pfp" ? "PFP" : "Wallpaper"}
-          </p>
-          <h1 className="mt-1 font-display text-4xl text-fg">
-            Edit {wallpaper.contentType === "pfp" ? "PFP" : "wallpaper"}
-          </h1>
-          <p className="mt-2 text-sm text-muted">
-            Update metadata or safely replace the uploaded image without changing this {wallpaper.contentType === "pfp" ? "PFP" : "wallpaper"} URL.
-          </p>
+          <p className="text-xs font-medium uppercase tracking-widest text-subtle">Wallpaper</p>
+          <h1 className="mt-1 font-display text-4xl text-fg">Edit wallpaper</h1>
+          <p className="mt-2 text-sm text-muted">Update metadata or safely replace the uploaded image without changing this wallpaper’s URL.</p>
         </div>
         <Button variant="secondary" onClick={() => void navigate({ to: "/ops/wallpapers" })}>
           Back
@@ -400,10 +376,10 @@ function EditWallpaperPage() {
             <img
               src={wallpaper.thumbnailUrl}
               alt={altText || title || wallpaper.title}
-              className={wallpaper.contentType === "pfp" ? "aspect-square w-full rounded-xl object-cover" : "aspect-[9/16] w-full rounded-xl object-cover"}
+              className="aspect-[9/16] w-full rounded-xl object-cover"
             />
           ) : (
-            <div className={wallpaper.contentType === "pfp" ? "aspect-square w-full rounded-xl bg-surface" : "aspect-[9/16] w-full rounded-xl bg-surface"} />
+            <div className="aspect-[9/16] w-full rounded-xl bg-surface" />
           )}
           <p className="mt-2 break-all text-xs text-subtle">ID: {wallpaper.id}</p>
           <input
@@ -428,8 +404,8 @@ function EditWallpaperPage() {
               <p className="text-xs font-medium uppercase tracking-widest text-subtle">New image</p>
               <img
                 src={replacement.plate.previewDataUrl}
-                alt={wallpaper.contentType === "pfp" ? "Replacement PFP preview" : "Replacement wallpaper preview"}
-                className={wallpaper.contentType === "pfp" ? "mt-2 aspect-square w-full rounded-lg object-cover" : "mt-2 aspect-[9/16] w-full rounded-lg object-cover"}
+                alt="Replacement wallpaper preview"
+                className="mt-2 aspect-[9/16] w-full rounded-lg object-cover"
               />
               <p className="mt-2 text-xs text-subtle">
                 {replacement.plate.width} × {replacement.plate.height}
@@ -453,13 +429,13 @@ function EditWallpaperPage() {
             </div>
           ) : (
             <p className="mt-2 text-xs leading-5 text-subtle">
-              JPG, PNG or WebP. {wallpaper.contentType === "pfp" ? "PFPs should stay square (1:1). " : ""}Replacing the image keeps the same post, URL, views, likes and SEO metadata.
+              JPG, PNG or WebP. Replacing the image keeps the same post, URL, views, likes and SEO metadata.
             </p>
           )}
         </div>
 
         <div className="space-y-4">
-          <Button type="button" className="w-full" disabled={generatingSeo || processingImage || replacingImage || (!wallpaper.thumbnailUrl && !replacement?.ok)} onClick={() => void generateSeo("all")}><Sparkles className="size-4" />{generatingSeo ? (wallpaper.contentType === "pfp" ? "Analyzing PFP…" : "Analyzing wallpaper…") : "Generate SEO"}</Button>
+          <Button type="button" className="w-full" disabled={generatingSeo || processingImage || replacingImage || (!wallpaper.thumbnailUrl && !replacement?.ok)} onClick={() => void generateSeo("all")}><Sparkles className="size-4" />{generatingSeo ? "Analyzing wallpaper…" : "Generate SEO"}</Button>
           {seoFeedback ? <p className="text-sm text-muted" aria-live="polite">{seoFeedback}</p> : null}
           {seoPreview ? (
             <div className="rounded-xl bg-surface p-4" aria-live="polite">
@@ -491,7 +467,7 @@ function EditWallpaperPage() {
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               maxLength={280}
-              placeholder={wallpaper.contentType === "pfp" ? "Short description of this profile picture" : "Short description of this wallpaper"}
+              placeholder="Short description of this wallpaper"
             />
             <span className="mt-1 block text-xs text-subtle">{description.length}/280</span>
           </label>
