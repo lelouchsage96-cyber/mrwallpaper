@@ -164,8 +164,8 @@ function OpsBulkUploadPage() {
               ? inferDeviceType(encoded.plate.width, encoded.plate.height)
               : batchDevice,
           ...(batchContentType === "pfp" &&
-          (encoded.plate.width / encoded.plate.height < 0.9 ||
-            encoded.plate.width / encoded.plate.height > 1.1)
+          (encoded.plate.width / encoded.plate.height < 0.98 ||
+            encoded.plate.width / encoded.plate.height > 1.02)
             ? {
                 status: "error" as const,
                 selected: false,
@@ -380,7 +380,7 @@ function OpsBulkUploadPage() {
         if (!item.selected || item.status === "published") return item;
         if (batchContentType === "pfp" && item.encoded?.ok) {
           const ratio = item.encoded.plate.width / item.encoded.plate.height;
-          if (ratio < 0.9 || ratio > 1.1) {
+          if (ratio < 0.98 || ratio > 1.02) {
             return {
               ...item,
               contentType: "pfp" as const,
@@ -712,7 +712,7 @@ function OpsBulkUploadPage() {
                               const contentType = event.target.value as CatalogContentType;
                               if (contentType === "pfp" && item.encoded?.ok) {
                                 const ratio = item.encoded.plate.width / item.encoded.plate.height;
-                                if (ratio < 0.9 || ratio > 1.1) {
+                                if (ratio < 0.98 || ratio > 1.02) {
                                   updateItem(item.id, {
                                     contentType,
                                     status: "error",
