@@ -61,6 +61,16 @@ export function categoryPath(slug: string): string {
   return `/wallpapers/${slug}`;
 }
 
+export function pfpPath(slug: string | null | undefined): string {
+  const safeSlug = typeof slug === "string" ? slug.trim() : "";
+  if (!safeSlug || safeSlug === "null" || safeSlug === "undefined") return "/pfps";
+  return `/pfp/${safeSlug}`;
+}
+
+export function pfpCategoryPath(slug: string): string {
+  return `/pfps/${slug}`;
+}
+
 function normalizeMetaText(input: string): string {
   return input.replace(/\s+/g, " ").trim();
 }
@@ -114,6 +124,46 @@ export function wallpaperAlt(opts: {
         : "phone wallpaper";
   const cat = opts.categoryName ? ` in ${opts.categoryName}` : "";
   return normalizeMetaText(`${opts.title} ${device}${cat}`);
+}
+
+export function pfpAlt(opts: {
+  title: string;
+  categoryName?: string;
+  altText?: string | null;
+}): string {
+  const customAlt = opts.altText ? normalizeMetaText(opts.altText) : "";
+  if (customAlt && !looksMachineGeneratedAlt(customAlt)) return customAlt;
+  const category = opts.categoryName ? ` in ${opts.categoryName}` : "";
+  return normalizeMetaText(`${opts.title} profile picture${category}`);
+}
+
+export function pfpMeta(opts: {
+  title: string;
+  categoryName: string;
+  description?: string | null;
+  seoTitle?: string | null;
+  seoDescription?: string | null;
+  primaryKeyword?: string | null;
+}): { title: string; description: string } {
+  const cleanTitle = normalizeMetaText(opts.title).replace(/^title\s*:\s*/i, "");
+  const primaryKeyword = opts.primaryKeyword ? normalizeMetaText(opts.primaryKeyword) : "";
+  const title = opts.seoTitle?.trim()
+    ? normalizeMetaText(opts.seoTitle)
+    : firstTitleThatFits([
+        `${cleanTitle} PFP | ${brand.name}`,
+        `${cleanTitle} Profile Picture | ${brand.name}`,
+        `${cleanTitle} PFP`,
+        cleanTitle,
+      ]);
+  const extra = opts.description?.trim();
+  const description = opts.seoDescription?.trim()
+    ? normalizeMetaText(opts.seoDescription)
+    : extra
+      ? normalizeMetaText(extra)
+      : primaryKeyword
+        ? `Download ${cleanTitle}, a free ${primaryKeyword} profile picture from ${brand.name}.`
+        : `Download ${cleanTitle}, a free ${opts.categoryName.toLowerCase()} PFP and profile picture from ${brand.name}.`;
+  return { title, description };
 }
 
 export function wallpaperMeta(opts: {
