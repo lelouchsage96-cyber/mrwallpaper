@@ -1,5 +1,4 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { Breadcrumbs } from "@/components/breadcrumbs";
 import { BottomNav, DesktopNav } from "@/components/bottom-nav";
 import { PfpGrid } from "@/components/pfp-grid";
 import { Input } from "@/components/ui/input";
@@ -87,42 +86,39 @@ function PfpIndexPage() {
   return (
     <>
       <DesktopNav />
-      <main className="mx-auto max-w-7xl px-4 pb-28 pt-6 lg:pb-20">
-      <Breadcrumbs items={[{ name: "Home", href: "/app" }, { name: "PFPs" }]} />
+      <main className="mx-auto max-w-7xl px-4 pb-28 pt-5 lg:pb-20 lg:px-6 lg:pt-5 xl:px-8">
+      <h1 className="font-display text-3xl text-fg lg:text-4xl">PFPs</h1>
 
-      <div className="mt-6 max-w-3xl">
-        <p className="text-xs font-medium tracking-[0.18em] text-subtle uppercase">Profile pictures</p>
-        <h1 className="mt-2 font-display text-4xl text-fg sm:text-5xl">PFPs for every profile</h1>
-        <p className="mt-3 text-sm leading-relaxed text-muted sm:text-base">{PFP_DESCRIPTION}</p>
+      <div className="sticky top-[env(safe-area-inset-top)] z-30 -mx-4 mt-4 border-y border-border/70 bg-bg/95 px-4 py-3 backdrop-blur-xl lg:static lg:mx-0 lg:mt-5 lg:rounded-2xl lg:border lg:border-border/70 lg:bg-bg/94 lg:p-3 lg:shadow-[0_8px_24px_rgba(0,0,0,0.12)]">
+        <form action="/pfps" method="get" className="max-w-xl">
+          <Input
+            type="search"
+            name="q"
+            defaultValue={q || ""}
+            placeholder="Search PFPs"
+            aria-label="Search PFPs"
+            className="text-base sm:text-sm"
+          />
+        </form>
+
+        {categories.length > 0 ? (
+          <nav className="mt-3 overflow-x-auto pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden" aria-label="PFP categories">
+            <div className="flex w-max gap-2">
+              {categories.map((category) => (
+                <a
+                  key={category.id}
+                  href={pfpCategoryPath(category.slug)}
+                  className="grid h-9 shrink-0 place-items-center rounded-full bg-elevated px-4 text-sm font-medium text-muted transition-colors hover:text-fg"
+                >
+                  {category.name}
+                </a>
+              ))}
+            </div>
+          </nav>
+        ) : null}
       </div>
 
-      <form action="/pfps" method="get" className="mt-7 max-w-xl">
-        <Input
-          type="search"
-          name="q"
-          defaultValue={q || ""}
-          placeholder="Search PFPs"
-          aria-label="Search PFPs"
-        />
-      </form>
-
-      {categories.length > 0 ? (
-        <nav className="-mx-4 mt-5 overflow-x-auto px-4 pb-2" aria-label="PFP categories">
-          <div className="flex w-max gap-2">
-            {categories.map((category) => (
-              <a
-                key={category.id}
-                href={pfpCategoryPath(category.slug)}
-                className="grid h-10 shrink-0 place-items-center rounded-full bg-elevated px-4 text-sm text-fg transition-colors hover:bg-surface"
-              >
-                {category.name}
-              </a>
-            ))}
-          </div>
-        </nav>
-      ) : null}
-
-      <section className="mt-8" aria-labelledby="pfp-results-heading">
+      <section className="mt-5 lg:mt-6" aria-labelledby="pfp-results-heading">
         <div className="mb-4 flex items-end justify-between gap-3">
           <h2 id="pfp-results-heading" className="font-display text-2xl text-fg">
             {q ? `${q} PFPs` : "Popular PFPs"}
