@@ -512,6 +512,28 @@ function mapPfpCard(row: CardRow, premiumOn = true): WallpaperCard {
   };
 }
 
+export async function fetchPfpCardsByIds(ids: string[], userId: string | null): Promise<WallpaperCard[]> {
+  if (!ids.length) return [];
+  const sql = await getSql();
+  const params: unknown[] = [ids];
+  let fav = "false as is_favorite";
+  if (userId) {
+    params.push(userId);
+    fav = `exists(select 1 from favorites f where f.wallpaper_id = w.id and f.user_id = ${params.length}) as is_favorite`;
+  }
+  const rows = await sql.query<CardRow>(
+    `select ${CARD_SELECT}, ${fav}
+     from wallpapers w
+     join categories c on c.id = w.category_id
+     where w.id = any($1) and w.status = 'approved' and ${STILL_ONLY} and ${PFP_MEMBERSHIP}`,
+    params,
+  );
+  const premiumOn = await premiumEnabled();
+  const mapped = rows.map((row) => mapPfpCard(row, premiumOn));
+  const byId = new Map(mapped.map((item) => [item.id, item]));
+  return ids.map((id) => byId.get(id)).filter((item): item is WallpaperCard => Boolean(item));
+}
+
 export async function fetchPfpDetail(id: string, userId: string | null): Promise<WallpaperDetail | null> {
   const sql = await getSql();
   const params: unknown[] = [id];
