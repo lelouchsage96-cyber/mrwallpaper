@@ -52,6 +52,10 @@ function useDiscovery(active: boolean, query: string, mode: SearchMode = "wallpa
   useEffect(() => {
     if (!active || loadedMeta.current === mode) return;
     loadedMeta.current = mode;
+    if (mode === "pfp") {
+      setCategories([]);
+      setPopular([]);
+    }
     let cancelled = false;
     const request =
       mode === "pfp"
@@ -138,7 +142,7 @@ function ResultRow({
         src={wallpaper.thumbnailUrl || `/wallpapers/${wallpaper.id}.jpg`}
         alt=""
         width={48}
-        height={72}
+        height={square ? 48 : 72}
         loading="lazy"
         className={square ? "size-12 shrink-0 rounded-md bg-surface object-cover" : "h-16 w-11 shrink-0 rounded-md bg-surface object-cover"}
       />
