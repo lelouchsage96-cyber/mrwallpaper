@@ -31,17 +31,6 @@ export type GeneratedWallpaperSeo = {
 export type SeoField = "all" | "title" | "description" | "tags" | "altText" | "primaryKeyword";
 export type CatalogContentType = "wallpaper" | "pfp";
 
-const PFP_COLLECTION_SLUG = "pfps";
-
-function pfpMembershipSql(alias = "w") {
-  return `exists (
-    select 1
-    from collection_wallpapers pfp_cw
-    join collections pfp_c on pfp_c.id = pfp_cw.collection_id
-    where pfp_cw.wallpaper_id = ${alias}.id and pfp_c.slug = '${PFP_COLLECTION_SLUG}'
-  )`;
-}
-
 export type SeoConflict = { kind: "keyword" | "title"; message: string; wallpaperId: string };
 
 class ForbiddenError extends Error {
@@ -157,30 +146,6 @@ async function attachTags(sql: Sql, wallpaperId: string, names: string[]) {
       [wallpaperId, tagId],
     );
   }
-}
-
-async function attachPfpCollection(sql: Sql, wallpaperId: string) {
-  await sql.query(
-    `insert into collections (id, slug, name, description, is_visible)
-     values ('collection-pfps', $1, 'Profile Pictures', 'Square profile pictures and PFPs.', false)
-     on conflict (slug) do update
-       set name = excluded.name,
-           description = excluded.description,
-           is_visible = false`,
-    [PFP_COLLECTION_SLUG],
-  );
-  const rows = await sql.query<{ id: string }>(
-    `select id from collections where slug = $1 limit 1`,
-    [PFP_COLLECTION_SLUG],
-  );
-  const collectionId = rows[0]?.id;
-  if (!collectionId) return;
-  await sql.query(
-    `insert into collection_wallpapers (collection_id, wallpaper_id, sort_order)
-     values ($1, $2, 0)
-     on conflict (collection_id, wallpaper_id) do nothing`,
-    [collectionId, wallpaperId],
-  );
 }
 
 export const getOpsUploadMeta = createServerFn({ method: "GET" })
@@ -372,12 +337,13 @@ export const generateWallpaperSeo = createServerFn({ method: "POST" })
     const supports4k = Math.max(data.width, data.height) >= 3840 && Math.min(data.width, data.height) >= 2160;
     const field = data.field || "all";
     const contentType: CatalogContentType = data.contentType === "pfp" ? "pfp" : "wallpaper";
-    const membership = pfpMembershipSql("w");
     const catalogRows = await sql.query<{ title: string; primary_keyword: string | null }>(
       `select w.title, w.primary_keyword
        from wallpapers w
        where w.status = 'approved'
-         and ${contentType === "pfp" ? membership : `not (${membership})`}
+         and ${contentType === "pfp"
+           ? "w.canonical_path like '/pfp/%'"
+           : "(w.canonical_path is null or w.canonical_path not like '/pfp/%')"}
        order by w.published_at desc nulls last
        limit 120`,
     );
@@ -536,12 +502,13 @@ export const checkWallpaperSeoConflicts = createServerFn({ method: "POST" })
   .handler(async ({ context, data }): Promise<{ conflicts: SeoConflict[] }> => {
     const sql = await requireAdmin(context.userId);
     const contentType: CatalogContentType = data.contentType === "pfp" ? "pfp" : "wallpaper";
-    const membership = pfpMembershipSql("w");
     const rows = await sql.query<{ id: string; title: string; primary_keyword: string | null }>(
       `select w.id, w.title, w.primary_keyword
        from wallpapers w
        where ($1 = '' or w.id <> $1)
-         and ${contentType === "pfp" ? membership : `not (${membership})`}`,
+         and ${contentType === "pfp"
+           ? "w.canonical_path like '/pfp/%'"
+           : "(w.canonical_path is null or w.canonical_path not like '/pfp/%')"}`,
       [data.excludeWallpaperId || ""],
     );
     const conflicts: SeoConflict[] = [];
@@ -813,14 +780,15 @@ export const uploadOpsWallpaper = createServerFn({ method: "POST" })
       `insert into wallpapers
          (id, title, description, category_id, creator_id, access_type, status,
           width, height, file_size_bytes, format, aspect_ratio, device_type,
-          sha256, source_sha256, published_at, slug, alt_text, primary_keyword, seo_title, seo_description, robots)
+          sha256, source_sha256, published_at, slug, canonical_path, alt_text, primary_keyword, seo_title, seo_description, robots)
        values
          ($1, $2, $3, $4, null, 'free', 'approved', $5, $6, $7, $8, $9, $10,
-          $11, $12, now(), $13, $14, $15, $16, $17, 'index')`,
+          $11, $12, now(), $13, $14, $15, $16, $17, $18, 'index')`,
       [
         wallpaperId, title, description, categoryId, width, height, originalBytes,
         format, aspectLabel(width, height), formDevice(data, width, height), fileSha,
-        sourceSha, slug, altText, seo.primaryKeyword, seo.seoTitle, seo.seoDescription,
+        sourceSha, slug, contentType === "pfp" ? `/pfp/${slug}` : null,
+        altText, seo.primaryKeyword, seo.seoTitle, seo.seoDescription,
       ],
     );
 
@@ -840,9 +808,6 @@ export const uploadOpsWallpaper = createServerFn({ method: "POST" })
     );
 
     await attachTags(sql, wallpaperId, tagNames);
-    if (contentType === "pfp") {
-      await attachPfpCollection(sql, wallpaperId);
-    }
     const category = cats.find((item) => item.id === categoryId);
     if (category && contentType === "wallpaper") {
       await notifyTasteSubscribersForWallpaper({
