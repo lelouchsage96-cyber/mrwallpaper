@@ -16,6 +16,7 @@ import {
   fetchPairBySlug,
   fetchPairForWallpaper,
   fetchPfpCardList,
+  fetchPfpCardsByIds,
   fetchPfpCategories,
   fetchPfpDetail,
   fetchPfpSitemapEntries,
@@ -918,17 +919,26 @@ export const listDownloads = createServerFn({ method: "GET" })
        from downloads where user_id = $1 order by downloaded_at desc limit 40`,
       [context.userId],
     );
-    const cards = await fetchCardsByIds(
-      rows.map((r) => r.wallpaper_id),
-      context.userId,
-    );
-    const byId = new Map(cards.map((c) => [c.id, c]));
+    const ids = rows.map((row) => row.wallpaper_id);
+    const [wallpapers, pfps] = await Promise.all([
+      fetchCardsByIds(ids, context.userId),
+      fetchPfpCardsByIds(ids, context.userId),
+    ]);
+    const byId = new Map([
+      ...wallpapers.map((card) => [card.id, { card, contentType: "wallpaper" as const }] as const),
+      ...pfps.map((card) => [card.id, { card, contentType: "pfp" as const }] as const),
+    ]);
     return {
       items: rows
         .map((r) => {
-          const card = byId.get(r.wallpaper_id);
-          if (!card) return null;
-          return { ...card, downloadedAt: r.downloaded_at, downloadType: r.download_type };
+          const hit = byId.get(r.wallpaper_id);
+          if (!hit) return null;
+          return {
+            ...hit.card,
+            contentType: hit.contentType,
+            downloadedAt: r.downloaded_at,
+            downloadType: r.download_type,
+          };
         })
         .filter((x): x is DownloadHistoryItem => Boolean(x)),
     };
