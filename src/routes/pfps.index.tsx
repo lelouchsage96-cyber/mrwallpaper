@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { BottomNav, DesktopNav } from "@/components/bottom-nav";
-import { PfpDesktopFilters, type PfpSort } from "@/components/pfp-desktop-filters";
+import { PfpDesktopFilters, PfpMobileFilters, type PfpSort } from "@/components/pfp-desktop-filters";
 import { PfpGrid } from "@/components/pfp-grid";
 import { SiteFooter } from "@/components/site-footer";
 import { Input } from "@/components/ui/input";
@@ -111,7 +111,7 @@ function PfpIndexPage() {
   return (
     <>
       <DesktopNav />
-      <main className="mx-auto max-w-7xl px-4 pb-28 pt-5 lg:pb-20 lg:px-6 lg:pt-5 xl:px-8">
+      <main className="mx-auto max-w-7xl px-4 pb-28 pt-[calc(env(safe-area-inset-top)+1.25rem)] lg:pb-20 lg:px-6 lg:pt-5 xl:px-8">
       <h1 className="font-display text-3xl text-fg lg:hidden">PFPs</h1>
 
       <div className="sticky top-[env(safe-area-inset-top)] z-30 -mx-4 mt-4 border-y border-border/70 bg-bg/95 px-4 py-3 backdrop-blur-xl lg:hidden">
@@ -124,23 +124,10 @@ function PfpIndexPage() {
             aria-label="Search PFPs"
             className="text-base sm:text-sm"
           />
+          {sort !== "trending" ? <input type="hidden" name="sort" value={sort} /> : null}
         </form>
 
-        {categories.length > 0 ? (
-          <nav className="mt-3 overflow-x-auto pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden" aria-label="PFP categories">
-            <div className="flex w-max gap-2">
-              {categories.map((category) => (
-                <a
-                  key={category.id}
-                  href={pfpCategoryPath(category.slug)}
-                  className="grid h-9 shrink-0 place-items-center rounded-full bg-elevated px-4 text-sm font-medium text-muted transition-colors hover:text-fg"
-                >
-                  {category.name}
-                </a>
-              ))}
-            </div>
-          </nav>
-        ) : null}
+        <PfpMobileFilters categories={categories} sort={sort} q={q} />
       </div>
 
       <div className="mt-2 lg:mt-5">
@@ -148,7 +135,7 @@ function PfpIndexPage() {
       </div>
 
       <section className="mt-5 lg:mt-5" aria-labelledby="pfp-results-heading">
-        <div className="mb-4">
+        <div className="mb-4 hidden lg:block">
           <h2 id="pfp-results-heading" className="font-display text-2xl text-fg">
             {sectionTitle}
           </h2>
