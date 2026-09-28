@@ -138,6 +138,7 @@ export const searchWallpapersV2 = createServerFn({ method: "GET" })
       const where = [
         "w.status = 'approved'",
         "(w.format is null or w.format not in ('mp4', 'mov', 'webm'))",
+        "(w.canonical_path is null or w.canonical_path not like '/pfp/%')",
       ];
 
       if (data.categorySlug) {
