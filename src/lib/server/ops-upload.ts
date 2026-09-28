@@ -745,10 +745,15 @@ export const uploadOpsWallpaper = createServerFn({ method: "POST" })
     const title = formString(data, "title");
     const description = formString(data, "description").slice(0, 280);
     const altText = formString(data, "altText").slice(0, 180) || title;
-    const seo = buildWallpaperSeoFields({ title, description, primaryKeyword: formString(data, "primaryKeyword") });
     const categoryId = formString(data, "categoryId");
     const tagNames = parseTags(data);
     const contentType = formContentType(data);
+    const seo = buildWallpaperSeoFields({
+      title,
+      description,
+      primaryKeyword: formString(data, "primaryKeyword"),
+      contentType,
+    });
     if (title.length < 2 || title.length > 60) return { ok: false as const, error: "title" };
 
     const cats = await fetchCategories();
