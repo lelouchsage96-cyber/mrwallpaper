@@ -55,6 +55,7 @@ export function buildWallpaperSeoFields(input: {
   description: string;
   primaryKeyword: string;
   brandName?: string;
+  contentType?: "wallpaper" | "pfp";
 }) {
   const title = input.title.replace(/\s+/g, " ").trim();
   const description = input.description.replace(/\s+/g, " ").trim();
@@ -79,7 +80,10 @@ export function buildWallpaperSeoFields(input: {
     : trimAtWord(subjectWithDescriptor, 80 - suffix.length);
   const seoTitle = `${subject}${suffix}`;
   const seoDescription = completeMetaDescription(
-    description || `Download ${keyword || title} for phone and tablet.`,
+    description ||
+      (input.contentType === "pfp"
+        ? `Download ${keyword || title} as a free profile picture or PFP.`
+        : `Download ${keyword || title} for phone and tablet.`),
   );
   return { seoTitle, seoDescription, primaryKeyword: keyword };
 }
