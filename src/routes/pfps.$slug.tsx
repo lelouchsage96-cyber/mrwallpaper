@@ -1,9 +1,10 @@
 import { createFileRoute, notFound } from "@tanstack/react-router";
 import { Breadcrumbs } from "@/components/breadcrumbs";
 import { BottomNav, DesktopNav } from "@/components/bottom-nav";
-import { PfpDesktopFilters, type PfpSort } from "@/components/pfp-desktop-filters";
+import { PfpDesktopFilters, PfpMobileFilters, type PfpSort } from "@/components/pfp-desktop-filters";
 import { PfpGrid } from "@/components/pfp-grid";
 import { SiteFooter } from "@/components/site-footer";
+import { Input } from "@/components/ui/input";
 import {
   breadcrumbJsonLd,
   collectionPageJsonLd,
@@ -95,28 +96,49 @@ function PfpCategoryPage() {
   return (
     <>
       <DesktopNav />
-      <main className="mx-auto max-w-7xl px-4 pb-28 pt-6 lg:pb-20">
-      <Breadcrumbs
-        items={[
-          { name: "Home", href: "/app" },
-          { name: "PFPs", href: "/pfps" },
-          { name: category.name },
-        ]}
-      />
+      <main className="mx-auto max-w-7xl px-4 pb-28 pt-[calc(env(safe-area-inset-top)+1.25rem)] lg:pb-20 lg:pt-6">
+      <div className="hidden lg:block">
+        <Breadcrumbs
+          items={[
+            { name: "Home", href: "/app" },
+            { name: "PFPs", href: "/pfps" },
+            { name: category.name },
+          ]}
+        />
 
-      <div className="mt-6 max-w-3xl">
-        <p className="text-xs font-medium tracking-[0.18em] text-subtle uppercase">PFP collection</p>
-        <h1 className="mt-2 font-display text-4xl text-fg sm:text-5xl">{category.name} PFPs</h1>
-        <p className="mt-3 text-sm leading-relaxed text-muted sm:text-base">
-          Free {category.name.toLowerCase()} profile pictures in square format, ready to use across your profiles.
-        </p>
+        <div className="mt-6 max-w-3xl">
+          <p className="text-xs font-medium tracking-[0.18em] text-subtle uppercase">PFP collection</p>
+          <h1 className="mt-2 font-display text-4xl text-fg sm:text-5xl">{category.name} PFPs</h1>
+          <p className="mt-3 text-sm leading-relaxed text-muted sm:text-base">
+            Free {category.name.toLowerCase()} profile pictures in square format, ready to use across your profiles.
+          </p>
+        </div>
+      </div>
+
+      <h1 className="font-display text-3xl text-fg lg:hidden">{category.name} PFPs</h1>
+
+      <div className="sticky top-[env(safe-area-inset-top)] z-30 -mx-4 mt-4 border-y border-border/70 bg-bg/95 px-4 py-3 backdrop-blur-xl lg:hidden">
+        <form action="/pfps" method="get">
+          <Input
+            type="search"
+            name="q"
+            placeholder="Search PFPs"
+            aria-label="Search PFPs"
+            className="text-base sm:text-sm"
+          />
+        </form>
+        <PfpMobileFilters
+          categories={categories}
+          categorySlug={category.slug}
+          sort={sort}
+        />
       </div>
 
       <div className="mt-6">
         <PfpDesktopFilters categories={categories} categorySlug={category.slug} sort={sort} />
       </div>
 
-      <section className="mt-8 lg:mt-5">
+      <section className="mt-4 lg:mt-5">
         {items.length > 0 ? (
           <PfpGrid items={items} eager={6} />
         ) : (

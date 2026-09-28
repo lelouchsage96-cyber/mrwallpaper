@@ -46,7 +46,7 @@ export function PfpGrid({
                   priority={index < eager}
                   className="size-full object-cover transition-transform duration-300 ease-out lg:group-hover:scale-[1.025]"
                 />
-                <div className="pointer-events-none absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/75 via-black/20 to-transparent px-3 pb-3 pt-10 opacity-100 lg:opacity-0 lg:transition-opacity lg:group-hover:opacity-100">
+                <div className="pointer-events-none absolute inset-x-0 bottom-0 hidden bg-gradient-to-t from-black/75 via-black/20 to-transparent px-3 pb-3 pt-10 opacity-0 transition-opacity lg:block lg:group-hover:opacity-100">
                   <p className="line-clamp-2 text-sm font-medium leading-snug text-white">{pfp.title}</p>
                   <p className="mt-1 truncate text-xs text-white/70">{pfp.categoryName}</p>
                 </div>
