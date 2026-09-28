@@ -9,7 +9,6 @@ import {
   collectionPageJsonLd,
   itemListJsonLd,
   pageHead,
-  pfpCategoryPath,
   pfpPath,
 } from "@/lib/seo";
 import { getPfpIndex } from "@/lib/server/api";
