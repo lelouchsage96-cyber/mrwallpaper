@@ -111,6 +111,8 @@ function PfpDetailPage() {
   const { pfp, related } = Route.useLoaderData();
   const [downloadOpen, setDownloadOpen] = useState(false);
 
+  if (!pfp) return null;
+
   async function share() {
     const url = `${window.location.origin}${pfpPath(pfp.slug || pfp.id)}`;
     try {
