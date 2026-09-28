@@ -87,10 +87,10 @@ function PfpIndexPage() {
     <>
       <DesktopNav />
       <main className="mx-auto max-w-7xl px-4 pb-28 pt-5 lg:pb-20 lg:px-6 lg:pt-5 xl:px-8">
-      <h1 className="font-display text-3xl text-fg lg:text-4xl">PFPs</h1>
+      <h1 className="font-display text-3xl text-fg lg:hidden">PFPs</h1>
 
-      <div className="sticky top-[env(safe-area-inset-top)] z-30 -mx-4 mt-4 border-y border-border/70 bg-bg/95 px-4 py-3 backdrop-blur-xl lg:static lg:mx-0 lg:mt-5 lg:rounded-2xl lg:border lg:border-border/70 lg:bg-bg/94 lg:p-3 lg:shadow-[0_8px_24px_rgba(0,0,0,0.12)]">
-        <form action="/pfps" method="get" className="max-w-xl">
+      <div className="sticky top-[env(safe-area-inset-top)] z-30 -mx-4 mt-4 border-y border-border/70 bg-bg/95 px-4 py-3 backdrop-blur-xl lg:hidden">
+        <form action="/pfps" method="get">
           <Input
             type="search"
             name="q"
@@ -118,12 +118,27 @@ function PfpIndexPage() {
         ) : null}
       </div>
 
+      {categories.length > 0 ? (
+        <nav className="mt-2 hidden overflow-x-auto pb-1 lg:block [scrollbar-width:none] [&::-webkit-scrollbar]:hidden" aria-label="PFP categories">
+          <div className="flex w-max gap-2">
+            {categories.map((category) => (
+              <a
+                key={category.id}
+                href={pfpCategoryPath(category.slug)}
+                className="grid h-9 shrink-0 place-items-center rounded-full bg-elevated/70 px-4 text-sm font-medium text-muted transition-colors hover:bg-elevated hover:text-fg"
+              >
+                {category.name}
+              </a>
+            ))}
+          </div>
+        </nav>
+      ) : null}
+
       <section className="mt-5 lg:mt-6" aria-labelledby="pfp-results-heading">
-        <div className="mb-4 flex items-end justify-between gap-3">
+        <div className="mb-4">
           <h2 id="pfp-results-heading" className="font-display text-2xl text-fg">
             {q ? `${q} PFPs` : "Popular PFPs"}
           </h2>
-          <span className="text-xs text-subtle">Square downloads · profile-ready</span>
         </div>
         {items.length > 0 ? (
           <PfpGrid items={items} eager={6} />

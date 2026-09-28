@@ -1,6 +1,7 @@
-import { useNavigate } from "@tanstack/react-router";
+import { useNavigate, useRouterState } from "@tanstack/react-router";
 import { ArrowLeft, ArrowRight, Clock3, LoaderCircle, Search, TrendingUp, X } from "lucide-react";
 import { type KeyboardEvent, useEffect, useRef, useState } from "react";
+import { getPfpIndex } from "@/lib/server/api";
 import { getSearchMetaV2, searchWallpapersV2 } from "@/lib/server/search-v2";
 import type { Category, WallpaperCard } from "@/lib/types";
 import { cn } from "@/lib/utils";
@@ -8,6 +9,7 @@ import { cn } from "@/lib/utils";
 const RECENT_SEARCH_KEY = "mrwallpaper.search.recent.v1";
 const MAX_RECENT_SEARCHES = 6;
 const FALLBACK_POPULAR = ["motivational", "bible verse", "amoled", "anime", "cars", "nature"];
+type SearchMode = "wallpaper" | "pfp";
 
 function readRecentSearches(): string[] {
   if (typeof window === "undefined") return [];
@@ -40,28 +42,40 @@ function rememberSearch(value: string) {
   return next;
 }
 
-function useDiscovery(active: boolean, query: string) {
+function useDiscovery(active: boolean, query: string, mode: SearchMode = "wallpaper") {
   const [categories, setCategories] = useState<Category[]>([]);
   const [popular, setPopular] = useState<string[]>(FALLBACK_POPULAR);
   const [results, setResults] = useState<WallpaperCard[]>([]);
   const [loading, setLoading] = useState(false);
-  const loadedMeta = useRef(false);
+  const loadedMeta = useRef<SearchMode | null>(null);
 
   useEffect(() => {
-    if (!active || loadedMeta.current) return;
-    loadedMeta.current = true;
+    if (!active || loadedMeta.current === mode) return;
+    loadedMeta.current = mode;
+    if (mode === "pfp") {
+      setCategories([]);
+      setPopular([]);
+    }
     let cancelled = false;
-    void getSearchMetaV2()
+    const request =
+      mode === "pfp"
+        ? getPfpIndex({ data: { page: 1 } }).then((meta) => ({
+            categories: meta.categories,
+            popular: [] as string[],
+          }))
+        : getSearchMetaV2();
+
+    void request
       .then((meta) => {
         if (cancelled) return;
         setCategories(meta.categories);
-        if (meta.popular.length) setPopular(meta.popular);
+        setPopular(mode === "pfp" ? [] : meta.popular.length ? meta.popular : FALLBACK_POPULAR);
       })
       .catch(() => undefined);
     return () => {
       cancelled = true;
     };
-  }, [active]);
+  }, [active, mode]);
 
   useEffect(() => {
     const term = query.trim();
@@ -74,11 +88,16 @@ function useDiscovery(active: boolean, query: string) {
     let cancelled = false;
     setLoading(true);
     const timer = window.setTimeout(() => {
-      void searchWallpapersV2({
-        data: { q: term, sort: "trending", offset: 0, device: "all" },
-      })
-        .then((response) => {
-          if (!cancelled) setResults(response.items.slice(0, 8));
+      const request =
+        mode === "pfp"
+          ? getPfpIndex({ data: { q: term, page: 1 } }).then((response) => response.items)
+          : searchWallpapersV2({
+              data: { q: term, sort: "trending", offset: 0, device: "all" },
+            }).then((response) => response.items);
+
+      void request
+        .then((items) => {
+          if (!cancelled) setResults(items.slice(0, 8));
         })
         .catch(() => {
           if (!cancelled) setResults([]);
@@ -92,7 +111,7 @@ function useDiscovery(active: boolean, query: string) {
       cancelled = true;
       window.clearTimeout(timer);
     };
-  }, [active, query]);
+  }, [active, query, mode]);
 
   return { categories, popular, results, loading };
 }
@@ -101,10 +120,12 @@ function ResultRow({
   wallpaper,
   active = false,
   onSelect,
+  square = false,
 }: {
   wallpaper: WallpaperCard;
   active?: boolean;
   onSelect: () => void;
+  square?: boolean;
 }) {
   return (
     <button
@@ -121,9 +142,9 @@ function ResultRow({
         src={wallpaper.thumbnailUrl || `/wallpapers/${wallpaper.id}.jpg`}
         alt=""
         width={48}
-        height={72}
+        height={square ? 48 : 72}
         loading="lazy"
-        className="h-16 w-11 shrink-0 rounded-md bg-surface object-cover"
+        className={square ? "size-12 shrink-0 rounded-md bg-surface object-cover" : "h-16 w-11 shrink-0 rounded-md bg-surface object-cover"}
       />
       <span className="min-w-0 flex-1">
         <span className="block truncate text-sm font-medium text-fg">{wallpaper.title}</span>
@@ -186,24 +207,26 @@ function Discovery({
         </section>
       ) : null}
 
-      <section>
-        <div className="mb-2 flex items-center gap-2">
-          <TrendingUp className="size-4 text-subtle" strokeWidth={1.7} />
-          <p className="text-xs font-medium tracking-[0.14em] text-subtle uppercase">Popular</p>
-        </div>
-        <div className="flex flex-wrap gap-2">
-          {popular.slice(0, 8).map((term) => (
-            <button
-              key={term}
-              type="button"
-              onClick={() => onSearch(term)}
-              className="min-h-10 rounded-full bg-surface px-3.5 text-sm text-muted hover:text-fg"
-            >
-              {term}
-            </button>
-          ))}
-        </div>
-      </section>
+      {popular.length > 0 ? (
+        <section>
+          <div className="mb-2 flex items-center gap-2">
+            <TrendingUp className="size-4 text-subtle" strokeWidth={1.7} />
+            <p className="text-xs font-medium tracking-[0.14em] text-subtle uppercase">Popular</p>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            {popular.slice(0, 8).map((term) => (
+              <button
+                key={term}
+                type="button"
+                onClick={() => onSearch(term)}
+                className="min-h-10 rounded-full bg-surface px-3.5 text-sm text-muted hover:text-fg"
+              >
+                {term}
+              </button>
+            ))}
+          </div>
+        </section>
+      ) : null}
 
       {categories.length > 0 ? (
         <section>
@@ -228,13 +251,18 @@ function Discovery({
 
 export function DesktopSearch() {
   const navigate = useNavigate();
+  const pathname = useRouterState({ select: (state) => state.location.pathname });
+  const mode: SearchMode =
+    pathname === "/pfps" || pathname.startsWith("/pfps/") || pathname.startsWith("/pfp/")
+      ? "pfp"
+      : "wallpaper";
   const rootRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
   const [recent, setRecent] = useState<string[]>([]);
   const [highlighted, setHighlighted] = useState(-1);
-  const { categories, popular, results, loading } = useDiscovery(open, query);
+  const { categories, popular, results, loading } = useDiscovery(open, query, mode);
   const term = query.trim();
 
   useEffect(() => {
@@ -253,18 +281,30 @@ export function DesktopSearch() {
     if (!clean) return;
     setRecent(rememberSearch(clean));
     setOpen(false);
-    void navigate({ to: "/app/explore", search: { q: clean, device: "all" } });
+    if (mode === "pfp") {
+      void navigate({ to: "/pfps", search: { q: clean } });
+    } else {
+      void navigate({ to: "/app/explore", search: { q: clean, device: "all" } });
+    }
   }
 
   function openWallpaper(wallpaper: WallpaperCard) {
     if (term) setRecent(rememberSearch(term));
     setOpen(false);
-    void navigate({ to: "/wallpaper/$id", params: { id: wallpaper.slug || wallpaper.id } });
+    if (mode === "pfp") {
+      void navigate({ to: "/pfp/$id", params: { id: wallpaper.slug || wallpaper.id } });
+    } else {
+      void navigate({ to: "/wallpaper/$id", params: { id: wallpaper.slug || wallpaper.id } });
+    }
   }
 
   function openCategory(category: Category) {
     setOpen(false);
-    void navigate({ to: "/app/explore", search: { category: category.slug } });
+    if (mode === "pfp") {
+      void navigate({ to: "/pfps/$slug", params: { slug: category.slug } });
+    } else {
+      void navigate({ to: "/app/explore", search: { category: category.slug } });
+    }
   }
 
   function onKeyDown(event: KeyboardEvent<HTMLInputElement>) {
@@ -313,8 +353,8 @@ export function DesktopSearch() {
             setOpen(true);
           }}
           onKeyDown={onKeyDown}
-          placeholder="Search wallpapers, styles, quotes..."
-          aria-label="Search wallpapers"
+          placeholder={mode === "pfp" ? "Search PFPs..." : "Search wallpapers, styles, quotes..."}
+          aria-label={mode === "pfp" ? "Search PFPs" : "Search wallpapers"}
           aria-expanded={open}
           className="min-w-0 flex-1 bg-transparent px-3 text-sm text-fg outline-none placeholder:text-subtle"
         />
@@ -349,6 +389,7 @@ export function DesktopSearch() {
                       wallpaper={wallpaper}
                       active={index === highlighted}
                       onSelect={() => openWallpaper(wallpaper)}
+                      square={mode === "pfp"}
                     />
                   ))}
                 </div>
@@ -360,7 +401,7 @@ export function DesktopSearch() {
                 onClick={() => runSearch(query)}
                 className="mt-2 flex min-h-11 w-full items-center justify-between rounded-lg px-2 text-sm font-medium text-fg hover:bg-surface"
               >
-                <span>See all results for “{term}”</span>
+                <span>{mode === "pfp" ? "See all PFPs" : "See all results"} for “{term}”</span>
                 <ArrowRight className="size-4" />
               </button>
             </div>
