@@ -28,7 +28,10 @@ export const Route = createFileRoute("/sitemap.xml")({
   server: {
     handlers: {
       GET: async () => {
-        const [data, pfpData] = await Promise.all([getSitemapData(), getPfpSitemapData()]);
+        const [data, pfpData] = await Promise.all([
+          getSitemapData(),
+          getPfpSitemapData().catch(() => ({ pfps: [], categories: [] })),
+        ]);
         const primaryPages = [
           { path: "/", priority: "1.0" },
           { path: "/wallpapers", priority: "0.9" },
