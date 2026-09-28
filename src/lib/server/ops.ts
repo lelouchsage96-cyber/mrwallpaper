@@ -185,7 +185,8 @@ export const getOpsOverview = createServerFn({ method: "GET" })
                 count(*) filter (where status = 'approved')::int as approved,
                 count(*) filter (where access_type = 'premium')::int as premium,
                 count(*) filter (where status in ('pending', 'draft'))::int as pending
-         from wallpapers`,
+         from wallpapers
+         where canonical_path is null or canonical_path not like '/pfp/%'`,
       ),
       sql.query<{ today: number; yesterday: number; all: number }>(
         `select
@@ -240,6 +241,7 @@ export const getOpsOverview = createServerFn({ method: "GET" })
                   where a.wallpaper_id = w.id and a.kind = 'thumbnail' limit 1) as thumbnail_url
          from wallpapers w
          where w.status = 'approved'
+           and (w.canonical_path is null or w.canonical_path not like '/pfp/%')
          order by w.download_count desc
          limit 6`,
       ),
