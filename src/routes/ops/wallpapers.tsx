@@ -78,9 +78,8 @@ function CatalogRow({
       <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:gap-4">
         <div className="flex min-w-0 flex-1 items-center gap-3">
           <OpsThumb src={w.thumbnailUrl} alt={w.title} id={w.id} />
-          <Link
-            to="/wallpaper/$id"
-            params={{ id: w.id }}
+          <a
+            href={w.contentType === "pfp" ? `/pfp/${w.slug || w.id}` : `/wallpaper/${w.slug || w.id}`}
             className="min-w-0 flex-1"
           >
             <span className="flex min-w-0 items-center gap-2">
@@ -90,11 +89,11 @@ function CatalogRow({
             <span className="mt-0.5 block truncate text-xs text-muted">
               {w.categoryName}
               {" · "}
-              {t.ops.device[w.deviceType]}
+              {w.contentType === "pfp" ? "PFP" : t.ops.device[w.deviceType]}
               {" · "}
               {formatCount(w.downloadCount)} {t.wallpaper.downloads}
             </span>
-          </Link>
+          </a>
         </div>
         <div className="flex flex-wrap items-center gap-2 lg:max-w-xl lg:justify-end">
           <Link
