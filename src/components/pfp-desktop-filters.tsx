@@ -1,4 +1,5 @@
-import { ChevronDown } from "lucide-react";
+import { ChevronDown, SlidersHorizontal, X } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
 import type { Category } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
@@ -11,9 +12,13 @@ const sortOptions: { id: PfpSort; label: string }[] = [
   { id: "favorites", label: "Most Favorited" },
 ];
 
-function pfpHref(categorySlug: string | null, sort: PfpSort) {
+function pfpHref(categorySlug: string | null, sort: PfpSort, q?: string) {
   const base = categorySlug ? `/pfps/${categorySlug}` : "/pfps";
-  return sort === "trending" ? base : `${base}?sort=${sort}`;
+  const params = new URLSearchParams();
+  if (!categorySlug && q?.trim()) params.set("q", q.trim());
+  if (sort !== "trending") params.set("sort", sort);
+  const query = params.toString();
+  return query ? `${base}?${query}` : base;
 }
 
 export function PfpDesktopFilters({
@@ -68,5 +73,147 @@ export function PfpDesktopFilters({
         </div>
       </div>
     </div>
+  );
+}
+
+
+export function PfpMobileFilters({
+  categories,
+  categorySlug = null,
+  sort = "trending",
+  q,
+}: {
+  categories: Category[];
+  categorySlug?: string | null;
+  sort?: PfpSort;
+  q?: string;
+}) {
+  const [open, setOpen] = useState(false);
+  const selectedCategory = useMemo(
+    () => categories.find((category) => category.slug === categorySlug),
+    [categories, categorySlug],
+  );
+  const sortLabel = sortOptions.find((option) => option.id === sort)?.label ?? "Trending";
+  const activeFilterCount = Number(Boolean(categorySlug)) + Number(sort !== "trending");
+
+  useEffect(() => {
+    if (!open) return;
+    const previous = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = previous;
+    };
+  }, [open]);
+
+  return (
+    <>
+      <div className="mt-3 flex items-center justify-between gap-3 lg:hidden">
+        <button
+          type="button"
+          onClick={() => setOpen(true)}
+          className="inline-flex h-10 items-center gap-2 rounded-full border border-border bg-elevated/65 px-4 text-sm font-medium text-fg transition-colors active:bg-surface"
+        >
+          <SlidersHorizontal className="size-4" strokeWidth={1.8} />
+          Filters
+          {activeFilterCount > 0 ? (
+            <span className="grid size-5 place-items-center rounded-full bg-fg text-[11px] font-semibold text-bg">
+              {activeFilterCount}
+            </span>
+          ) : null}
+        </button>
+
+        <span className="min-w-0 truncate text-xs text-subtle">
+          {selectedCategory?.name ?? "All categories"} · {sortLabel}
+        </span>
+      </div>
+
+      {open ? (
+        <div className="fixed inset-0 z-50 lg:hidden" role="dialog" aria-modal="true" aria-label="PFP filters">
+          <button
+            type="button"
+            aria-label="Close filters"
+            onClick={() => setOpen(false)}
+            className="absolute inset-0 bg-black/55 backdrop-blur-[2px]"
+          />
+
+          <div className="mw-sheet absolute inset-x-0 bottom-0 max-h-[82dvh] overflow-y-auto rounded-t-[28px] border-t border-border bg-bg px-4 pb-[max(1rem,env(safe-area-inset-bottom))] pt-4 shadow-[0_-24px_60px_rgba(0,0,0,0.35)]">
+            <div className="mx-auto mb-4 h-1 w-10 rounded-full bg-muted/35" aria-hidden="true" />
+
+            <div className="flex items-center justify-between gap-3">
+              <div>
+                <p className="text-xs font-medium uppercase tracking-[0.16em] text-subtle">Refine results</p>
+                <h2 className="mt-1 font-display text-2xl text-fg">Filters</h2>
+              </div>
+              <button
+                type="button"
+                onClick={() => setOpen(false)}
+                className="grid size-10 place-items-center rounded-full bg-elevated text-muted"
+                aria-label="Close filters"
+              >
+                <X className="size-4" />
+              </button>
+            </div>
+
+            <section className="mt-6">
+              <p className="mb-2 text-xs font-medium uppercase tracking-[0.14em] text-subtle">Sort by</p>
+              <div className="flex flex-wrap gap-2">
+                {sortOptions.map((option) => (
+                  <a
+                    key={option.id}
+                    href={pfpHref(categorySlug, option.id, q)}
+                    className={cn(
+                      "grid h-9 place-items-center rounded-full px-4 text-sm font-medium transition-colors",
+                      sort === option.id ? "bg-fg text-bg" : "bg-elevated text-muted",
+                    )}
+                  >
+                    {option.label}
+                  </a>
+                ))}
+              </div>
+            </section>
+
+            {categories.length > 0 ? (
+              <section className="mt-6">
+                <p className="mb-2 text-xs font-medium uppercase tracking-[0.14em] text-subtle">Category</p>
+                <div className="flex max-h-44 flex-wrap gap-2 overflow-y-auto pr-1">
+                  <a
+                    href={pfpHref(null, sort, q)}
+                    className={cn(
+                      "grid h-9 place-items-center rounded-full px-4 text-sm font-medium transition-colors",
+                      !categorySlug ? "bg-fg text-bg" : "bg-elevated text-muted",
+                    )}
+                  >
+                    All
+                  </a>
+                  {categories.map((category) => (
+                    <a
+                      key={category.id}
+                      href={pfpHref(category.slug, sort)}
+                      className={cn(
+                        "grid h-9 place-items-center rounded-full px-4 text-sm font-medium transition-colors",
+                        categorySlug === category.slug ? "bg-fg text-bg" : "bg-elevated text-muted",
+                      )}
+                    >
+                      {category.name}
+                    </a>
+                  ))}
+                </div>
+              </section>
+            ) : null}
+
+            {activeFilterCount > 0 || q ? (
+              <div className="mt-7 border-t border-border pt-4">
+                <a
+                  href="/pfps"
+                  className="grid h-11 w-full place-items-center rounded-full bg-elevated text-sm font-medium text-fg"
+                >
+                  Clear filters
+                </a>
+              </div>
+            ) : null}
+          </div>
+        </div>
+      ) : null}
+    </>
   );
 }
