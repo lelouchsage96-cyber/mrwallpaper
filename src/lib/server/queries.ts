@@ -460,7 +460,7 @@ export async function fetchPfpCardList(
     params.push(userId);
     fav = `exists(select 1 from favorites f where f.wallpaper_id = w.id and f.user_id = ${params.length}) as is_favorite`;
   }
-  const where = [`w.status = 'approved'`, STILL_ONLY, PFP_MEMBERSHIP];
+  const where = [`w.status = 'approved'`, STILL_ONLY, PFP_ONLY];
   if (opts.categoryId) {
     params.push(opts.categoryId);
     where.push(`w.category_id = ${params.length}`);
