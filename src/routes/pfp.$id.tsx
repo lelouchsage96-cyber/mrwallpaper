@@ -5,6 +5,7 @@ import { Breadcrumbs } from "@/components/breadcrumbs";
 import { DownloadSheet } from "@/components/download-sheet";
 import { FavoriteButton } from "@/components/favorite-button";
 import { PfpGrid } from "@/components/pfp-grid";
+import { SiteFooter } from "@/components/site-footer";
 import { Button } from "@/components/ui/button";
 import { showActionToast } from "@/components/action-toast";
 import { brand } from "@/lib/brand";
@@ -296,6 +297,10 @@ function PfpDetailPage() {
           <PfpGrid items={related} eager={2} />
         </section>
       ) : null}
+
+      <div className="px-4 lg:px-6">
+        <SiteFooter faqHref="/app/faq" />
+      </div>
 
       <div className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-bg/92 px-3 pb-[max(0.65rem,env(safe-area-inset-bottom))] pt-2.5 backdrop-blur-xl lg:hidden">
         <div className="mx-auto flex max-w-md items-center gap-2">
