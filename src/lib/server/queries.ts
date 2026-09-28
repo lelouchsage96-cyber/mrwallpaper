@@ -58,14 +58,8 @@ const CARD_SELECT = `
 `;
 
 const STILL_ONLY = `(w.format is null or w.format not in ('mp4', 'mov', 'webm'))`;
-const PFP_COLLECTION_SLUG = "pfps";
-const PFP_MEMBERSHIP = `exists (
-  select 1
-  from collection_wallpapers pfp_cw
-  join collections pfp_c on pfp_c.id = pfp_cw.collection_id
-  where pfp_cw.wallpaper_id = w.id and pfp_c.slug = '${PFP_COLLECTION_SLUG}'
-)`;
-const WALLPAPER_ONLY = `not (${PFP_MEMBERSHIP})`;
+const PFP_ONLY = `w.canonical_path like '/pfp/%'`;
+const WALLPAPER_ONLY = `(w.canonical_path is null or w.canonical_path not like '/pfp/%')`;
 
 async function tryRows<T>(label: string, run: () => Promise<T[]>, fallback: T[] = []): Promise<T[]> {
   try {
@@ -525,7 +519,7 @@ export async function fetchPfpCardsByIds(ids: string[], userId: string | null): 
     `select ${CARD_SELECT}, ${fav}
      from wallpapers w
      join categories c on c.id = w.category_id
-     where w.id = any($1) and w.status = 'approved' and ${STILL_ONLY} and ${PFP_MEMBERSHIP}`,
+     where w.id = any($1) and w.status = 'approved' and ${STILL_ONLY} and ${PFP_ONLY}`,
     params,
   );
   const premiumOn = await premiumEnabled();
@@ -559,7 +553,7 @@ export async function fetchPfpDetail(id: string, userId: string | null): Promise
      join categories c on c.id = w.category_id
      left join creator_profiles cp
        on cp.user_id = w.creator_id and cp.status = 'approved'
-     where w.status = 'approved' and ${STILL_ONLY} and ${PFP_MEMBERSHIP}
+     where w.status = 'approved' and ${STILL_ONLY} and ${PFP_ONLY}
        and (w.id = $1 or w.slug = $1)
      limit 1`,
     params,
@@ -613,7 +607,7 @@ export async function fetchSimilarPfpCards(
     `select ${CARD_SELECT}, ${fav}
      from wallpapers w
      join categories c on c.id = w.category_id
-     where w.status = 'approved' and ${STILL_ONLY} and ${PFP_MEMBERSHIP}
+     where w.status = 'approved' and ${STILL_ONLY} and ${PFP_ONLY}
        and w.id <> $1
      order by case when w.category_id = $2 then 0 else 1 end,
               w.download_count desc, w.favorite_count desc, w.published_at desc
@@ -699,7 +693,7 @@ export async function fetchPfpCategories(): Promise<Category[]> {
              from wallpapers w
              join wallpaper_assets a on a.wallpaper_id = w.id and a.kind = 'thumbnail'
              where w.category_id = c.id and w.status = 'approved' and ${STILL_ONLY}
-               and ${PFP_MEMBERSHIP}
+               and ${PFP_ONLY}
              order by w.download_count desc, w.published_at desc nulls last
              limit 1) as cover_url
      from categories c
@@ -708,7 +702,7 @@ export async function fetchPfpCategories(): Promise<Category[]> {
          select 1
          from wallpapers w
          where w.category_id = c.id and w.status = 'approved' and ${STILL_ONLY}
-           and ${PFP_MEMBERSHIP}
+           and ${PFP_ONLY}
        )`,
   );
   const covers = new Map(rows.map((row) => [row.id, row.cover_url]));
@@ -1006,7 +1000,7 @@ export async function lookupPfpRef(key: string) {
   const rows = await sql.query<{ id: string; slug: string | null; status: string }>(
     `select w.id, w.slug, w.status
      from wallpapers w
-     where (w.id = $1 or w.slug = $1) and ${PFP_MEMBERSHIP}
+     where (w.id = $1 or w.slug = $1) and ${PFP_ONLY}
      limit 1`,
     [key],
   );
@@ -1146,7 +1140,7 @@ export async function fetchPfpSitemapEntries(): Promise<{
      where w.status = 'approved'
        and (w.robots is null or w.robots = 'index')
        and ${STILL_ONLY}
-       and ${PFP_MEMBERSHIP}
+       and ${PFP_ONLY}
      order by w.updated_at desc
      limit 5000`,
   );
