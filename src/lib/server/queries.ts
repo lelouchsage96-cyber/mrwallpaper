@@ -458,19 +458,19 @@ export async function fetchPfpCardList(
   let fav = "false as is_favorite";
   if (userId) {
     params.push(userId);
-    fav = `exists(select 1 from favorites f where f.wallpaper_id = w.id and f.user_id = ${params.length}) as is_favorite`;
+    fav = `exists(select 1 from favorites f where f.wallpaper_id = w.id and f.user_id = $${params.length}) as is_favorite`;
   }
   const where = [`w.status = 'approved'`, STILL_ONLY, PFP_ONLY];
   if (opts.categoryId) {
     params.push(opts.categoryId);
-    where.push(`w.category_id = ${params.length}`);
+    where.push(`w.category_id = $${params.length}`);
   }
   if (opts.search?.trim()) {
     params.push(`%${opts.search.trim().toLowerCase()}%`);
     where.push(
-      `(lower(w.title) like ${params.length} or lower(c.name) like ${params.length} or exists (
+      `(lower(w.title) like $${params.length} or lower(c.name) like $${params.length} or exists (
           select 1 from wallpaper_tags wt join tags t on t.id = wt.tag_id
-          where wt.wallpaper_id = w.id and lower(t.name) like ${params.length}
+          where wt.wallpaper_id = w.id and lower(t.name) like $${params.length}
         ))`,
     );
   }
@@ -490,7 +490,7 @@ export async function fetchPfpCardList(
      join categories c on c.id = w.category_id
      where ${where.join(" and ")}
      order by ${order}
-     limit ${limitAt} offset ${offsetAt}`,
+     limit $${limitAt} offset $${offsetAt}`,
     params,
   );
   const premiumOn = await premiumEnabled();
@@ -513,7 +513,7 @@ export async function fetchPfpCardsByIds(ids: string[], userId: string | null): 
   let fav = "false as is_favorite";
   if (userId) {
     params.push(userId);
-    fav = `exists(select 1 from favorites f where f.wallpaper_id = w.id and f.user_id = ${params.length}) as is_favorite`;
+    fav = `exists(select 1 from favorites f where f.wallpaper_id = w.id and f.user_id = $${params.length}) as is_favorite`;
   }
   const rows = await sql.query<CardRow>(
     `select ${CARD_SELECT}, ${fav}
@@ -534,7 +534,7 @@ export async function fetchPfpDetail(id: string, userId: string | null): Promise
   let fav = "false as is_favorite";
   if (userId) {
     params.push(userId);
-    fav = `exists(select 1 from favorites f where f.wallpaper_id = w.id and f.user_id = ${params.length}) as is_favorite`;
+    fav = `exists(select 1 from favorites f where f.wallpaper_id = w.id and f.user_id = $${params.length}) as is_favorite`;
   }
   const rows = await sql.query<DetailRow>(
     `select ${CARD_SELECT}, ${fav},
@@ -599,7 +599,7 @@ export async function fetchSimilarPfpCards(
   let fav = "false as is_favorite";
   if (userId) {
     params.push(userId);
-    fav = `exists(select 1 from favorites f where f.wallpaper_id = w.id and f.user_id = ${params.length}) as is_favorite`;
+    fav = `exists(select 1 from favorites f where f.wallpaper_id = w.id and f.user_id = $${params.length}) as is_favorite`;
   }
   params.push(limit);
   const limitAt = params.length;
@@ -611,7 +611,7 @@ export async function fetchSimilarPfpCards(
        and w.id <> $1
      order by case when w.category_id = $2 then 0 else 1 end,
               w.download_count desc, w.favorite_count desc, w.published_at desc
-     limit ${limitAt}`,
+     limit $${limitAt}`,
     params,
   );
   const premiumOn = await premiumEnabled();
