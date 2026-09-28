@@ -341,10 +341,17 @@ export const listOpsWallpapers = createServerFn({ method: "GET" })
       alt_text?: string | null;
       canonical_path?: string | null;
       robots?: string | null;
+      is_pfp: boolean | number;
     }>(
       `select w.id, w.slug, w.title, c.name as category_name, w.access_type, w.status,
               w.download_count, w.favorite_count, w.device_type,
               w.seo_title, w.seo_description, w.alt_text, w.canonical_path, w.robots,
+              exists (
+                select 1
+                from collection_wallpapers pfp_cw
+                join collections pfp_c on pfp_c.id = pfp_cw.collection_id
+                where pfp_cw.wallpaper_id = w.id and pfp_c.slug = 'pfps'
+              ) as is_pfp,
               (select a.path from wallpaper_assets a
                 where a.wallpaper_id = w.id and a.kind = 'thumbnail' limit 1) as thumbnail_url
        from wallpapers w
@@ -370,6 +377,7 @@ export const listOpsWallpapers = createServerFn({ method: "GET" })
         downloadCount: Number(r.download_count) || 0,
         favoriteCount: Number(r.favorite_count) || 0,
         deviceType: parseDeviceType(r.device_type),
+        contentType: r.is_pfp === true || r.is_pfp === 1 ? "pfp" : "wallpaper",
         seoTitle: r.seo_title || "",
         seoDescription: r.seo_description || "",
         altText: r.alt_text || "",
@@ -423,14 +431,24 @@ export const updateWallpaperOps = createServerFn({ method: "POST" })
       );
     }
     if (data.slug !== undefined) {
-      const current = await sql.query<{ slug: string | null }>(
-        `select slug from wallpapers where id = $1 limit 1`,
+      const current = await sql.query<{ slug: string | null; is_pfp: boolean | number }>(
+        `select w.slug,
+                exists (
+                  select 1
+                  from collection_wallpapers pfp_cw
+                  join collections pfp_c on pfp_c.id = pfp_cw.collection_id
+                  where pfp_cw.wallpaper_id = w.id and pfp_c.slug = 'pfps'
+                ) as is_pfp
+         from wallpapers w
+         where w.id = $1
+         limit 1`,
         [data.wallpaperId],
       );
       const next = await uniqueWallpaperSlug(slugify(data.slug || "wallpaper"), data.wallpaperId);
       const prev = current[0]?.slug;
       if (prev && prev !== next) {
-        await recordSeoRedirect(`/wallpaper/${prev}`, `/wallpaper/${next}`);
+        const base = current[0]?.is_pfp === true || current[0]?.is_pfp === 1 ? "/pfp/" : "/wallpaper/";
+        await recordSeoRedirect(`${base}${prev}`, `${base}${next}`);
       }
       await sql.query(`update wallpapers set slug = $1, updated_at = now() where id = $2`, [next, data.wallpaperId]);
     }
