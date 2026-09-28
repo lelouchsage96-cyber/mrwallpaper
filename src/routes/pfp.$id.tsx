@@ -2,7 +2,6 @@ import { createFileRoute, notFound, redirect, useNavigate } from "@tanstack/reac
 import { ChevronDown, ChevronLeft, Coffee, Download, Share2 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Breadcrumbs } from "@/components/breadcrumbs";
-import { BottomNav } from "@/components/bottom-nav";
 import { DownloadSheet } from "@/components/download-sheet";
 import { FavoriteButton } from "@/components/favorite-button";
 import { PfpGrid } from "@/components/pfp-grid";
@@ -152,7 +151,7 @@ function PfpDetailPage() {
 
   return (
     <>
-      <main className="mx-auto max-w-7xl pb-28 pt-[env(safe-area-inset-top)] lg:pb-16">
+      <main className="mx-auto max-w-7xl pb-32 pt-[env(safe-area-inset-top)] lg:pb-16">
         <div className="px-4 pt-3 lg:px-6 lg:pt-5">
           <div className="flex items-center justify-between">
             <button
@@ -234,7 +233,7 @@ function PfpDetailPage() {
             </div>
           </div>
 
-          <div className="mt-5 flex flex-wrap items-center gap-2">
+          <div className="mt-5 hidden flex-wrap items-center gap-2 lg:flex">
             <Button className="min-w-0 flex-1 sm:flex-none sm:min-w-52" onClick={() => setDownloadOpen(true)}>
               <Download className="size-4" />
               Download PFP
@@ -298,6 +297,32 @@ function PfpDetailPage() {
         </section>
       ) : null}
 
+      <div className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-bg/92 px-3 pb-[max(0.65rem,env(safe-area-inset-bottom))] pt-2.5 backdrop-blur-xl lg:hidden">
+        <div className="mx-auto flex max-w-md items-center gap-2">
+          <FavoriteButton
+            wallpaperId={pfp.id}
+            isFavorite={isFavorite}
+            loginNext={pfpPath(pfp.slug || pfp.id)}
+            onChange={setIsFavorite}
+            className="size-12 shrink-0 bg-elevated backdrop-blur-none"
+          />
+          <a
+            href={brand.support.kofi}
+            target="_blank"
+            rel="noreferrer"
+            aria-label="Support MrWallpaper on Ko-fi"
+            className="mw-support-button group relative inline-flex h-12 shrink-0 items-center justify-center gap-1.5 overflow-hidden rounded-full px-3.5 text-sm font-semibold text-fg transition-[transform,background-color,border-color,box-shadow] duration-200 hover:-translate-y-0.5 active:translate-y-0 active:scale-[0.98]"
+          >
+            <Coffee className="mw-support-cup relative z-10 size-4" />
+            <span className="relative z-10">Support</span>
+          </a>
+          <Button className="h-12 min-w-0 flex-1 rounded-full" onClick={() => setDownloadOpen(true)}>
+            <Download className="size-4" />
+            Download PFP
+          </Button>
+        </div>
+      </div>
+
       <DownloadSheet
         open={downloadOpen}
         onClose={() => setDownloadOpen(false)}
@@ -307,7 +332,6 @@ function PfpDetailPage() {
         deviceType={pfp.deviceType}
       />
       </main>
-      <BottomNav />
     </>
   );
 }
