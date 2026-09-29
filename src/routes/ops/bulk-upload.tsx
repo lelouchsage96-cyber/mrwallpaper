@@ -48,6 +48,7 @@ type BatchItem = {
   message: string | null;
   allowSeoConflict: boolean;
   slug: string | null;
+  seoGenerationPass: number;
 };
 
 async function putOriginal(file: File): Promise<string | null> {
@@ -141,6 +142,7 @@ function OpsBulkUploadPage() {
         message: null,
         allowSeoConflict: false,
         slug: null,
+        seoGenerationPass: 0,
       };
 
       setItems((current) => [...current, initial]);
@@ -192,6 +194,9 @@ function OpsBulkUploadPage() {
     const item = items.find((entry) => entry.id === id);
     if (!item?.encoded?.ok || item.status === "published") return false;
 
+    const variationIndex = item.seoGenerationPass + 1;
+    const regenerate = item.seoGenerationPass > 0;
+
     updateItem(id, { status: "seo", message: null });
     try {
       const result = await generateWallpaperSeo({
@@ -207,8 +212,8 @@ function OpsBulkUploadPage() {
           width: item.encoded.plate.width,
           height: item.encoded.plate.height,
           field: "all",
-          regenerate: false,
-          variationIndex: 1,
+          regenerate,
+          variationIndex,
           contentType: item.contentType,
         },
       });
@@ -226,8 +231,9 @@ function OpsBulkUploadPage() {
         primaryKeyword: result.seo.primaryKeyword,
         categoryId: result.seo.categoryId,
         status: "ready",
-        message: "SEO generated",
+        message: regenerate ? "SEO regenerated" : "SEO generated",
         allowSeoConflict: false,
+        seoGenerationPass: variationIndex,
       });
       return true;
     } catch {
@@ -824,7 +830,7 @@ function OpsBulkUploadPage() {
                           onClick={() => void generateSeoFor(item.id)}
                         >
                           <Sparkles className="size-4" />
-                          Generate SEO
+                          {item.seoGenerationPass > 0 ? "Regenerate SEO" : "Generate SEO"}
                         </Button>
                         <Button
                           disabled={working || busyItem || !plate || item.status === "published"}
