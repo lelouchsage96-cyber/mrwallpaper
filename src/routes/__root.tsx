@@ -6,16 +6,23 @@ import { NotFoundPage } from "@/components/not-found-page";
 import { ThemeProvider } from "@/components/theme-provider";
 import { BOOT_SCRIPT } from "@/lib/boot-script";
 import { AppErrorComponent } from "@/lib/error-component";
-import { getPublicSeo } from "@/lib/server/api";
 import appCss from "../styles.css?url";
 
+// Root metadata is intentionally static. Reading these values from Postgres on
+// every cold SSR request meant arbitrary crawler/404 traffic could wake Neon.
+// Keep the public shell database-free; update these deployment constants only
+// when the site-wide analytics/verification settings actually change.
+const PUBLIC_SEO = {
+  gaId: "G-MJHJ2F7NLL",
+  gscVerification: "",
+  ogImage: "/og.jpg",
+} as const;
+
 export const Route = createRootRoute({
-  loader: () => getPublicSeo(),
-  staleTime: 60_000,
   errorComponent: AppErrorComponent,
   notFoundComponent: NotFoundPage,
-  head: ({ loaderData }) => {
-    const seo = loaderData ?? { gaId: "", gscVerification: "", ogImage: "/og.jpg" };
+  head: () => {
+    const seo = PUBLIC_SEO;
     const meta = [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1, viewport-fit=cover" },
