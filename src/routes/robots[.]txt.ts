@@ -11,6 +11,14 @@ Disallow: /login
 Disallow: /onboarding
 Disallow: /api/
 Disallow: /auth/
+Disallow: /_serverFn/
+Disallow: /app
+Disallow: /app/
+Disallow: /settings
+Disallow: /favorites
+Disallow: /downloads
+Disallow: /notifications
+Disallow: /submit
 
 Sitemap: ${SITE_URL}/sitemap.xml
 `;
