@@ -159,7 +159,7 @@ function PfpDetailPage() {
               type="button"
               onClick={goBack}
               aria-label="Back"
-              className="grid size-11 place-items-center rounded-full bg-elevated text-fg"
+              className="mw-glass-button grid size-11 place-items-center rounded-full text-fg"
             >
               <ChevronLeft className="size-5" />
             </button>
@@ -168,7 +168,7 @@ function PfpDetailPage() {
                 type="button"
                 onClick={() => void share()}
                 aria-label="Share PFP"
-                className="grid size-11 place-items-center rounded-full bg-elevated text-fg"
+                className="mw-glass-button grid size-11 place-items-center rounded-full text-fg"
               >
                 <Share2 className="size-5" strokeWidth={1.75} />
               </button>
@@ -177,7 +177,7 @@ function PfpDetailPage() {
                 isFavorite={isFavorite}
                 loginNext={pfpPath(pfp.slug || pfp.id)}
                 onChange={setIsFavorite}
-                className="bg-elevated backdrop-blur-none"
+                className=""
               />
             </div>
           </div>
@@ -302,14 +302,14 @@ function PfpDetailPage() {
         <SiteFooter faqHref="/app/faq" />
       </div>
 
-      <div className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-bg/92 px-3 pb-[max(0.65rem,env(safe-area-inset-bottom))] pt-2.5 backdrop-blur-xl lg:hidden">
+      <div className="mw-glass mw-glass-nav fixed inset-x-0 bottom-0 z-40 px-3 pb-[max(0.65rem,env(safe-area-inset-bottom))] pt-2.5 lg:hidden">
         <div className="mx-auto flex max-w-md items-center gap-2">
           <FavoriteButton
             wallpaperId={pfp.id}
             isFavorite={isFavorite}
             loginNext={pfpPath(pfp.slug || pfp.id)}
             onChange={setIsFavorite}
-            className="size-12 shrink-0 bg-elevated backdrop-blur-none"
+            className="size-12 shrink-0"
           />
           <a
             href={brand.support.kofi}

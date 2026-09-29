@@ -117,14 +117,14 @@ function PfpCategoryPage() {
 
       <h1 className="font-display text-3xl text-fg lg:hidden">{category.name} PFPs</h1>
 
-      <div className="sticky top-[env(safe-area-inset-top)] z-30 -mx-4 mt-4 border-y border-border/70 bg-bg/95 px-4 py-3 backdrop-blur-xl lg:hidden">
+      <div className="sticky top-[env(safe-area-inset-top)] z-30 -mx-4 mt-4 border-y border-border/60 bg-bg/94 px-4 py-3 backdrop-blur-xl lg:hidden">
         <form action="/pfps" method="get">
           <Input
             type="search"
             name="q"
             placeholder="Search PFPs"
             aria-label="Search PFPs"
-            className="text-base sm:text-sm"
+            className="mw-glass-button text-base sm:text-sm"
           />
         </form>
         <PfpMobileFilters
@@ -134,9 +134,7 @@ function PfpCategoryPage() {
         />
       </div>
 
-      <div className="mt-6">
-        <PfpDesktopFilters categories={categories} categorySlug={category.slug} sort={sort} />
-      </div>
+      <PfpDesktopFilters categories={categories} categorySlug={category.slug} sort={sort} />
 
       <section className="mt-4 lg:mt-5">
         {items.length > 0 ? (

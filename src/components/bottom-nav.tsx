@@ -42,7 +42,7 @@ export function DesktopNav() {
   return (
     <nav
       aria-label="Main"
-      className="sticky top-0 z-40 hidden border-b border-border/80 bg-bg/90 shadow-[0_1px_0_rgba(255,255,255,0.02)] backdrop-blur-xl lg:block"
+      className="mw-glass mw-glass-nav sticky top-0 z-40 hidden lg:block"
     >
       <div className="mx-auto flex h-16 max-w-7xl items-center gap-6 px-6 xl:px-8">
         <Link to="/app" activeOptions={{ exact: true }} className="shrink-0 font-display text-2xl text-fg">
@@ -157,7 +157,7 @@ export function BottomNav() {
   return (
     <nav
       aria-label="Main"
-      className="fixed inset-x-0 bottom-0 z-40 border-t border-border/80 bg-bg/92 shadow-[0_-10px_30px_rgba(0,0,0,0.08)] backdrop-blur-xl lg:hidden"
+      className="mw-glass mw-glass-nav fixed inset-x-0 bottom-0 z-40 lg:hidden"
     >
       <ul className="mx-auto grid max-w-lg grid-cols-5 px-1 pb-[max(0.5rem,env(safe-area-inset-bottom))] pt-1">
         {items.map((item) => {

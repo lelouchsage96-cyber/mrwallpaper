@@ -335,7 +335,7 @@ export function DesktopSearch() {
           runSearch(query);
         }}
         className={cn(
-          "flex h-11 items-center rounded-xl bg-elevated shadow-[var(--shadow-border)] transition-shadow duration-150",
+          "mw-glass-button flex h-11 items-center rounded-xl transition-shadow duration-150",
           open && "ring-2 ring-ring",
         )}
       >
@@ -374,7 +374,7 @@ export function DesktopSearch() {
       </form>
 
       {open ? (
-        <div className="absolute inset-x-0 top-[calc(100%+0.5rem)] z-50 max-h-[70vh] overflow-y-auto rounded-2xl border border-border bg-elevated p-3 shadow-2xl">
+        <div className="mw-glass mw-glass-panel absolute inset-x-0 top-[calc(100%+0.5rem)] z-50 max-h-[70vh] overflow-y-auto rounded-2xl p-3">
           {term.length >= 2 ? (
             <div role="listbox" aria-label="Search results">
               {loading ? (

@@ -31,7 +31,7 @@ export function PfpDesktopFilters({
   sort?: PfpSort;
 }) {
   return (
-    <div className="hidden lg:sticky lg:top-[4.5rem] lg:z-30 lg:block lg:rounded-2xl lg:border lg:border-border/70 lg:bg-bg/94 lg:p-2 lg:shadow-[0_8px_24px_rgba(0,0,0,0.12)] lg:backdrop-blur-xl">
+    <div className="mw-glass hidden lg:sticky lg:top-[4.5rem] lg:z-30 lg:mt-5 lg:block lg:rounded-2xl lg:p-2">
       <div className="flex items-center gap-3">
         <div className="relative shrink-0">
           <select
@@ -111,7 +111,7 @@ export function PfpMobileFilters({
         <button
           type="button"
           onClick={() => setOpen(true)}
-          className="inline-flex h-10 items-center gap-2 rounded-full border border-border bg-elevated/65 px-4 text-sm font-medium text-fg transition-colors active:bg-surface"
+          className="mw-glass-button inline-flex h-10 items-center gap-2 rounded-full px-4 text-sm font-medium text-fg transition-colors active:scale-[0.98]"
         >
           <SlidersHorizontal className="size-4" strokeWidth={1.8} />
           Filters
@@ -136,7 +136,7 @@ export function PfpMobileFilters({
             className="absolute inset-0 bg-black/55 backdrop-blur-[2px]"
           />
 
-          <div className="mw-sheet absolute inset-x-0 bottom-0 max-h-[82dvh] overflow-y-auto rounded-t-[28px] border-t border-border bg-bg px-4 pb-[max(1rem,env(safe-area-inset-bottom))] pt-4 shadow-[0_-24px_60px_rgba(0,0,0,0.35)]">
+          <div className="mw-sheet mw-glass mw-glass-panel absolute inset-x-0 bottom-0 max-h-[82dvh] overflow-y-auto rounded-t-[28px] px-4 pb-[max(1rem,env(safe-area-inset-bottom))] pt-4">
             <div className="mx-auto mb-4 h-1 w-10 rounded-full bg-muted/35" aria-hidden="true" />
 
             <div className="flex items-center justify-between gap-3">
@@ -147,7 +147,7 @@ export function PfpMobileFilters({
               <button
                 type="button"
                 onClick={() => setOpen(false)}
-                className="grid size-10 place-items-center rounded-full bg-elevated text-muted"
+                className="mw-glass-button grid size-10 place-items-center rounded-full text-muted"
                 aria-label="Close filters"
               >
                 <X className="size-4" />
