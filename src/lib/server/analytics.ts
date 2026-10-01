@@ -2,6 +2,7 @@ import { getSql } from "@/lib/db";
 
 export const ANALYTICS_EVENTS = [
   "page_view",
+  "campaign_visit",
   "wallpaper_view",
   "category_view",
   "search",

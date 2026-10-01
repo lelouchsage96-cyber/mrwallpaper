@@ -4,6 +4,7 @@ import {
   Download,
   Eye,
   Heart,
+  MousePointerClick,
   Search,
   Share2,
   Users,
@@ -125,6 +126,7 @@ function OpsAnalyticsPage() {
             <MetricCard label="Shares" value={data.metrics.shares} hint="Share sheet or copied link" icon={<Share2 className="size-4" />} />
             <MetricCard label="Searches" value={data.metrics.searches} hint="Searches with a query" icon={<Search className="size-4" />} />
             <MetricCard label="App opens" value={data.metrics.appOpens} hint="Visits to the installable app surface" icon={<AppWindow className="size-4" />} />
+            <MetricCard label="Tracked link clicks" value={data.metrics.campaignClicks} hint="UTM-tagged campaign visits" icon={<MousePointerClick className="size-4" />} />
           </section>
 
           <section className="rounded-xl bg-elevated p-5 shadow-[var(--shadow-border)]">
@@ -220,6 +222,24 @@ function OpsAnalyticsPage() {
                     <span className="shrink-0 text-muted">{n(item.visits)} views</span>
                   </div>
                 )) : <p className="text-sm text-muted">No source data yet.</p>}
+              </div>
+              <div className="mt-6 border-t border-border pt-4">
+                <p className="text-xs font-medium tracking-widest text-subtle uppercase">Tracked links</p>
+                {data.campaigns.length ? (
+                  <div className="mt-3 space-y-3">
+                    {data.campaigns.map((item) => (
+                      <div key={`${item.source}:${item.medium}:${item.campaign}`} className="flex items-center justify-between gap-3 text-sm">
+                        <div className="min-w-0">
+                          <p className="truncate text-fg">{item.campaign}</p>
+                          <p className="truncate text-xs text-subtle">{item.source} · {item.medium}</p>
+                        </div>
+                        <span className="shrink-0 text-muted">{n(item.clicks)} clicks · {n(item.visitors)} people</span>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="mt-3 text-sm text-muted">No tracked campaign clicks yet.</p>
+                )}
               </div>
               {data.devices.length ? (
                 <div className="mt-6 border-t border-border pt-4">

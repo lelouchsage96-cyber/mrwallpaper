@@ -34,6 +34,7 @@ export type AnalyticsOverview = {
     shares: number;
     searches: number;
     appOpens: number;
+    campaignClicks: number;
   };
   daily: Array<{ day: string; pageViews: number; wallpaperViews: number; downloads: number }>;
   topWallpapers: Array<{ id: string; slug: string; title: string; views: number; downloads: number; shares: number }>;
@@ -41,6 +42,7 @@ export type AnalyticsOverview = {
   topSearches: Array<{ query: string; searches: number }>;
   sources: Array<{ source: string; visits: number }>;
   devices: Array<{ device: string; visits: number }>;
+  campaigns: Array<{ source: string; campaign: string; medium: string; clicks: number; visitors: number }>;
 };
 
 export const getOpsAnalytics = createServerFn({ method: "GET" })
@@ -52,7 +54,7 @@ export const getOpsAnalytics = createServerFn({ method: "GET" })
     const params = [days];
     const windowSql = `occurred_at >= now() - ($1::int * interval '1 day')`;
 
-    const [metricRows, dailyRows, wallpaperRows, categoryRows, searchRows, sourceRows, deviceRows] = await Promise.all([
+    const [metricRows, dailyRows, wallpaperRows, categoryRows, searchRows, sourceRows, deviceRows, campaignRows] = await Promise.all([
       sql.query<{
         page_views: number;
         visitors: number;
@@ -63,6 +65,7 @@ export const getOpsAnalytics = createServerFn({ method: "GET" })
         shares: number;
         searches: number;
         app_opens: number;
+        campaign_clicks: number;
       }>(
         `select
            count(*) filter (where event_name = 'page_view')::int as page_views,
@@ -73,7 +76,8 @@ export const getOpsAnalytics = createServerFn({ method: "GET" })
            count(*) filter (where event_name = 'favorite_add')::int as favorites,
            count(*) filter (where event_name = 'share')::int as shares,
            count(*) filter (where event_name = 'search')::int as searches,
-           count(*) filter (where event_name = 'open_app')::int as app_opens
+           count(*) filter (where event_name = 'open_app')::int as app_opens,
+           count(*) filter (where event_name = 'campaign_visit')::int as campaign_clicks
          from analytics_events where ${windowSql}`,
         params,
       ),
@@ -129,6 +133,20 @@ export const getOpsAnalytics = createServerFn({ method: "GET" })
          group by 1 order by visits desc`,
         params,
       ),
+      sql.query<{ source: string; campaign: string; medium: string; clicks: number; visitors: number }>(
+        `select
+           coalesce(nullif(source, ''), 'unknown') as source,
+           coalesce(nullif(metadata->>'utm_campaign', ''), 'unassigned') as campaign,
+           coalesce(nullif(metadata->>'utm_medium', ''), 'unknown') as medium,
+           count(*)::int as clicks,
+           count(distinct visitor_id) filter (where visitor_id is not null)::int as visitors
+         from analytics_events
+         where ${windowSql} and event_name = 'campaign_visit'
+         group by 1, 2, 3
+         order by clicks desc
+         limit 20`,
+        params,
+      ),
     ]);
 
     const m = metricRows[0];
@@ -144,6 +162,7 @@ export const getOpsAnalytics = createServerFn({ method: "GET" })
         shares: Number(m?.shares) || 0,
         searches: Number(m?.searches) || 0,
         appOpens: Number(m?.app_opens) || 0,
+        campaignClicks: Number(m?.campaign_clicks) || 0,
       },
       daily: dailyRows.map((r) => ({
         day: r.day,
@@ -163,5 +182,12 @@ export const getOpsAnalytics = createServerFn({ method: "GET" })
       topSearches: searchRows.map((r) => ({ query: r.query, searches: Number(r.searches) || 0 })),
       sources: sourceRows.map((r) => ({ source: r.source, visits: Number(r.visits) || 0 })),
       devices: deviceRows.map((r) => ({ device: r.device, visits: Number(r.visits) || 0 })),
+      campaigns: campaignRows.map((r) => ({
+        source: r.source,
+        campaign: r.campaign,
+        medium: r.medium,
+        clicks: Number(r.clicks) || 0,
+        visitors: Number(r.visitors) || 0,
+      })),
     };
   });

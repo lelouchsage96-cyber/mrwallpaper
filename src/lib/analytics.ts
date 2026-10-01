@@ -3,6 +3,7 @@ import { useRouterState } from "@tanstack/react-router";
 
 export type ClientAnalyticsEvent =
   | "page_view"
+  | "campaign_visit"
   | "wallpaper_view"
   | "category_view"
   | "search"
@@ -35,6 +36,7 @@ const SESSION_KEY = "mrwallpapers.analytics.session.v1";
 const SOURCE_KEY = "mrwallpapers.analytics.source.v1";
 
 const FIRST_PARTY_DB_EVENTS = new Set<ClientAnalyticsEvent>([
+  "campaign_visit",
   "download",
   "favorite_add",
   "favorite_remove",
@@ -173,10 +175,25 @@ export function AnalyticsRouteTracker() {
 
     trackEvent("page_view");
 
+    const params = new URLSearchParams(location.searchStr || "");
+    const campaignSource = params.get("utm_source")?.trim();
+    if (campaignSource) {
+      const campaign = params.get("utm_campaign")?.trim();
+      const medium = params.get("utm_medium")?.trim();
+      const content = params.get("utm_content")?.trim();
+      trackEvent("campaign_visit", {
+        source: campaignSource,
+        metadata: {
+          ...(medium ? { utm_medium: medium } : {}),
+          ...(campaign ? { utm_campaign: campaign } : {}),
+          ...(content ? { utm_content: content } : {}),
+        },
+      });
+    }
+
     const category = /^\/wallpapers\/([^/?#]+)\/?$/.exec(pathname)?.[1];
     if (category) trackEvent("category_view", { categorySlug: decodeURIComponent(category) });
 
-    const params = new URLSearchParams(location.searchStr || "");
     const query = params.get("q")?.trim();
     if (query && (pathname === "/wallpapers" || pathname === "/app/explore")) {
       const searchKey = `${pathname}:${query.toLowerCase()}`;
