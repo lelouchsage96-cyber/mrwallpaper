@@ -44,7 +44,7 @@ export function DesktopNav() {
       aria-label="Main"
       className="mw-glass mw-glass-nav sticky top-0 z-40 hidden lg:block"
     >
-      <div className="mx-auto flex h-16 max-w-7xl items-center gap-6 px-6 xl:px-8">
+      <div className="mx-auto flex h-16 max-w-[90rem] items-center gap-6 px-6 xl:px-8">
         <Link to="/app" activeOptions={{ exact: true }} className="shrink-0 font-display text-2xl text-fg">
           {brand.name}
         </Link>
@@ -86,7 +86,7 @@ export function DesktopNav() {
 
       {showHomeBrowse ? (
         <div className="border-t border-border/50 bg-surface/20">
-          <div className="mx-auto flex max-w-7xl items-center gap-1.5 px-4 py-1.5 xl:px-6">
+          <div className="mx-auto flex max-w-[90rem] items-center gap-1.5 px-4 py-1.5 xl:px-6">
             <button
               type="button"
               onClick={() => scrollBrowse(-1)}
