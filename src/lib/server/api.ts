@@ -845,6 +845,13 @@ export const requestDownload = createServerFn({ method: "POST" })
     );
     const url = resolveOriginal(data.wallpaperId, assets[0]?.path);
     const ext = downloadExt(detail.format);
+    const downloadName =
+      detail.title
+        .normalize("NFKD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .replace(/[^\w]+/g, "-")
+        .replace(/^-+|-+$/g, "")
+        .toLowerCase() || `mrwallpaper-${data.wallpaperId.slice(0, 8)}`;
 
     if (userId) {
       const downloadType = premium ? "premium" : data.adSessionId ? "rewarded" : "free";
@@ -873,7 +880,7 @@ export const requestDownload = createServerFn({ method: "POST" })
     return {
       status: "ok",
       url: `${url}${url.includes("?") ? "&" : "?"}dl=1`,
-      filename: `${detail.title.replace(/[^\\w]+/g, "-").toLowerCase()}.${ext}`,
+      filename: `${downloadName}.${ext}`,
       mime: assets[0]?.mime || "image/jpeg",
       isLive: detail.isLive,
       stillUrl: null,
