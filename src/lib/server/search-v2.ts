@@ -208,10 +208,10 @@ export const searchWallpapersV2 = createServerFn({ method: "GET" })
           const match = `(lower(w.title) like any($${at}::text[])
             or lower(c.name) like any($${at}::text[])
             or replace(lower(c.slug), '-', ' ') like any($${at}::text[])
-            or lower(coalesce(w.alt_text, '')) like any(${at}::text[])
-            or lower(coalesce(w.description, '')) like any(${at}::text[])
-            or lower(coalesce(w.primary_keyword, '')) like any(${at}::text[])
-            or lower(coalesce(w.device_type, 'phone')) like any(${at}::text[])
+            or lower(coalesce(w.alt_text, '')) like any($${at}::text[])
+            or lower(coalesce(w.description, '')) like any($${at}::text[])
+            or lower(coalesce(w.primary_keyword, '')) like any($${at}::text[])
+            or lower(coalesce(w.device_type, 'phone')) like any($${at}::text[])
             or exists (
               select 1 from wallpaper_tags wt
               join tags t on t.id = wt.tag_id
@@ -226,10 +226,10 @@ export const searchWallpapersV2 = createServerFn({ method: "GET" })
               join tags t on t.id = wt.tag_id
               where wt.wallpaper_id = w.id and lower(t.name) like any($${at}::text[])
             ) then 10 else 0 end +
-            case when lower(coalesce(w.primary_keyword, '')) like any(${at}::text[]) then 14 else 0 end +
-            case when lower(coalesce(w.alt_text, '')) like any(${at}::text[]) then 6 else 0 end +
-            case when lower(coalesce(w.description, '')) like any(${at}::text[]) then 4 else 0 end +
-            case when lower(coalesce(w.device_type, 'phone')) like any(${at}::text[]) then 3 else 0 end
+            case when lower(coalesce(w.primary_keyword, '')) like any($${at}::text[]) then 14 else 0 end +
+            case when lower(coalesce(w.alt_text, '')) like any($${at}::text[]) then 6 else 0 end +
+            case when lower(coalesce(w.description, '')) like any($${at}::text[]) then 4 else 0 end +
+            case when lower(coalesce(w.device_type, 'phone')) like any($${at}::text[]) then 3 else 0 end
           )`);
         }
 
@@ -247,9 +247,9 @@ export const searchWallpapersV2 = createServerFn({ method: "GET" })
             join tags t on t.id = wt.tag_id
             where wt.wallpaper_id = w.id and lower(t.name) = $${exactAt}
           ) then 85 else 0 end +
-          case when lower(coalesce(w.primary_keyword, '')) = ${exactAt} then 95 else 0 end +
-          case when lower(w.title) like ${containsAt} then 60 else 0 end +
-          case when lower(coalesce(w.primary_keyword, '')) like ${containsAt} then 55 else 0 end +
+          case when lower(coalesce(w.primary_keyword, '')) = $${exactAt} then 95 else 0 end +
+          case when lower(w.title) like $${containsAt} then 60 else 0 end +
+          case when lower(coalesce(w.primary_keyword, '')) like $${containsAt} then 55 else 0 end +
           ${groupScores.join(" + ")}
         )`;
         matchedGroupsSql = matchedGroups;
