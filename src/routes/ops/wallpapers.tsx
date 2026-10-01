@@ -223,21 +223,44 @@ function OpsWallpapersPage() {
   const [items, setItems] = useState<OpsWallpaperRow[]>([]);
   const [featured, setFeatured] = useState<OpsFeaturedRow[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [offset, setOffset] = useState(0);
+  const [hasMore, setHasMore] = useState(false);
   const [error, setError] = useState(false);
 
   function load() {
     setLoading(true);
     setError(false);
     void Promise.all([
-      listOpsWallpapers({ data: { q: q.trim() || undefined, status: status || undefined } }),
+      listOpsWallpapers({ data: { q: q.trim() || undefined, status: status || undefined, offset: 0 } }),
       listOpsFeatured(),
     ])
       .then(([w, f]) => {
         setItems(w.items);
+        setOffset(w.offset);
+        setHasMore(w.hasMore);
         setFeatured(f.items);
       })
       .catch(() => setError(true))
       .finally(() => setLoading(false));
+  }
+
+  function loadMore() {
+    if (loadingMore || !hasMore) return;
+    setLoadingMore(true);
+    void listOpsWallpapers({
+      data: { q: q.trim() || undefined, status: status || undefined, offset },
+    })
+      .then((w) => {
+        setItems((current) => {
+          const seen = new Set(current.map((item) => item.id));
+          return [...current, ...w.items.filter((item) => !seen.has(item.id))];
+        });
+        setOffset(w.offset);
+        setHasMore(w.hasMore);
+      })
+      .catch(() => setError(true))
+      .finally(() => setLoadingMore(false));
   }
 
   useEffect(() => {
@@ -358,20 +381,38 @@ function OpsWallpapersPage() {
           {t.ops.emptyCatalog}
         </p>
       ) : (
-        <ul className="divide-y divide-border overflow-hidden rounded-xl bg-elevated">
-          {items.map((w) => (
-            <CatalogRow
-              key={w.id}
-              w={w}
-              onPatch={(next) => void patch(w.id, next)}
-              onPlace={(slot) => {
-                void setFeaturedSlot({
-                  data: { wallpaperId: w.id, slot },
-                }).then(load);
-              }}
-            />
-          ))}
-        </ul>
+        <>
+          <ul className="divide-y divide-border overflow-hidden rounded-xl bg-elevated">
+            {items.map((w) => (
+              <CatalogRow
+                key={w.id}
+                w={w}
+                onPatch={(next) => void patch(w.id, next)}
+                onPlace={(slot) => {
+                  void setFeaturedSlot({
+                    data: { wallpaperId: w.id, slot },
+                  }).then(load);
+                }}
+              />
+            ))}
+          </ul>
+          {hasMore ? (
+            <div className="flex justify-center pt-4">
+              <Button
+                variant="secondary"
+                disabled={loadingMore}
+                onClick={loadMore}
+                className="min-w-36"
+              >
+                {loadingMore ? "Loading…" : "Load more"}
+              </Button>
+            </div>
+          ) : items.length > 0 ? (
+            <p className="pt-3 text-center text-xs text-subtle">
+              Showing all matching uploads.
+            </p>
+          ) : null}
+        </>
       )}
     </div>
   );

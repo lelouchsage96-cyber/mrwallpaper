@@ -316,8 +316,14 @@ export const getOpsOverview = createServerFn({ method: "GET" })
 
 export const listOpsWallpapers = createServerFn({ method: "GET" })
   .middleware([authMiddleware])
-  .validator(z.object({ status: z.string().optional(), q: z.string().optional() }).optional())
-  .handler(async ({ context, data }): Promise<{ items: OpsWallpaperRow[] }> => {
+  .validator(
+    z.object({
+      status: z.string().optional(),
+      q: z.string().optional(),
+      offset: z.number().int().min(0).optional(),
+    }).optional(),
+  )
+  .handler(async ({ context, data }): Promise<{ items: OpsWallpaperRow[]; offset: number; hasMore: boolean }> => {
     await requireOps(context.userId);
     const sql = await getSql();
     const params: unknown[] = [];
@@ -331,6 +337,12 @@ export const listOpsWallpapers = createServerFn({ method: "GET" })
       where.push(`(lower(w.title) like $${params.length} or lower(c.name) like $${params.length})`);
     }
     const clause = where.length ? `where ${where.join(" and ")}` : "";
+    const offset = data?.offset ?? 0;
+    const pageSize = 50;
+    params.push(pageSize + 1);
+    const limitAt = params.length;
+    params.push(offset);
+    const offsetAt = params.length;
     const rows = await sql.query<{
       id: string;
       slug: string | null;
@@ -363,11 +375,12 @@ export const listOpsWallpapers = createServerFn({ method: "GET" })
          when w.status = 'draft' then 1
          else 2
        end, w.updated_at desc
-       limit 80`,
+       limit ${limitAt} offset ${offsetAt}`,
       params,
     );
+    const pageRows = rows.slice(0, pageSize);
     return {
-      items: rows.map((r) => ({
+      items: pageRows.map((r) => ({
         id: r.id,
         slug: r.slug || r.id,
         title: r.title,
@@ -385,6 +398,8 @@ export const listOpsWallpapers = createServerFn({ method: "GET" })
         canonicalPath: r.canonical_path || "",
         robots: r.robots === "noindex" ? "noindex" : "index",
       })),
+      offset: offset + pageRows.length,
+      hasMore: rows.length > pageSize,
     };
   });
 
