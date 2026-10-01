@@ -102,7 +102,7 @@ function OpsShell() {
       : session?.role;
 
   return (
-    <div className="min-h-dvh bg-bg lg:grid lg:grid-cols-[240px_minmax(0,1fr)]">
+    <div className="min-h-dvh bg-bg lg:grid lg:grid-cols-[256px_minmax(0,1fr)]">
       <aside className="sticky top-0 hidden h-dvh flex-col border-r border-border px-4 py-5 lg:flex">
         <Link to="/ops" className="flex items-center gap-2.5 px-1">
           <MwMark className="size-8 shrink-0" />
@@ -156,7 +156,7 @@ function OpsShell() {
       </aside>
 
       <div className="min-w-0">
-        <header className="border-b border-border pt-[env(safe-area-inset-top)] lg:hidden">
+        <header className="sticky top-0 z-50 border-b border-border bg-bg/95 pt-[env(safe-area-inset-top)] backdrop-blur-xl lg:hidden">
           <div className="flex items-center justify-between gap-3 px-4 py-3">
             <div className="flex min-w-0 items-center gap-2.5">
               <MwMark className="size-8 shrink-0" />
@@ -189,7 +189,7 @@ function OpsShell() {
           ) : null}
         </header>
 
-        <main className="mx-auto max-w-6xl px-4 py-6 lg:px-8 lg:py-8">
+        <main className="mx-auto max-w-7xl px-4 py-6 lg:px-8 lg:py-8">
           {isPending ? (
             <div className="h-40 animate-pulse rounded-xl bg-elevated" />
           ) : !user ? (

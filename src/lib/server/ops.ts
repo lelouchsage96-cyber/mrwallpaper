@@ -179,7 +179,7 @@ export const getOpsOverview = createServerFn({ method: "GET" })
   .handler(async ({ context }): Promise<OpsOverview> => {
     await requireOps(context.userId);
     const sql = await getSql();
-    const [wp, dl, rp, users, sub, fav, series, top, mix, adsToday, adsAll, adsNet] = await Promise.all([
+    const [wp, dl, rp, submissions, users, sub, fav, series, top, mix, adsToday, adsAll, adsNet] = await Promise.all([
       sql.query<{ n: number; approved: number; premium: number; pending: number }>(
         `select count(*)::int as n,
                 count(*) filter (where status = 'approved')::int as approved,
@@ -200,6 +200,9 @@ export const getOpsOverview = createServerFn({ method: "GET" })
       ),
       sql.query<{ n: number }>(
         `select count(*)::int as n from reports where status = 'open'`,
+      ),
+      sql.query<{ n: number }>(
+        `select count(*)::int as n from wallpaper_submissions where status = 'pending'`,
       ),
       sql.query<{ n: number }>(`select count(*)::int as n from profiles`),
       sql.query<{ n: number }>(
@@ -277,6 +280,7 @@ export const getOpsOverview = createServerFn({ method: "GET" })
       downloadsYesterday: dl[0]?.yesterday ?? 0,
       downloadsAll: dl[0]?.all ?? 0,
       openReports: rp[0]?.n ?? 0,
+      pendingSubmissions: submissions[0]?.n ?? 0,
       users: users[0]?.n ?? 0,
       premiumSubs: sub[0]?.n ?? 0,
       favorites: fav[0]?.n ?? 0,

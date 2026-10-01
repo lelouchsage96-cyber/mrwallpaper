@@ -25,24 +25,26 @@ async function requireAdmin(userId: string) {
 export type AnalyticsOverview = {
   days: number;
   metrics: {
-    pageViews: number;
-    visitors: number;
-    sessions: number;
-    wallpaperViews: number;
     downloads: number;
     favorites: number;
     shares: number;
-    searches: number;
-    appOpens: number;
+    searchMisses: number;
     campaignClicks: number;
+    campaignVisitors: number;
   };
-  daily: Array<{ day: string; pageViews: number; wallpaperViews: number; downloads: number }>;
-  topWallpapers: Array<{ id: string; slug: string; title: string; views: number; downloads: number; shares: number }>;
-  topCategories: Array<{ slug: string; views: number }>;
+  daily: Array<{ day: string; downloads: number; campaignClicks: number }>;
+  topWallpapers: Array<{ id: string; slug: string; title: string; downloads: number; shares: number }>;
   topSearches: Array<{ query: string; searches: number }>;
   sources: Array<{ source: string; visits: number }>;
   devices: Array<{ device: string; visits: number }>;
-  campaigns: Array<{ source: string; campaign: string; medium: string; clicks: number; visitors: number }>;
+  campaigns: Array<{
+    source: string;
+    campaign: string;
+    medium: string;
+    clicks: number;
+    visitors: number;
+    downloads: number;
+  }>;
 };
 
 export const getOpsAnalytics = createServerFn({ method: "GET" })
@@ -54,95 +56,86 @@ export const getOpsAnalytics = createServerFn({ method: "GET" })
     const params = [days];
     const windowSql = `occurred_at >= now() - ($1::int * interval '1 day')`;
 
-    const [metricRows, dailyRows, wallpaperRows, categoryRows, searchRows, sourceRows, deviceRows, campaignRows] = await Promise.all([
+    const [metricRows, dailyRows, wallpaperRows, searchRows, sourceRows, deviceRows, campaignRows] = await Promise.all([
       sql.query<{
-        page_views: number;
-        visitors: number;
-        sessions: number;
-        wallpaper_views: number;
         downloads: number;
         favorites: number;
         shares: number;
-        searches: number;
-        app_opens: number;
+        search_misses: number;
         campaign_clicks: number;
+        campaign_visitors: number;
       }>(
         `select
-           count(*) filter (where event_name = 'page_view')::int as page_views,
-           count(distinct visitor_id) filter (where event_name = 'page_view' and visitor_id is not null)::int as visitors,
-           count(distinct session_id) filter (where event_name = 'page_view' and session_id is not null)::int as sessions,
-           count(*) filter (where event_name = 'wallpaper_view')::int as wallpaper_views,
            count(*) filter (where event_name = 'download')::int as downloads,
            count(*) filter (where event_name = 'favorite_add')::int as favorites,
            count(*) filter (where event_name = 'share')::int as shares,
-           count(*) filter (where event_name = 'search')::int as searches,
-           count(*) filter (where event_name = 'open_app')::int as app_opens,
-           count(*) filter (where event_name = 'campaign_visit')::int as campaign_clicks
+           count(*) filter (where event_name = 'search_zero_results')::int as search_misses,
+           count(*) filter (where event_name = 'campaign_visit')::int as campaign_clicks,
+           count(distinct visitor_id) filter (
+             where event_name = 'campaign_visit' and visitor_id is not null
+           )::int as campaign_visitors
          from analytics_events where ${windowSql}`,
         params,
       ),
-      sql.query<{ day: string; page_views: number; wallpaper_views: number; downloads: number }>(
+      sql.query<{ day: string; downloads: number; campaign_clicks: number }>(
         `select to_char(date_trunc('day', occurred_at), 'YYYY-MM-DD') as day,
-                count(*) filter (where event_name = 'page_view')::int as page_views,
-                count(*) filter (where event_name = 'wallpaper_view')::int as wallpaper_views,
-                count(*) filter (where event_name = 'download')::int as downloads
+                count(*) filter (where event_name = 'download')::int as downloads,
+                count(*) filter (where event_name = 'campaign_visit')::int as campaign_clicks
          from analytics_events
          where ${windowSql}
          group by 1 order by 1 asc`,
         params,
       ),
-      sql.query<{ id: string; slug: string | null; title: string; views: number; downloads: number; shares: number }>(
+      sql.query<{ id: string; slug: string | null; title: string; downloads: number; shares: number }>(
         `select w.id, w.slug, w.title,
-                count(*) filter (where e.event_name = 'wallpaper_view')::int as views,
                 count(*) filter (where e.event_name = 'download')::int as downloads,
                 count(*) filter (where e.event_name = 'share')::int as shares
          from analytics_events e
          join wallpapers w on w.id = e.wallpaper_id or w.slug = e.wallpaper_id
          where e.occurred_at >= now() - ($1::int * interval '1 day')
-           and e.event_name in ('wallpaper_view','download','share')
+           and e.event_name in ('download','share')
          group by w.id, w.slug, w.title
-         order by views desc, downloads desc, shares desc
+         order by downloads desc, shares desc
          limit 10`,
-        params,
-      ),
-      sql.query<{ slug: string; views: number }>(
-        `select category_slug as slug, count(*)::int as views
-         from analytics_events
-         where ${windowSql} and event_name = 'category_view' and category_slug is not null
-         group by category_slug order by views desc limit 10`,
         params,
       ),
       sql.query<{ query: string; searches: number }>(
         `select search_query as query, count(*)::int as searches
          from analytics_events
-         where ${windowSql} and event_name = 'search' and search_query is not null
+         where ${windowSql} and event_name = 'search_zero_results' and search_query is not null
          group by search_query order by searches desc limit 10`,
         params,
       ),
       sql.query<{ source: string; visits: number }>(
-        `select coalesce(nullif(source, ''), 'direct') as source, count(*)::int as visits
+        `select coalesce(nullif(source, ''), 'unknown') as source, count(*)::int as visits
          from analytics_events
-         where ${windowSql} and event_name = 'page_view'
+         where ${windowSql} and event_name = 'campaign_visit'
          group by 1 order by visits desc limit 10`,
         params,
       ),
       sql.query<{ device: string; visits: number }>(
         `select coalesce(nullif(device_type, ''), 'unknown') as device, count(*)::int as visits
          from analytics_events
-         where ${windowSql} and event_name = 'page_view'
+         where ${windowSql} and event_name = 'campaign_visit'
          group by 1 order by visits desc`,
         params,
       ),
-      sql.query<{ source: string; campaign: string; medium: string; clicks: number; visitors: number }>(
+      sql.query<{ source: string; campaign: string; medium: string; clicks: number; visitors: number; downloads: number }>(
         `select
            coalesce(nullif(source, ''), 'unknown') as source,
            coalesce(nullif(metadata->>'utm_campaign', ''), 'unassigned') as campaign,
            coalesce(nullif(metadata->>'utm_medium', ''), 'unknown') as medium,
-           count(*)::int as clicks,
-           count(distinct visitor_id) filter (where visitor_id is not null)::int as visitors
+           count(*) filter (where event_name = 'campaign_visit')::int as clicks,
+           count(distinct visitor_id) filter (
+             where event_name = 'campaign_visit' and visitor_id is not null
+           )::int as visitors,
+           count(*) filter (where event_name = 'download')::int as downloads
          from analytics_events
-         where ${windowSql} and event_name = 'campaign_visit'
+         where ${windowSql}
+           and event_name in ('campaign_visit', 'download')
+           and nullif(metadata->>'utm_campaign', '') is not null
          group by 1, 2, 3
+         having count(*) filter (where event_name = 'campaign_visit') > 0
          order by clicks desc
          limit 20`,
         params,
@@ -153,32 +146,25 @@ export const getOpsAnalytics = createServerFn({ method: "GET" })
     return {
       days,
       metrics: {
-        pageViews: Number(m?.page_views) || 0,
-        visitors: Number(m?.visitors) || 0,
-        sessions: Number(m?.sessions) || 0,
-        wallpaperViews: Number(m?.wallpaper_views) || 0,
         downloads: Number(m?.downloads) || 0,
         favorites: Number(m?.favorites) || 0,
         shares: Number(m?.shares) || 0,
-        searches: Number(m?.searches) || 0,
-        appOpens: Number(m?.app_opens) || 0,
+        searchMisses: Number(m?.search_misses) || 0,
         campaignClicks: Number(m?.campaign_clicks) || 0,
+        campaignVisitors: Number(m?.campaign_visitors) || 0,
       },
       daily: dailyRows.map((r) => ({
         day: r.day,
-        pageViews: Number(r.page_views) || 0,
-        wallpaperViews: Number(r.wallpaper_views) || 0,
         downloads: Number(r.downloads) || 0,
+        campaignClicks: Number(r.campaign_clicks) || 0,
       })),
       topWallpapers: wallpaperRows.map((r) => ({
         id: r.id,
         slug: r.slug || r.id,
         title: r.title,
-        views: Number(r.views) || 0,
         downloads: Number(r.downloads) || 0,
         shares: Number(r.shares) || 0,
       })),
-      topCategories: categoryRows.map((r) => ({ slug: r.slug, views: Number(r.views) || 0 })),
       topSearches: searchRows.map((r) => ({ query: r.query, searches: Number(r.searches) || 0 })),
       sources: sourceRows.map((r) => ({ source: r.source, visits: Number(r.visits) || 0 })),
       devices: deviceRows.map((r) => ({ device: r.device, visits: Number(r.visits) || 0 })),
@@ -188,6 +174,7 @@ export const getOpsAnalytics = createServerFn({ method: "GET" })
         medium: r.medium,
         clicks: Number(r.clicks) || 0,
         visitors: Number(r.visitors) || 0,
+        downloads: Number(r.downloads) || 0,
       })),
     };
   });

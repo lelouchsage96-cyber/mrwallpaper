@@ -23,6 +23,13 @@ type EventData = {
   metadata?: Record<string, string | number | boolean | null>;
 };
 
+type Attribution = {
+  source: string;
+  medium?: string;
+  campaign?: string;
+  content?: string;
+};
+
 type Gtag = (...args: unknown[]) => void;
 
 declare global {
@@ -34,6 +41,7 @@ declare global {
 const VISITOR_KEY = "mrwallpapers.analytics.visitor.v1";
 const SESSION_KEY = "mrwallpapers.analytics.session.v1";
 const SOURCE_KEY = "mrwallpapers.analytics.source.v1";
+const ATTRIBUTION_KEY = "mrwallpapers.analytics.attribution.v1";
 
 const FIRST_PARTY_DB_EVENTS = new Set<ClientAnalyticsEvent>([
   "campaign_visit",
@@ -75,17 +83,44 @@ function referrerHost(): string | undefined {
   }
 }
 
-function sessionSource(): string {
+function sessionAttribution(): Attribution {
   try {
-    const existing = sessionStorage.getItem(SOURCE_KEY);
-    if (existing) return existing.slice(0, 80);
     const params = new URLSearchParams(window.location.search);
-    const utm = params.get("utm_source")?.trim();
-    const source = (utm || referrerHost() || "direct").slice(0, 80);
-    sessionStorage.setItem(SOURCE_KEY, source);
-    return source;
+    const utmSource = params.get("utm_source")?.trim();
+    if (utmSource) {
+      const next: Attribution = {
+        source: utmSource.slice(0, 80),
+        medium: params.get("utm_medium")?.trim().slice(0, 80) || undefined,
+        campaign: params.get("utm_campaign")?.trim().slice(0, 120) || undefined,
+        content: params.get("utm_content")?.trim().slice(0, 120) || undefined,
+      };
+      sessionStorage.setItem(ATTRIBUTION_KEY, JSON.stringify(next));
+      sessionStorage.setItem(SOURCE_KEY, next.source);
+      return next;
+    }
+
+    const existing = sessionStorage.getItem(ATTRIBUTION_KEY);
+    if (existing) {
+      const parsed = JSON.parse(existing) as Partial<Attribution>;
+      if (parsed.source) {
+        return {
+          source: String(parsed.source).slice(0, 80),
+          medium: parsed.medium ? String(parsed.medium).slice(0, 80) : undefined,
+          campaign: parsed.campaign ? String(parsed.campaign).slice(0, 120) : undefined,
+          content: parsed.content ? String(parsed.content).slice(0, 120) : undefined,
+        };
+      }
+    }
+
+    const legacySource = sessionStorage.getItem(SOURCE_KEY)?.trim();
+    const next: Attribution = {
+      source: (legacySource || referrerHost() || "direct").slice(0, 80),
+    };
+    sessionStorage.setItem(ATTRIBUTION_KEY, JSON.stringify(next));
+    sessionStorage.setItem(SOURCE_KEY, next.source);
+    return next;
   } catch {
-    return "direct";
+    return { source: "direct" };
   }
 }
 
@@ -104,23 +139,31 @@ function trackingAllowed(): boolean {
 export function trackEvent(eventName: ClientAnalyticsEvent, data: EventData = {}): void {
   if (!trackingAllowed()) return;
 
+  const attribution = sessionAttribution();
+  const metadata = {
+    ...(attribution.medium ? { utm_medium: attribution.medium } : {}),
+    ...(attribution.campaign ? { utm_campaign: attribution.campaign } : {}),
+    ...(attribution.content ? { utm_content: attribution.content } : {}),
+    ...data.metadata,
+  };
+
   const payload = {
     eventName,
     visitorId: storageId(localStorage, VISITOR_KEY, "v"),
     sessionId: storageId(sessionStorage, SESSION_KEY, "s"),
     path: window.location.pathname,
     referrerHost: referrerHost(),
-    source: data.source || sessionSource(),
+    source: data.source || attribution.source,
     wallpaperId: data.wallpaperId,
     categorySlug: data.categorySlug,
     searchQuery: data.searchQuery,
     deviceType: deviceType(),
     viewportWidth: window.innerWidth || undefined,
-    metadata: data.metadata,
+    metadata,
   };
 
-  // GA4 handles high-volume navigation events. Keep Postgres analytics for
-  // sparse, high-signal product actions so routine browsing cannot keep Neon awake.
+  // GA4 handles high-volume navigation. Postgres stores only sparse, high-signal
+  // actions so routine browsing does not keep Neon awake.
   if (FIRST_PARTY_DB_EVENTS.has(eventName)) {
     try {
       const body = JSON.stringify(payload);
@@ -153,11 +196,13 @@ export function trackEvent(eventName: ClientAnalyticsEvent, data: EventData = {}
       content_id: data.wallpaperId,
       content_group: data.categorySlug,
       search_term: data.searchQuery,
-      source: data.source || sessionSource(),
+      source: data.source || attribution.source,
+      medium: attribution.medium,
+      campaign: attribution.campaign,
       ...data.metadata,
     });
   } catch {
-    // GA is optional; first-party analytics remains the source of truth.
+    // GA is optional.
   }
 }
 

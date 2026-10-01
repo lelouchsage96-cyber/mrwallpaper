@@ -259,6 +259,7 @@ export type OpsOverview = {
   downloadsYesterday: number;
   downloadsAll: number;
   openReports: number;
+  pendingSubmissions: number;
   users: number;
   premiumSubs: number;
   favorites: number;
