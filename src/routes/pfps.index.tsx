@@ -1,7 +1,9 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { useEffect, useRef, useState } from "react";
 import { BottomNav, DesktopNav } from "@/components/bottom-nav";
+import { InfiniteSentinel } from "@/components/lazy";
 import { PfpDesktopFilters, PfpMobileFilters, type PfpSort } from "@/components/pfp-desktop-filters";
-import { PfpGrid } from "@/components/pfp-grid";
+import { PfpGrid, PfpGridSkeleton } from "@/components/pfp-grid";
 import { SiteFooter } from "@/components/site-footer";
 import { Input } from "@/components/ui/input";
 import {
@@ -86,15 +88,45 @@ export const Route = createFileRoute("/pfps/")({
 
 function PfpIndexPage() {
   const { categories, items, q, sort, page, hasMore } = Route.useLoaderData();
-  const prev = page > 1 ? page - 1 : null;
-  const next = hasMore ? page + 1 : null;
-  function pageHref(target: number) {
-    const params = new URLSearchParams();
-    if (q) params.set("q", q);
-    if (sort !== "trending") params.set("sort", sort);
-    if (target > 1) params.set("page", String(target));
-    const query = params.toString();
-    return query ? `/pfps?${query}` : "/pfps";
+  const [loadedItems, setLoadedItems] = useState(items);
+  const [loadedPage, setLoadedPage] = useState(page);
+  const [moreAvailable, setMoreAvailable] = useState(hasMore);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const busy = useRef(false);
+
+  useEffect(() => {
+    setLoadedItems(items);
+    setLoadedPage(page);
+    setMoreAvailable(hasMore);
+    setLoadingMore(false);
+    busy.current = false;
+  }, [hasMore, items, page, q, sort]);
+
+  function loadMore() {
+    if (busy.current || !moreAvailable) return;
+    busy.current = true;
+    setLoadingMore(true);
+    const nextPage = loadedPage + 1;
+
+    void getPfpIndex({
+      data: {
+        q,
+        sort,
+        page: nextPage,
+      },
+    })
+      .then((res) => {
+        setLoadedItems((current) => {
+          const seen = new Set(current.map((item) => item.id));
+          return [...current, ...res.items.filter((item) => !seen.has(item.id))];
+        });
+        setLoadedPage(res.page);
+        setMoreAvailable(res.hasMore);
+      })
+      .finally(() => {
+        busy.current = false;
+        setLoadingMore(false);
+      });
   }
 
   return (
@@ -122,8 +154,19 @@ function PfpIndexPage() {
       <PfpDesktopFilters categories={categories} sort={sort} />
 
       <section className="mt-5" aria-label="PFP results">
-        {items.length > 0 ? (
-          <PfpGrid items={items} eager={6} />
+        {loadedItems.length > 0 ? (
+          <>
+            <PfpGrid items={loadedItems} eager={6} />
+            <InfiniteSentinel
+              disabled={!moreAvailable || loadingMore}
+              onLoad={loadMore}
+            />
+            {loadingMore ? (
+              <div className="mt-3">
+                <PfpGridSkeleton count={4} />
+              </div>
+            ) : null}
+          </>
         ) : (
           <div className="rounded-2xl bg-elevated px-5 py-12 text-center">
             <p className="text-sm text-muted">
@@ -132,22 +175,6 @@ function PfpIndexPage() {
           </div>
         )}
       </section>
-
-      {(prev || next) ? (
-        <nav className="mt-10 flex items-center gap-4 text-sm" aria-label="Pagination">
-          {prev ? (
-            <a href={pageHref(prev)} className="text-muted hover:text-fg">Previous</a>
-          ) : (
-            <span className="text-subtle">Previous</span>
-          )}
-          <span className="text-muted">Page {page}</span>
-          {next ? (
-            <a href={pageHref(next)} className="text-muted hover:text-fg">Next</a>
-          ) : (
-            <span className="text-subtle">Next</span>
-          )}
-        </nav>
-      ) : null}
 
       <SiteFooter faqHref="/app/faq" />
       </main>
