@@ -25,14 +25,19 @@ export function SectionHeader({
   title,
   to,
   search,
+  meta,
 }: {
   title: string;
   to?: SeeAllTo;
   search?: ExploreSearch;
+  meta?: string;
 }) {
   return (
     <div className="mb-3 flex items-end justify-between gap-3">
-      <h2 className="font-display text-xl text-fg md:text-2xl">{title}</h2>
+      <div className="flex min-w-0 items-baseline gap-2">
+        <h2 className="font-display text-xl text-fg md:text-2xl">{title}</h2>
+        {meta ? <span className="text-xs text-subtle">{meta}</span> : null}
+      </div>
       {to ? (
         <Link
           to={to}

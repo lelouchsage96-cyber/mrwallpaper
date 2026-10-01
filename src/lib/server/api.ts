@@ -68,6 +68,27 @@ async function settle<T>(label: string, task: Promise<T>, fallback: T): Promise<
   }
 }
 
+function dailyRecommendationOrder(cards: WallpaperCard[], seed: string): WallpaperCard[] {
+  function hash(value: string): number {
+    let result = 2166136261;
+    for (let index = 0; index < value.length; index += 1) {
+      result ^= value.charCodeAt(index);
+      result = Math.imul(result, 16777619);
+    }
+    return result >>> 0;
+  }
+
+  return [...cards].sort((a, b) => {
+    const aHash = hash(`${seed}:${a.id}`);
+    const bHash = hash(`${seed}:${b.id}`);
+    return aHash === bHash ? a.id.localeCompare(b.id) : aHash - bHash;
+  });
+}
+
+function recommendationDayKey(): string {
+  return new Date().toISOString().slice(0, 10);
+}
+
 type PublicReadCacheEntry = {
   expiresAt: number;
   value: Promise<unknown>;
@@ -261,11 +282,18 @@ export const getHomeFeed = createServerFn({ method: "GET" })
       tasteIds.length >= 3
         ? settle(
             "recommended",
-            fetchCardList(userId, { order: "trending", limit: 8, device: "phone", categoryIds: tasteIds }),
+            fetchCardList(userId, { order: "trending", limit: 24, device: "phone", categoryIds: tasteIds }),
             none,
           )
         : Promise.resolve(none),
     ]);
+
+    const recommendationSeed = [
+      recommendationDayKey(),
+      userId ?? "guest",
+      ...[...tasteIds].sort(),
+    ].join(":");
+    const dailyRecommended = dailyRecommendationOrder(recommended, recommendationSeed);
     const wotdCard = wotd[0] ?? trendingRaw[0] ?? null;
     const wotdId = wotdCard?.id ?? null;
     const trending = trendingRaw.filter((w) => w.id !== wotdId).slice(0, 16);
@@ -320,7 +348,7 @@ export const getHomeFeed = createServerFn({ method: "GET" })
       wotd: wotdCard,
       trending,
       fresh,
-      recommended,
+      recommended: dailyRecommended,
       editors,
       premium: [],
       live: [],

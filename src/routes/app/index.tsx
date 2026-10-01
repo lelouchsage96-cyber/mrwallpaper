@@ -162,7 +162,7 @@ function HomePage() {
       ) : (
         <div className="space-y-11 lg:space-y-14 xl:space-y-16">
           {homeDisplay.forYou.length > 0 ? (
-            <section><SectionHeader title={t.home.forYou} /><WallpaperGrid items={homeDisplay.forYou} onFavorite={onFavorite} eager={4} mobileLimit={8} /></section>
+            <section><SectionHeader title={t.home.forYou} meta="Refreshes daily" /><WallpaperGrid items={homeDisplay.forYou} onFavorite={onFavorite} eager={4} mobileLimit={8} /></section>
           ) : null}
 
           <section>
