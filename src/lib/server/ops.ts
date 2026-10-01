@@ -375,7 +375,7 @@ export const listOpsWallpapers = createServerFn({ method: "GET" })
          when w.status = 'draft' then 1
          else 2
        end, w.updated_at desc
-       limit ${limitAt} offset ${offsetAt}`,
+       limit $${limitAt} offset $${offsetAt}`,
       params,
     );
     const pageRows = rows.slice(0, pageSize);
