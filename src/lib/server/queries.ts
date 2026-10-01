@@ -288,7 +288,13 @@ const SIMILARITY_STOP_WORDS = new Set([
 ]);
 
 function similarityTerms(source: WallpaperDetail): string[] {
-  const text = [source.primaryKeyword ?? "", source.title, ...source.tags]
+  const text = [
+    source.primaryKeyword ?? "",
+    source.title,
+    source.altText,
+    source.description,
+    ...source.tags,
+  ]
     .join(" ")
     .toLowerCase()
     .replace(/[^a-z0-9\s-]/g, " ");

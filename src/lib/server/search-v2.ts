@@ -28,6 +28,16 @@ const STOP_WORDS = new Set([
   "4k",
   "hd",
   "uhd",
+  "a",
+  "an",
+  "the",
+  "for",
+  "of",
+  "to",
+  "my",
+  "your",
+  "with",
+  "and",
 ]);
 
 const SEARCH_ALIASES: Record<string, string[]> = {
@@ -64,6 +74,26 @@ const SEARCH_ALIASES: Record<string, string[]> = {
   phone: ["mobile", "iphone", "android"],
   ipad: ["tablet"],
   tablet: ["ipad"],
+  minimal: ["minimalist", "clean", "simple"],
+  minimalist: ["minimal", "clean", "simple"],
+  cute: ["kawaii", "adorable", "sweet"],
+  kawaii: ["cute", "adorable"],
+  bow: ["ribbon", "bows"],
+  ribbon: ["bow", "bows"],
+  flower: ["flowers", "floral", "blossom"],
+  flowers: ["flower", "floral", "blossom"],
+  floral: ["flower", "flowers", "blossom"],
+  faith: ["christian", "bible", "scripture", "jesus"],
+  jesus: ["christian", "faith", "bible"],
+  discipline: ["motivation", "motivational", "focus"],
+  study: ["focus", "productivity", "motivation"],
+  calm: ["peaceful", "soft", "serene"],
+  peaceful: ["calm", "serene", "soft"],
+  space: ["cosmic", "galaxy", "stars"],
+  galaxy: ["space", "cosmic", "stars"],
+  gray: ["grey"],
+  grey: ["gray"],
+  burgundy: ["maroon", "wine", "red"],
 };
 
 type SearchSort = "latest" | "trending" | "downloads" | "favorites";
@@ -158,6 +188,7 @@ export const searchWallpapersV2 = createServerFn({ method: "GET" })
 
       const { phrase, groups } = searchGroups(data.q ?? "");
       let relevance = "0";
+      let matchedGroupsSql = "0";
 
       if (phrase && groups.length > 0) {
         params.push(phrase);
@@ -177,8 +208,10 @@ export const searchWallpapersV2 = createServerFn({ method: "GET" })
           const match = `(lower(w.title) like any($${at}::text[])
             or lower(c.name) like any($${at}::text[])
             or replace(lower(c.slug), '-', ' ') like any($${at}::text[])
-            or lower(coalesce(w.alt_text, '')) like any($${at}::text[])
-            or lower(coalesce(w.device_type, 'phone')) like any($${at}::text[])
+            or lower(coalesce(w.alt_text, '')) like any(${at}::text[])
+            or lower(coalesce(w.description, '')) like any(${at}::text[])
+            or lower(coalesce(w.primary_keyword, '')) like any(${at}::text[])
+            or lower(coalesce(w.device_type, 'phone')) like any(${at}::text[])
             or exists (
               select 1 from wallpaper_tags wt
               join tags t on t.id = wt.tag_id
@@ -193,12 +226,18 @@ export const searchWallpapersV2 = createServerFn({ method: "GET" })
               join tags t on t.id = wt.tag_id
               where wt.wallpaper_id = w.id and lower(t.name) like any($${at}::text[])
             ) then 10 else 0 end +
-            case when lower(coalesce(w.alt_text, '')) like any($${at}::text[]) then 5 else 0 end +
-            case when lower(coalesce(w.device_type, 'phone')) like any($${at}::text[]) then 4 else 0 end
+            case when lower(coalesce(w.primary_keyword, '')) like any(${at}::text[]) then 14 else 0 end +
+            case when lower(coalesce(w.alt_text, '')) like any(${at}::text[]) then 6 else 0 end +
+            case when lower(coalesce(w.description, '')) like any(${at}::text[]) then 4 else 0 end +
+            case when lower(coalesce(w.device_type, 'phone')) like any(${at}::text[]) then 3 else 0 end
           )`);
         }
 
-        where.push(groupMatches.join(" and "));
+        const minimumMatches = groups.length <= 2 ? groups.length : Math.max(2, groups.length - 1);
+        const matchedGroups = groupMatches
+          .map((match) => `(case when ${match} then 1 else 0 end)`)
+          .join(" + ");
+        where.push(`(${matchedGroups}) >= ${minimumMatches}`);
         relevance = `(
           case when lower(w.title) = $${exactAt} then 150 else 0 end +
           case when lower(w.title) like $${prefixAt} then 100 else 0 end +
@@ -208,9 +247,12 @@ export const searchWallpapersV2 = createServerFn({ method: "GET" })
             join tags t on t.id = wt.tag_id
             where wt.wallpaper_id = w.id and lower(t.name) = $${exactAt}
           ) then 85 else 0 end +
-          case when lower(w.title) like $${containsAt} then 60 else 0 end +
+          case when lower(coalesce(w.primary_keyword, '')) = ${exactAt} then 95 else 0 end +
+          case when lower(w.title) like ${containsAt} then 60 else 0 end +
+          case when lower(coalesce(w.primary_keyword, '')) like ${containsAt} then 55 else 0 end +
           ${groupScores.join(" + ")}
         )`;
+        matchedGroupsSql = matchedGroups;
       }
 
       const offset = data.offset ?? 0;
@@ -220,8 +262,8 @@ export const searchWallpapersV2 = createServerFn({ method: "GET" })
       params.push(offset);
       const offsetAt = params.length;
 
-      const rows = await sql.query<{ id: string; relevance: number | string }>(
-        `select w.id, ${relevance} as relevance
+      const rows = await sql.query<{ id: string; relevance: number | string; matched_groups: number | string }>(
+        `select w.id, ${relevance} as relevance, ${matchedGroupsSql} as matched_groups
          from wallpapers w
          join categories c on c.id = w.category_id
          where ${where.join(" and ")}
@@ -231,11 +273,17 @@ export const searchWallpapersV2 = createServerFn({ method: "GET" })
       );
 
       const hasMore = rows.length > PAGE_SIZE;
-      const ids = rows.slice(0, PAGE_SIZE).map((row) => row.id);
+      const pageRows = rows.slice(0, PAGE_SIZE);
+      const ids = pageRows.map((row) => row.id);
       const items = await fetchCardsByIds(ids, context.userId);
-      return { items, offset: offset + items.length, hasMore };
+      const relaxed = Boolean(
+        phrase &&
+        pageRows.length > 0 &&
+        !pageRows.some((row) => Number(row.matched_groups) >= groups.length),
+      );
+      return { items, offset: offset + items.length, hasMore: relaxed ? false : hasMore, relaxed };
     } catch (error) {
       console.error("[search-v2]", error);
-      return { items: [], offset: data.offset ?? 0, hasMore: false };
+      return { items: [], offset: data.offset ?? 0, hasMore: false, relaxed: false };
     }
   });

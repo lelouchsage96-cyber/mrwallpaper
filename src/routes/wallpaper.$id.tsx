@@ -254,7 +254,7 @@ function DetailsPage() {
         <div className="pt-6 lg:pt-4">
           <h1 className="font-display text-3xl text-fg lg:text-4xl">{wallpaper.title}</h1>
           <p className="mt-1 text-sm text-muted">
-            <a href={categoryPath(wallpaper.categorySlug)} className="hover:text-fg">
+            <a href={`/app/explore?category=${encodeURIComponent(wallpaper.categorySlug)}`} className="hover:text-fg">
               {wallpaper.categoryName}
             </a>
             {wallpaper.creatorSlug && wallpaper.creatorName ? (
@@ -308,7 +308,7 @@ function DetailsPage() {
                   {wallpaper.tags.map((tag) => (
                     <a
                       key={tag}
-                      href={`/wallpapers?q=${encodeURIComponent(tag)}`}
+                      href={`/app/explore?q=${encodeURIComponent(tag)}&device=all`}
                       className="rounded-full bg-elevated px-3 py-1.5 text-xs text-muted hover:text-fg"
                     >
                       {tag}
@@ -391,7 +391,7 @@ function DetailsPage() {
         <section className="mt-10 px-4 lg:mt-16 lg:px-6">
           <div className="mb-4 flex items-end justify-between gap-3 border-t border-border pt-8">
             <h2 className="font-display text-xl text-fg lg:text-2xl">More like this</h2>
-            <a href={categoryPath(wallpaper.categorySlug)} className="text-sm text-muted hover:text-fg">
+            <a href={`/app/explore?category=${encodeURIComponent(wallpaper.categorySlug)}`} className="text-sm text-muted hover:text-fg">
               View category
             </a>
           </div>

@@ -31,6 +31,17 @@ const sortChips: { id: Sort; label: string }[] = [
   { id: "favorites", label: t.explore.sort.favorites },
 ];
 
+const quickDiscovery = [
+  { label: "Motivational", category: "motivational" },
+  { label: "Bible", category: "bible-verse" },
+  { label: "Aesthetic", category: "aesthetic" },
+  { label: "Dark", category: "dark" },
+  { label: "Anime", category: "anime" },
+  { label: "Cars", category: "cars" },
+] as const;
+
+const vibeChips = ["cute", "minimal", "calm", "faith", "discipline", "space"] as const;
+
 const colorChips = [
   { query: "black", label: "Black", swatch: "#111111" },
   { query: "white", label: "White", swatch: "#f4f4f5" },
@@ -155,6 +166,7 @@ function ExplorePage() {
     void (async () => {
       try {
         const res = await searchWallpapersV2({ data: { q: debounced || undefined, access, sort, offset: nextOffset, categorySlug, device } });
+        if (reset) setShowingSuggestions(Boolean(res.relaxed));
         if (reset && debounced && res.items.length === 0) {
           const trackKey = [debounced.toLowerCase(), categorySlug ?? "", device, sort, access ?? ""].join("|");
           if (zeroTracked.current !== trackKey) {
@@ -220,6 +232,21 @@ function ExplorePage() {
           type="search"
           className="mw-glass-button text-base sm:text-sm"
         />
+
+        {!q && !categorySlug ? (
+          <div className="mt-3 flex gap-2 overflow-x-auto pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+            {quickDiscovery.map((item) => (
+              <button
+                key={item.category}
+                type="button"
+                onClick={() => setSearch({ category: item.category, access, sort, device: "phone" })}
+                className="h-9 shrink-0 rounded-full bg-elevated px-3.5 text-sm text-muted transition-colors hover:text-fg"
+              >
+                {item.label}
+              </button>
+            ))}
+          </div>
+        ) : null}
 
         <div className="mt-3 flex items-center justify-between gap-3">
           <button
@@ -328,7 +355,12 @@ function ExplorePage() {
           </div>
         ) : (
           <>
-            {showingSuggestions && debounced ? <p className="mb-4 text-sm text-muted">No exact matches for “{debounced}”. Try these instead.</p> : null}
+            {showingSuggestions && debounced ? (
+              <div className="mb-4 rounded-xl bg-elevated px-4 py-3">
+                <p className="text-sm font-medium text-fg">Closest matches for “{debounced}”</p>
+                <p className="mt-1 text-xs text-muted">We loosened one part of your search so you still get useful results.</p>
+              </div>
+            ) : null}
             <WallpaperGrid items={items} eager={4} onFavorite={(id, next) => setItems((prev) => prev.map((wallpaper) => wallpaper.id === id ? { ...wallpaper, isFavorite: next } : wallpaper))} />
             <InfiniteSentinel disabled={!hasMore || loading || refreshing || showingSuggestions} onLoad={() => load(false)} />
             {hasMore && !showingSuggestions && (loading || refreshing) ? <div className="mt-4"><WallpaperGridSkeleton count={2} /></div> : null}
@@ -403,6 +435,27 @@ function ExplorePage() {
                 </div>
               </section>
             ) : null}
+
+            <section className="mt-6">
+              <p className="mb-2 text-xs font-medium uppercase tracking-[0.14em] text-subtle">Find by vibe</p>
+              <div className="flex flex-wrap gap-2">
+                {vibeChips.map((term) => (
+                  <button
+                    key={term}
+                    type="button"
+                    onClick={() => {
+                      setQ(term);
+                      setDebounced(term);
+                      setSearch({ q: term, category: undefined, access, sort, device: "all" });
+                      setFiltersOpen(false);
+                    }}
+                    className="h-9 rounded-full bg-elevated px-3 text-sm capitalize text-muted"
+                  >
+                    {term}
+                  </button>
+                ))}
+              </div>
+            </section>
 
             <section className="mt-6">
               <p className="mb-2 text-xs font-medium uppercase tracking-[0.14em] text-subtle">Browse by color</p>
