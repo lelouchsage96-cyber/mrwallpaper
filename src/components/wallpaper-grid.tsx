@@ -9,14 +9,19 @@ export function WallpaperGrid({
   onFavorite,
   eager = 0,
   feature,
+  features,
   mobileLimit,
 }: {
   items: Card[];
   onFavorite?: (id: string, next: boolean) => void;
   eager?: number;
   feature?: { id: string; label: string };
+  features?: Array<{ id: string; label: string }>;
   mobileLimit?: number;
 }) {
+  const featureLabels = new Map<string, string>((features ?? []).map((item) => [item.id, item.label] as const));
+  if (feature) featureLabels.set(feature.id, feature.label);
+
   return (
     <div className={GRID_CLASSES}>
       {items.map((w, i) => (
@@ -25,7 +30,7 @@ export function WallpaperGrid({
           wallpaper={w}
           onFavorite={onFavorite}
           priority={i < eager}
-          featureLabel={feature?.id === w.id ? feature.label : undefined}
+          featureLabel={featureLabels.get(w.id)}
           className={mobileLimit !== undefined && i >= mobileLimit ? "hidden lg:block" : undefined}
         />
       ))}
