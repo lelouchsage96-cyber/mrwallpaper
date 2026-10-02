@@ -96,6 +96,14 @@ function ExplorePage() {
   const hasCustomFilters = Boolean(debounced || categorySlug || device !== "phone" || sort !== "trending" || access);
   const activeFilterCount = Number(Boolean(categorySlug)) + Number(device !== "phone") + Number(sort !== "trending") + Number(Boolean(access));
 
+  const trendingFeatures =
+    sort === "trending"
+      ? items.slice(0, 3).map((wallpaper, index) => ({
+          id: wallpaper.id,
+          label: `#${index + 1} Trending`,
+        }))
+      : undefined;
+
   useEffect(() => {
     void getSearchMetaV2().then((meta) => { setCategories(meta.categories); setPopular(meta.popular); }).catch(() => undefined);
     void getAppConfig().then((config) => {
@@ -361,7 +369,7 @@ function ExplorePage() {
                 <p className="mt-1 text-xs text-muted">We loosened one part of your search so you still get useful results.</p>
               </div>
             ) : null}
-            <WallpaperGrid items={items} eager={4} onFavorite={(id, next) => setItems((prev) => prev.map((wallpaper) => wallpaper.id === id ? { ...wallpaper, isFavorite: next } : wallpaper))} />
+            <WallpaperGrid items={items} eager={4} features={trendingFeatures} onFavorite={(id, next) => setItems((prev) => prev.map((wallpaper) => wallpaper.id === id ? { ...wallpaper, isFavorite: next } : wallpaper))} />
             <InfiniteSentinel disabled={!hasMore || loading || refreshing || showingSuggestions} onLoad={() => load(false)} />
             {hasMore && !showingSuggestions && (loading || refreshing) ? <div className="mt-4"><WallpaperGridSkeleton count={2} /></div> : null}
           </>
