@@ -89,6 +89,13 @@ function recommendationDayKey(): string {
   return new Date().toISOString().slice(0, 10);
 }
 
+function dailyWallpaperOfDay(cards: WallpaperCard[]): WallpaperCard | null {
+  const pool = [...cards.slice(0, 12)].sort((a, b) => a.id.localeCompare(b.id));
+  if (pool.length === 0) return null;
+  const dayNumber = Math.floor(Date.now() / 86_400_000);
+  return pool[dayNumber % pool.length] ?? null;
+}
+
 type PublicReadCacheEntry = {
   expiresAt: number;
   value: Promise<unknown>;
@@ -245,14 +252,13 @@ export const getHomeFeed = createServerFn({ method: "GET" })
     const none: WallpaperCard[] = [];
     const marketOn = await marketplaceEnabled();
     const creators = [];
-    const [categories, collections, trendingRaw, freshRaw, tabletRaw, wotdIds, editorIds] =
+    const [categories, collections, trendingRaw, freshRaw, tabletRaw, editorIds] =
       await Promise.all([
         settle("categories", fetchCategories(), []),
         settle("collections", fetchCollections(), []),
         settle("trending", fetchCardList(userId, { order: "trending", limit: 24, device: "phone" }), none),
         settle("fresh", fetchCardList(userId, { order: "fresh", limit: 12, device: "phone" }), none),
         settle("tablet", fetchCardList(userId, { order: "fresh", limit: 6, device: "tablet" }), none),
-        settle("wotd", fetchFeaturedIds("wotd"), []),
         settle("editors", fetchFeaturedIds("editors_choice"), []),
       ]);
     if (userId) {
@@ -267,8 +273,7 @@ export const getHomeFeed = createServerFn({ method: "GET" })
         console.error("[home] taste", err);
       }
     }
-    const [wotd, editors, pairs, recommended] = await Promise.all([
-      settle("wotdCards", fetchCardsByIds(wotdIds.slice(0, 1), userId), none),
+    const [editors, pairs, recommended] = await Promise.all([
       settle("editorCards", fetchCardsByIds(editorIds, userId), none),
       settle(
         "duos",
@@ -294,7 +299,7 @@ export const getHomeFeed = createServerFn({ method: "GET" })
       ...[...tasteIds].sort(),
     ].join(":");
     const dailyRecommended = dailyRecommendationOrder(recommended, recommendationSeed);
-    const wotdCard = wotd[0] ?? trendingRaw[0] ?? null;
+    const wotdCard = dailyWallpaperOfDay(freshRaw.length > 0 ? freshRaw : trendingRaw);
     const wotdId = wotdCard?.id ?? null;
     const trending = trendingRaw.filter((w) => w.id !== wotdId).slice(0, 16);
     const fresh = freshRaw.filter((w) => w.id !== wotdId).slice(0, 8);

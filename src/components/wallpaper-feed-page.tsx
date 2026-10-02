@@ -57,6 +57,14 @@ export function WallpaperFeedPage({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [sort, device]);
 
+  const trendingFeatures =
+    sort === "trending"
+      ? items.slice(0, 3).map((wallpaper, index) => ({
+          id: wallpaper.id,
+          label: `#${index + 1} Trending`,
+        }))
+      : undefined;
+
   return (
     <div className="px-4 pt-5">
       <h1 className="font-display text-3xl text-fg">{title}</h1>
@@ -74,6 +82,7 @@ export function WallpaperFeedPage({
             <WallpaperGrid
               items={items}
               eager={4}
+              features={trendingFeatures}
               onFavorite={(id, next) =>
                 setItems((prev) => prev.map((w) => (w.id === id ? { ...w, isFavorite: next } : w)))
               }
