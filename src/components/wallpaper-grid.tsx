@@ -19,7 +19,7 @@ export function WallpaperGrid({
   features?: Array<{ id: string; label: string }>;
   mobileLimit?: number;
 }) {
-  const featureLabels = new Map((features ?? []).map((item) => [item.id, item.label]));
+  const featureLabels = new Map<string, string>((features ?? []).map((item) => [item.id, item.label] as const));
   if (feature) featureLabels.set(feature.id, feature.label);
 
   return (
