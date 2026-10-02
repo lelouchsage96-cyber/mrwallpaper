@@ -20,7 +20,7 @@ import { cn, formatCount } from "@/lib/utils";
 export const Route = createFileRoute("/ops/wallpapers")({ component: OpsWallpapersPage });
 
 const statuses = ["pending", "approved", "draft", "rejected", "removed"] as const;
-const slots = ["wotd", "editors_choice"] as const;
+const slots = ["wotd"] as const;
 
 function Select({
   value,
@@ -45,8 +45,8 @@ function Select({
   );
 }
 
-function slotLabel(slot: string) {
-  return slot === "wotd" ? t.ops.wotd : t.ops.editors;
+function slotLabel() {
+  return t.ops.wotd;
 }
 
 function Field({
@@ -71,7 +71,7 @@ function CatalogRow({
 }: {
   w: OpsWallpaperRow;
   onPatch: (next: Partial<OpsWallpaperRow>) => void;
-  onPlace: (slot: "wotd" | "editors_choice") => void;
+  onPlace: (slot: "wotd") => void;
 }) {
   return (
     <li className="px-4 py-4">
@@ -130,14 +130,13 @@ function CatalogRow({
               value=""
               aria-label={t.ops.placeOn}
               onChange={(v) => {
-                if (v === "wotd" || v === "editors_choice") onPlace(v);
+                if (v === "wotd") onPlace(v);
               }}
             >
               <option value="" disabled>
                 {t.ops.placeOn}
               </option>
               <option value="wotd">{t.ops.placeWotd}</option>
-              <option value="editors_choice">{t.ops.placeEditors}</option>
             </Select>
           ) : null}
         </div>
@@ -302,7 +301,7 @@ function OpsWallpapersPage() {
             return (
               <div key={slot} className="rounded-xl bg-elevated p-4">
                 <p className="text-xs font-medium tracking-widest text-subtle uppercase">
-                  {slotLabel(slot)}
+                  {slotLabel()}
                 </p>
                 {rows.length === 0 ? (
                   <p className="mt-4 text-sm text-muted">{t.ops.emptySlot}</p>
