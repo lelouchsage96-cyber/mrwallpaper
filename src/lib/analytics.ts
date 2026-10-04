@@ -32,9 +32,12 @@ type Attribution = {
 
 type Gtag = (...args: unknown[]) => void;
 
+type VercelAnalytics = (...args: unknown[]) => void;
+
 declare global {
   interface Window {
     gtag?: Gtag;
+    va?: VercelAnalytics;
   }
 }
 
@@ -192,7 +195,9 @@ export function trackEvent(eventName: ClientAnalyticsEvent, data: EventData = {}
 
   try {
     window.gtag?.("event", eventName, {
-      page_path: window.location.pathname,
+      page_path: `${window.location.pathname}${window.location.search}`,
+      page_location: window.location.href,
+      page_title: document.title,
       content_id: data.wallpaperId,
       content_group: data.categorySlug,
       search_term: data.searchQuery,
@@ -203,6 +208,24 @@ export function trackEvent(eventName: ClientAnalyticsEvent, data: EventData = {}
     });
   } catch {
     // GA is optional.
+  }
+
+  if (eventName !== "page_view") {
+    try {
+      const vercelData: Record<string, string | number | boolean> = {};
+      if (data.wallpaperId) vercelData.wallpaperId = data.wallpaperId;
+      if (data.categorySlug) vercelData.category = data.categorySlug;
+      if (data.searchQuery) vercelData.search = data.searchQuery.slice(0, 100);
+      vercelData.source = data.source || attribution.source;
+      for (const [key, value] of Object.entries(metadata)) {
+        if (typeof value === "string" || typeof value === "number" || typeof value === "boolean") {
+          vercelData[key] = typeof value === "string" ? value.slice(0, 100) : value;
+        }
+      }
+      window.va?.("event", { name: eventName, data: vercelData });
+    } catch {
+      // Vercel Analytics is optional.
+    }
   }
 }
 
