@@ -52,6 +52,7 @@ const FIRST_PARTY_DB_EVENTS = new Set<ClientAnalyticsEvent>([
   "favorite_add",
   "favorite_remove",
   "share",
+  "search",
   "search_zero_results",
 ]);
 
