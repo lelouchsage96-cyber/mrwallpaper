@@ -27,14 +27,20 @@ export type AnalyticsOverview = {
   metrics: {
     downloads: number;
     favorites: number;
+    favoriteRemoves: number;
+    netFavorites: number;
     shares: number;
+    searches: number;
     searchMisses: number;
+    searchMissRate: number;
     campaignClicks: number;
     campaignVisitors: number;
   };
   daily: Array<{ day: string; downloads: number; campaignClicks: number }>;
-  topWallpapers: Array<{ id: string; slug: string; title: string; downloads: number; shares: number }>;
+  topWallpapers: Array<{ id: string; slug: string; title: string; downloads: number; favorites: number; shares: number }>;
   topSearches: Array<{ query: string; searches: number }>;
+  missedSearches: Array<{ query: string; searches: number }>;
+  topCategories: Array<{ category: string; actions: number; downloads: number; favorites: number; shares: number }>;
   sources: Array<{ source: string; visits: number }>;
   devices: Array<{ device: string; visits: number }>;
   campaigns: Array<{
@@ -56,11 +62,13 @@ export const getOpsAnalytics = createServerFn({ method: "GET" })
     const params = [days];
     const windowSql = `occurred_at >= now() - ($1::int * interval '1 day')`;
 
-    const [metricRows, dailyRows, wallpaperRows, searchRows, sourceRows, deviceRows, campaignRows] = await Promise.all([
+    const [metricRows, dailyRows, wallpaperRows, searchRows, missedSearchRows, categoryRows, sourceRows, deviceRows, campaignRows] = await Promise.all([
       sql.query<{
         downloads: number;
         favorites: number;
+        favorite_removes: number;
         shares: number;
+        searches: number;
         search_misses: number;
         campaign_clicks: number;
         campaign_visitors: number;
@@ -68,7 +76,9 @@ export const getOpsAnalytics = createServerFn({ method: "GET" })
         `select
            count(*) filter (where event_name = 'download')::int as downloads,
            count(*) filter (where event_name = 'favorite_add')::int as favorites,
+           count(*) filter (where event_name = 'favorite_remove')::int as favorite_removes,
            count(*) filter (where event_name = 'share')::int as shares,
+           count(*) filter (where event_name = 'search')::int as searches,
            count(*) filter (where event_name = 'search_zero_results')::int as search_misses,
            count(*) filter (where event_name = 'campaign_visit')::int as campaign_clicks,
            count(distinct visitor_id) filter (
@@ -86,17 +96,25 @@ export const getOpsAnalytics = createServerFn({ method: "GET" })
          group by 1 order by 1 asc`,
         params,
       ),
-      sql.query<{ id: string; slug: string | null; title: string; downloads: number; shares: number }>(
+      sql.query<{ id: string; slug: string | null; title: string; downloads: number; favorites: number; shares: number }>(
         `select w.id, w.slug, w.title,
                 count(*) filter (where e.event_name = 'download')::int as downloads,
+                count(*) filter (where e.event_name = 'favorite_add')::int as favorites,
                 count(*) filter (where e.event_name = 'share')::int as shares
          from analytics_events e
          join wallpapers w on w.id = e.wallpaper_id or w.slug = e.wallpaper_id
          where e.occurred_at >= now() - ($1::int * interval '1 day')
-           and e.event_name in ('download','share')
+           and e.event_name in ('download','favorite_add','share')
          group by w.id, w.slug, w.title
-         order by downloads desc, shares desc
+         order by downloads desc, favorites desc, shares desc
          limit 10`,
+        params,
+      ),
+      sql.query<{ query: string; searches: number }>(
+        `select search_query as query, count(*)::int as searches
+         from analytics_events
+         where ${windowSql} and event_name = 'search' and search_query is not null
+         group by search_query order by searches desc limit 10`,
         params,
       ),
       sql.query<{ query: string; searches: number }>(
@@ -104,6 +122,21 @@ export const getOpsAnalytics = createServerFn({ method: "GET" })
          from analytics_events
          where ${windowSql} and event_name = 'search_zero_results' and search_query is not null
          group by search_query order by searches desc limit 10`,
+        params,
+      ),
+      sql.query<{ category: string; actions: number; downloads: number; favorites: number; shares: number }>(
+        `select coalesce(nullif(category_slug, ''), 'uncategorized') as category,
+                count(*)::int as actions,
+                count(*) filter (where event_name = 'download')::int as downloads,
+                count(*) filter (where event_name = 'favorite_add')::int as favorites,
+                count(*) filter (where event_name = 'share')::int as shares
+         from analytics_events
+         where ${windowSql}
+           and event_name in ('download','favorite_add','share')
+           and category_slug is not null
+         group by 1
+         order by actions desc
+         limit 10`,
         params,
       ),
       sql.query<{ source: string; visits: number }>(
@@ -148,8 +181,12 @@ export const getOpsAnalytics = createServerFn({ method: "GET" })
       metrics: {
         downloads: Number(m?.downloads) || 0,
         favorites: Number(m?.favorites) || 0,
+        favoriteRemoves: Number(m?.favorite_removes) || 0,
+        netFavorites: Math.max(0, (Number(m?.favorites) || 0) - (Number(m?.favorite_removes) || 0)),
         shares: Number(m?.shares) || 0,
+        searches: Number(m?.searches) || 0,
         searchMisses: Number(m?.search_misses) || 0,
+        searchMissRate: Number(m?.searches) > 0 ? ((Number(m?.search_misses) || 0) / Number(m?.searches)) * 100 : 0,
         campaignClicks: Number(m?.campaign_clicks) || 0,
         campaignVisitors: Number(m?.campaign_visitors) || 0,
       },
@@ -163,9 +200,18 @@ export const getOpsAnalytics = createServerFn({ method: "GET" })
         slug: r.slug || r.id,
         title: r.title,
         downloads: Number(r.downloads) || 0,
+        favorites: Number(r.favorites) || 0,
         shares: Number(r.shares) || 0,
       })),
       topSearches: searchRows.map((r) => ({ query: r.query, searches: Number(r.searches) || 0 })),
+      missedSearches: missedSearchRows.map((r) => ({ query: r.query, searches: Number(r.searches) || 0 })),
+      topCategories: categoryRows.map((r) => ({
+        category: r.category,
+        actions: Number(r.actions) || 0,
+        downloads: Number(r.downloads) || 0,
+        favorites: Number(r.favorites) || 0,
+        shares: Number(r.shares) || 0,
+      })),
       sources: sourceRows.map((r) => ({ source: r.source, visits: Number(r.visits) || 0 })),
       devices: deviceRows.map((r) => ({ device: r.device, visits: Number(r.visits) || 0 })),
       campaigns: campaignRows.map((r) => ({
