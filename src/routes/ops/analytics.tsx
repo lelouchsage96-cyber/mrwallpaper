@@ -5,8 +5,10 @@ import {
   Heart,
   MonitorSmartphone,
   MousePointerClick,
+  Search,
   SearchX,
   Share2,
+  TrendingUp,
   Users,
 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
@@ -158,9 +160,9 @@ function OpsAnalyticsPage() {
               icon={<Download className="size-4" />}
             />
             <MetricCard
-              label="Favorites"
-              value={data.metrics.favorites}
-              hint="Added to favorites"
+              label="Net favorites"
+              value={data.metrics.netFavorites}
+              hint={`${n(data.metrics.favorites)} added · ${n(data.metrics.favoriteRemoves)} removed`}
               icon={<Heart className="size-4" />}
             />
             <MetricCard
@@ -170,10 +172,10 @@ function OpsAnalyticsPage() {
               icon={<Share2 className="size-4" />}
             />
             <MetricCard
-              label="Search misses"
-              value={data.metrics.searchMisses}
-              hint="Searches that returned no results"
-              icon={<SearchX className="size-4" />}
+              label="Searches"
+              value={data.metrics.searches}
+              hint={data.metrics.searches ? `${data.metrics.searchMissRate.toFixed(1)}% returned no results` : "Search tracking starts with this release"}
+              icon={<Search className="size-4" />}
             />
             <MetricCard
               label="Campaign visitors"
@@ -295,7 +297,7 @@ function OpsAnalyticsPage() {
                       <span className="w-6 text-xs text-subtle">{index + 1}</span>
                       <span className="min-w-0 flex-1 truncate text-sm text-fg">{item.title}</span>
                       <span className="shrink-0 text-xs text-muted">
-                        {n(item.downloads)} ↓ · {n(item.shares)} shares
+                        {n(item.downloads)} ↓ · {n(item.favorites)} ♥ · {n(item.shares)} shares
                       </span>
                     </Link>
                   ))}
@@ -306,21 +308,57 @@ function OpsAnalyticsPage() {
             </section>
 
             <section className="rounded-xl bg-elevated p-5 shadow-[var(--shadow-border)]">
-              <p className="text-xs font-medium tracking-widest text-subtle uppercase">Search quality</p>
-              <h2 className="mt-1 font-display text-2xl text-fg">Searches with no results</h2>
+              <p className="text-xs font-medium tracking-widest text-subtle uppercase">Search demand</p>
+              <h2 className="mt-1 font-display text-2xl text-fg">Most searched terms</h2>
               <div className="mt-4 space-y-3">
                 {data.topSearches.length ? data.topSearches.map((item) => (
                   <div key={item.query} className="flex items-center justify-between gap-3 text-sm">
                     <span className="min-w-0 truncate text-fg">{item.query}</span>
-                    <span className="shrink-0 text-muted">{n(item.searches)} misses</span>
+                    <span className="shrink-0 text-muted">{n(item.searches)} searches</span>
                   </div>
                 )) : (
-                  <p className="text-sm text-muted">No zero-result searches in this period.</p>
+                  <p className="text-sm text-muted">Search-volume tracking starts with this release.</p>
+                )}
+              </div>
+              <div className="mt-6 border-t border-border pt-5">
+                <div className="flex items-center gap-2">
+                  <SearchX className="size-4 text-muted" />
+                  <p className="text-xs font-medium tracking-widest text-subtle uppercase">No-result searches</p>
+                </div>
+                <div className="mt-3 space-y-3">
+                  {data.missedSearches.length ? data.missedSearches.map((item) => (
+                    <div key={item.query} className="flex items-center justify-between gap-3 text-sm">
+                      <span className="min-w-0 truncate text-fg">{item.query}</span>
+                      <span className="shrink-0 text-muted">{n(item.searches)} misses</span>
+                    </div>
+                  )) : (
+                    <p className="text-sm text-muted">No zero-result searches in this period.</p>
+                  )}
+                </div>
+              </div>
+            </section>
+
+            <section className="rounded-xl bg-elevated p-5 shadow-[var(--shadow-border)]">
+              <div className="flex items-center gap-2">
+                <TrendingUp className="size-4 text-muted" />
+                <p className="text-xs font-medium tracking-widest text-subtle uppercase">Category performance</p>
+              </div>
+              <h2 className="mt-1 font-display text-2xl text-fg">Top categories by action</h2>
+              <div className="mt-4 space-y-3">
+                {data.topCategories.length ? data.topCategories.map((item) => (
+                  <div key={item.category} className="flex items-center justify-between gap-3 text-sm">
+                    <span className="min-w-0 truncate capitalize text-fg">{item.category.replaceAll("-", " ")}</span>
+                    <span className="shrink-0 text-muted">
+                      {n(item.downloads)} ↓ · {n(item.favorites)} ♥ · {n(item.shares)} ↗
+                    </span>
+                  </div>
+                )) : (
+                  <p className="text-sm text-muted">Category actions will appear after downloads, favorites, or shares.</p>
                 )}
               </div>
             </section>
 
-            <section className="rounded-xl bg-elevated p-5 shadow-[var(--shadow-border)] lg:col-span-2">
+            <section className="rounded-xl bg-elevated p-5 shadow-[var(--shadow-border)]">
               <div className="grid gap-6 md:grid-cols-2">
                 <div>
                   <p className="text-xs font-medium tracking-widest text-subtle uppercase">Acquisition</p>
