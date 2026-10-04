@@ -526,7 +526,7 @@ function SubmitWallpaperPage() {
                 <span className="text-sm leading-relaxed text-muted">
                   I created this image or I have permission to share and distribute it. I understand
                   that, if approved, it will be available as a free wallpaper on Mr Wallpapers.{" "}
-                  <Link to="/legal/guidelines" className="font-medium text-fg underline underline-offset-2">
+                  <Link to="/legal/$slug" params={{ slug: "guidelines" }} className="font-medium text-fg underline underline-offset-2">
                     Submission guidelines
                   </Link>
                 </span>

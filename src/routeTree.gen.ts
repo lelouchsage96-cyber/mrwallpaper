@@ -15,13 +15,17 @@ import { Route as AboutRouteImport } from './routes/about'
 import { Route as AppRouteImport } from './routes/app'
 import { Route as ContactRouteImport } from './routes/contact'
 import { Route as CreatorsRouteImport } from './routes/creators'
+import { Route as FaqRouteImport } from './routes/faq'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as OnboardingRouteImport } from './routes/onboarding'
 import { Route as OpsRouteImport } from './routes/ops'
 import { Route as ResetPasswordRouteImport } from './routes/reset-password'
 import { Route as RobotsDottxtRouteImport } from './routes/robots[.]txt'
+import { Route as SettingsRouteImport } from './routes/settings'
 import { Route as SitemapDotxmlRouteImport } from './routes/sitemap[.]xml'
 import { Route as StudioRouteImport } from './routes/studio'
+import { Route as SubmitRouteImport } from './routes/submit'
+import { Route as WallioRouteImport } from './routes/wallio'
 import { Route as ApiAnalyticsRouteImport } from './routes/api/analytics'
 import { Route as ApiOpsOriginalRouteImport } from './routes/api/ops-original'
 import { Route as ApiStudioOriginalRouteImport } from './routes/api/studio-original'
@@ -29,11 +33,13 @@ import { Route as AppIndexRouteImport } from './routes/app/index'
 import { Route as AppCreatorsRouteImport } from './routes/app/creators'
 import { Route as AppDownloadsRouteImport } from './routes/app/downloads'
 import { Route as AppExploreRouteImport } from './routes/app/explore'
+import { Route as AppFaqRouteImport } from './routes/app/faq'
 import { Route as AppFavoritesRouteImport } from './routes/app/favorites'
 import { Route as AppFreshRouteImport } from './routes/app/fresh'
 import { Route as AppNotificationsRouteImport } from './routes/app/notifications'
 import { Route as AppPremiumRouteImport } from './routes/app/premium'
 import { Route as AppProfileRouteImport } from './routes/app/profile'
+import { Route as AppSettingsRouteImport } from './routes/app/settings'
 import { Route as AppTabletRouteImport } from './routes/app/tablet'
 import { Route as AppTasteRouteImport } from './routes/app/taste'
 import { Route as AppTrendingRouteImport } from './routes/app/trending'
@@ -44,6 +50,7 @@ import { Route as LegalSlugRouteImport } from './routes/legal.$slug'
 import { Route as MediaSplatRouteImport } from './routes/media.$'
 import { Route as OpsIndexRouteImport } from './routes/ops/index'
 import { Route as OpsAnalyticsRouteImport } from './routes/ops/analytics'
+import { Route as OpsBulkUploadRouteImport } from './routes/ops/bulk-upload'
 import { Route as OpsCreatorsRouteImport } from './routes/ops/creators'
 import { Route as OpsImportR2RouteImport } from './routes/ops/import-r2'
 import { Route as OpsReportsRouteImport } from './routes/ops/reports'
@@ -52,6 +59,9 @@ import { Route as OpsUploadRouteImport } from './routes/ops/upload'
 import { Route as OpsUsersRouteImport } from './routes/ops/users'
 import { Route as OpsWallpapersRouteImport } from './routes/ops/wallpapers'
 import { Route as PairSlugRouteImport } from './routes/pair.$slug'
+import { Route as PfpIdRouteImport } from './routes/pfp.$id'
+import { Route as PfpsIndexRouteImport } from './routes/pfps.index'
+import { Route as PfpsSlugRouteImport } from './routes/pfps.$slug'
 import { Route as StudioIndexRouteImport } from './routes/studio/index'
 import { Route as StudioApplyRouteImport } from './routes/studio/apply'
 import { Route as StudioSubmitRouteImport } from './routes/studio/submit'
@@ -92,6 +102,11 @@ const CreatorsRoute = CreatorsRouteImport.update({
   path: '/creators',
   getParentRoute: () => rootRouteImport,
 } as any)
+const FaqRoute = FaqRouteImport.update({
+  id: '/faq',
+  path: '/faq',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const LoginRoute = LoginRouteImport.update({
   id: '/login',
   path: '/login',
@@ -117,6 +132,11 @@ const RobotsDottxtRoute = RobotsDottxtRouteImport.update({
   path: '/robots.txt',
   getParentRoute: () => rootRouteImport,
 } as any)
+const SettingsRoute = SettingsRouteImport.update({
+  id: '/settings',
+  path: '/settings',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const SitemapDotxmlRoute = SitemapDotxmlRouteImport.update({
   id: '/sitemap.xml',
   path: '/sitemap.xml',
@@ -125,6 +145,16 @@ const SitemapDotxmlRoute = SitemapDotxmlRouteImport.update({
 const StudioRoute = StudioRouteImport.update({
   id: '/studio',
   path: '/studio',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SubmitRoute = SubmitRouteImport.update({
+  id: '/submit',
+  path: '/submit',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const WallioRoute = WallioRouteImport.update({
+  id: '/wallio',
+  path: '/wallio',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ApiAnalyticsRoute = ApiAnalyticsRouteImport.update({
@@ -162,6 +192,11 @@ const AppExploreRoute = AppExploreRouteImport.update({
   path: '/explore',
   getParentRoute: () => AppRoute,
 } as any)
+const AppFaqRoute = AppFaqRouteImport.update({
+  id: '/faq',
+  path: '/faq',
+  getParentRoute: () => AppRoute,
+} as any)
 const AppFavoritesRoute = AppFavoritesRouteImport.update({
   id: '/favorites',
   path: '/favorites',
@@ -185,6 +220,11 @@ const AppPremiumRoute = AppPremiumRouteImport.update({
 const AppProfileRoute = AppProfileRouteImport.update({
   id: '/profile',
   path: '/profile',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppSettingsRoute = AppSettingsRouteImport.update({
+  id: '/settings',
+  path: '/settings',
   getParentRoute: () => AppRoute,
 } as any)
 const AppTabletRoute = AppTabletRouteImport.update({
@@ -237,6 +277,11 @@ const OpsAnalyticsRoute = OpsAnalyticsRouteImport.update({
   path: '/analytics',
   getParentRoute: () => OpsRoute,
 } as any)
+const OpsBulkUploadRoute = OpsBulkUploadRouteImport.update({
+  id: '/bulk-upload',
+  path: '/bulk-upload',
+  getParentRoute: () => OpsRoute,
+} as any)
 const OpsCreatorsRoute = OpsCreatorsRouteImport.update({
   id: '/creators',
   path: '/creators',
@@ -275,6 +320,21 @@ const OpsWallpapersRoute = OpsWallpapersRouteImport.update({
 const PairSlugRoute = PairSlugRouteImport.update({
   id: '/pair/$slug',
   path: '/pair/$slug',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PfpIdRoute = PfpIdRouteImport.update({
+  id: '/pfp/$id',
+  path: '/pfp/$id',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PfpsIndexRoute = PfpsIndexRouteImport.update({
+  id: '/pfps/',
+  path: '/pfps/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PfpsSlugRoute = PfpsSlugRouteImport.update({
+  id: '/pfps/$slug',
+  path: '/pfps/$slug',
   getParentRoute: () => rootRouteImport,
 } as any)
 const StudioIndexRoute = StudioIndexRouteImport.update({
@@ -330,24 +390,30 @@ export interface FileRoutesByFullPath {
   '/app': typeof AppRouteWithChildren
   '/contact': typeof ContactRoute
   '/creators': typeof CreatorsRoute
+  '/faq': typeof FaqRoute
   '/login': typeof LoginRoute
   '/onboarding': typeof OnboardingRoute
   '/ops': typeof OpsRouteWithChildren
   '/reset-password': typeof ResetPasswordRoute
   '/robots.txt': typeof RobotsDottxtRoute
+  '/settings': typeof SettingsRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/studio': typeof StudioRouteWithChildren
+  '/submit': typeof SubmitRoute
+  '/wallio': typeof WallioRoute
   '/api/analytics': typeof ApiAnalyticsRoute
   '/api/ops-original': typeof ApiOpsOriginalRoute
   '/api/studio-original': typeof ApiStudioOriginalRoute
   '/app/creators': typeof AppCreatorsRoute
   '/app/downloads': typeof AppDownloadsRoute
   '/app/explore': typeof AppExploreRoute
+  '/app/faq': typeof AppFaqRoute
   '/app/favorites': typeof AppFavoritesRoute
   '/app/fresh': typeof AppFreshRoute
   '/app/notifications': typeof AppNotificationsRoute
   '/app/premium': typeof AppPremiumRoute
   '/app/profile': typeof AppProfileRoute
+  '/app/settings': typeof AppSettingsRoute
   '/app/tablet': typeof AppTabletRoute
   '/app/taste': typeof AppTasteRoute
   '/app/trending': typeof AppTrendingRoute
@@ -357,6 +423,7 @@ export interface FileRoutesByFullPath {
   '/legal/$slug': typeof LegalSlugRoute
   '/media/$': typeof MediaSplatRoute
   '/ops/analytics': typeof OpsAnalyticsRoute
+  '/ops/bulk-upload': typeof OpsBulkUploadRoute
   '/ops/creators': typeof OpsCreatorsRoute
   '/ops/import-r2': typeof OpsImportR2Route
   '/ops/reports': typeof OpsReportsRoute
@@ -365,12 +432,15 @@ export interface FileRoutesByFullPath {
   '/ops/users': typeof OpsUsersRoute
   '/ops/wallpapers': typeof OpsWallpapersRoute
   '/pair/$slug': typeof PairSlugRoute
+  '/pfp/$id': typeof PfpIdRoute
+  '/pfps/$slug': typeof PfpsSlugRoute
   '/studio/apply': typeof StudioApplyRoute
   '/studio/submit': typeof StudioSubmitRoute
   '/wallpaper/$id': typeof WallpaperIdRoute
   '/wallpapers/$slug': typeof WallpapersSlugRoute
   '/app/': typeof AppIndexRoute
   '/ops/': typeof OpsIndexRoute
+  '/pfps/': typeof PfpsIndexRoute
   '/studio/': typeof StudioIndexRoute
   '/wallpapers/': typeof WallpapersIndexRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
@@ -383,22 +453,28 @@ export interface FileRoutesByTo {
   '/about': typeof AboutRoute
   '/contact': typeof ContactRoute
   '/creators': typeof CreatorsRoute
+  '/faq': typeof FaqRoute
   '/login': typeof LoginRoute
   '/onboarding': typeof OnboardingRoute
   '/reset-password': typeof ResetPasswordRoute
   '/robots.txt': typeof RobotsDottxtRoute
+  '/settings': typeof SettingsRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
+  '/submit': typeof SubmitRoute
+  '/wallio': typeof WallioRoute
   '/api/analytics': typeof ApiAnalyticsRoute
   '/api/ops-original': typeof ApiOpsOriginalRoute
   '/api/studio-original': typeof ApiStudioOriginalRoute
   '/app/creators': typeof AppCreatorsRoute
   '/app/downloads': typeof AppDownloadsRoute
   '/app/explore': typeof AppExploreRoute
+  '/app/faq': typeof AppFaqRoute
   '/app/favorites': typeof AppFavoritesRoute
   '/app/fresh': typeof AppFreshRoute
   '/app/notifications': typeof AppNotificationsRoute
   '/app/premium': typeof AppPremiumRoute
   '/app/profile': typeof AppProfileRoute
+  '/app/settings': typeof AppSettingsRoute
   '/app/tablet': typeof AppTabletRoute
   '/app/taste': typeof AppTasteRoute
   '/app/trending': typeof AppTrendingRoute
@@ -408,6 +484,7 @@ export interface FileRoutesByTo {
   '/legal/$slug': typeof LegalSlugRoute
   '/media/$': typeof MediaSplatRoute
   '/ops/analytics': typeof OpsAnalyticsRoute
+  '/ops/bulk-upload': typeof OpsBulkUploadRoute
   '/ops/creators': typeof OpsCreatorsRoute
   '/ops/import-r2': typeof OpsImportR2Route
   '/ops/reports': typeof OpsReportsRoute
@@ -416,12 +493,15 @@ export interface FileRoutesByTo {
   '/ops/users': typeof OpsUsersRoute
   '/ops/wallpapers': typeof OpsWallpapersRoute
   '/pair/$slug': typeof PairSlugRoute
+  '/pfp/$id': typeof PfpIdRoute
+  '/pfps/$slug': typeof PfpsSlugRoute
   '/studio/apply': typeof StudioApplyRoute
   '/studio/submit': typeof StudioSubmitRoute
   '/wallpaper/$id': typeof WallpaperIdRoute
   '/wallpapers/$slug': typeof WallpapersSlugRoute
   '/app': typeof AppIndexRoute
   '/ops': typeof OpsIndexRoute
+  '/pfps': typeof PfpsIndexRoute
   '/studio': typeof StudioIndexRoute
   '/wallpapers': typeof WallpapersIndexRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
@@ -436,24 +516,30 @@ export interface FileRoutesById {
   '/app': typeof AppRouteWithChildren
   '/contact': typeof ContactRoute
   '/creators': typeof CreatorsRoute
+  '/faq': typeof FaqRoute
   '/login': typeof LoginRoute
   '/onboarding': typeof OnboardingRoute
   '/ops': typeof OpsRouteWithChildren
   '/reset-password': typeof ResetPasswordRoute
   '/robots.txt': typeof RobotsDottxtRoute
+  '/settings': typeof SettingsRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/studio': typeof StudioRouteWithChildren
+  '/submit': typeof SubmitRoute
+  '/wallio': typeof WallioRoute
   '/api/analytics': typeof ApiAnalyticsRoute
   '/api/ops-original': typeof ApiOpsOriginalRoute
   '/api/studio-original': typeof ApiStudioOriginalRoute
   '/app/creators': typeof AppCreatorsRoute
   '/app/downloads': typeof AppDownloadsRoute
   '/app/explore': typeof AppExploreRoute
+  '/app/faq': typeof AppFaqRoute
   '/app/favorites': typeof AppFavoritesRoute
   '/app/fresh': typeof AppFreshRoute
   '/app/notifications': typeof AppNotificationsRoute
   '/app/premium': typeof AppPremiumRoute
   '/app/profile': typeof AppProfileRoute
+  '/app/settings': typeof AppSettingsRoute
   '/app/tablet': typeof AppTabletRoute
   '/app/taste': typeof AppTasteRoute
   '/app/trending': typeof AppTrendingRoute
@@ -463,6 +549,7 @@ export interface FileRoutesById {
   '/legal/$slug': typeof LegalSlugRoute
   '/media/$': typeof MediaSplatRoute
   '/ops/analytics': typeof OpsAnalyticsRoute
+  '/ops/bulk-upload': typeof OpsBulkUploadRoute
   '/ops/creators': typeof OpsCreatorsRoute
   '/ops/import-r2': typeof OpsImportR2Route
   '/ops/reports': typeof OpsReportsRoute
@@ -471,12 +558,15 @@ export interface FileRoutesById {
   '/ops/users': typeof OpsUsersRoute
   '/ops/wallpapers': typeof OpsWallpapersRoute
   '/pair/$slug': typeof PairSlugRoute
+  '/pfp/$id': typeof PfpIdRoute
+  '/pfps/$slug': typeof PfpsSlugRoute
   '/studio/apply': typeof StudioApplyRoute
   '/studio/submit': typeof StudioSubmitRoute
   '/wallpaper/$id': typeof WallpaperIdRoute
   '/wallpapers/$slug': typeof WallpapersSlugRoute
   '/app/': typeof AppIndexRoute
   '/ops/': typeof OpsIndexRoute
+  '/pfps/': typeof PfpsIndexRoute
   '/studio/': typeof StudioIndexRoute
   '/wallpapers/': typeof WallpapersIndexRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
@@ -492,24 +582,30 @@ export interface FileRouteTypes {
     | '/app'
     | '/contact'
     | '/creators'
+    | '/faq'
     | '/login'
     | '/onboarding'
     | '/ops'
     | '/reset-password'
     | '/robots.txt'
+    | '/settings'
     | '/sitemap.xml'
     | '/studio'
+    | '/submit'
+    | '/wallio'
     | '/api/analytics'
     | '/api/ops-original'
     | '/api/studio-original'
     | '/app/creators'
     | '/app/downloads'
     | '/app/explore'
+    | '/app/faq'
     | '/app/favorites'
     | '/app/fresh'
     | '/app/notifications'
     | '/app/premium'
     | '/app/profile'
+    | '/app/settings'
     | '/app/tablet'
     | '/app/taste'
     | '/app/trending'
@@ -519,6 +615,7 @@ export interface FileRouteTypes {
     | '/legal/$slug'
     | '/media/$'
     | '/ops/analytics'
+    | '/ops/bulk-upload'
     | '/ops/creators'
     | '/ops/import-r2'
     | '/ops/reports'
@@ -527,12 +624,15 @@ export interface FileRouteTypes {
     | '/ops/users'
     | '/ops/wallpapers'
     | '/pair/$slug'
+    | '/pfp/$id'
+    | '/pfps/$slug'
     | '/studio/apply'
     | '/studio/submit'
     | '/wallpaper/$id'
     | '/wallpapers/$slug'
     | '/app/'
     | '/ops/'
+    | '/pfps/'
     | '/studio/'
     | '/wallpapers/'
     | '/api/auth/$'
@@ -545,22 +645,28 @@ export interface FileRouteTypes {
     | '/about'
     | '/contact'
     | '/creators'
+    | '/faq'
     | '/login'
     | '/onboarding'
     | '/reset-password'
     | '/robots.txt'
+    | '/settings'
     | '/sitemap.xml'
+    | '/submit'
+    | '/wallio'
     | '/api/analytics'
     | '/api/ops-original'
     | '/api/studio-original'
     | '/app/creators'
     | '/app/downloads'
     | '/app/explore'
+    | '/app/faq'
     | '/app/favorites'
     | '/app/fresh'
     | '/app/notifications'
     | '/app/premium'
     | '/app/profile'
+    | '/app/settings'
     | '/app/tablet'
     | '/app/taste'
     | '/app/trending'
@@ -570,6 +676,7 @@ export interface FileRouteTypes {
     | '/legal/$slug'
     | '/media/$'
     | '/ops/analytics'
+    | '/ops/bulk-upload'
     | '/ops/creators'
     | '/ops/import-r2'
     | '/ops/reports'
@@ -578,12 +685,15 @@ export interface FileRouteTypes {
     | '/ops/users'
     | '/ops/wallpapers'
     | '/pair/$slug'
+    | '/pfp/$id'
+    | '/pfps/$slug'
     | '/studio/apply'
     | '/studio/submit'
     | '/wallpaper/$id'
     | '/wallpapers/$slug'
     | '/app'
     | '/ops'
+    | '/pfps'
     | '/studio'
     | '/wallpapers'
     | '/api/auth/$'
@@ -597,24 +707,30 @@ export interface FileRouteTypes {
     | '/app'
     | '/contact'
     | '/creators'
+    | '/faq'
     | '/login'
     | '/onboarding'
     | '/ops'
     | '/reset-password'
     | '/robots.txt'
+    | '/settings'
     | '/sitemap.xml'
     | '/studio'
+    | '/submit'
+    | '/wallio'
     | '/api/analytics'
     | '/api/ops-original'
     | '/api/studio-original'
     | '/app/creators'
     | '/app/downloads'
     | '/app/explore'
+    | '/app/faq'
     | '/app/favorites'
     | '/app/fresh'
     | '/app/notifications'
     | '/app/premium'
     | '/app/profile'
+    | '/app/settings'
     | '/app/tablet'
     | '/app/taste'
     | '/app/trending'
@@ -624,6 +740,7 @@ export interface FileRouteTypes {
     | '/legal/$slug'
     | '/media/$'
     | '/ops/analytics'
+    | '/ops/bulk-upload'
     | '/ops/creators'
     | '/ops/import-r2'
     | '/ops/reports'
@@ -632,12 +749,15 @@ export interface FileRouteTypes {
     | '/ops/users'
     | '/ops/wallpapers'
     | '/pair/$slug'
+    | '/pfp/$id'
+    | '/pfps/$slug'
     | '/studio/apply'
     | '/studio/submit'
     | '/wallpaper/$id'
     | '/wallpapers/$slug'
     | '/app/'
     | '/ops/'
+    | '/pfps/'
     | '/studio/'
     | '/wallpapers/'
     | '/api/auth/$'
@@ -652,13 +772,17 @@ export interface RootRouteChildren {
   AppRoute: typeof AppRouteWithChildren
   ContactRoute: typeof ContactRoute
   CreatorsRoute: typeof CreatorsRoute
+  FaqRoute: typeof FaqRoute
   LoginRoute: typeof LoginRoute
   OnboardingRoute: typeof OnboardingRoute
   OpsRoute: typeof OpsRouteWithChildren
   ResetPasswordRoute: typeof ResetPasswordRoute
   RobotsDottxtRoute: typeof RobotsDottxtRoute
+  SettingsRoute: typeof SettingsRoute
   SitemapDotxmlRoute: typeof SitemapDotxmlRoute
   StudioRoute: typeof StudioRouteWithChildren
+  SubmitRoute: typeof SubmitRoute
+  WallioRoute: typeof WallioRoute
   ApiAnalyticsRoute: typeof ApiAnalyticsRoute
   ApiOpsOriginalRoute: typeof ApiOpsOriginalRoute
   ApiStudioOriginalRoute: typeof ApiStudioOriginalRoute
@@ -668,8 +792,11 @@ export interface RootRouteChildren {
   LegalSlugRoute: typeof LegalSlugRoute
   MediaSplatRoute: typeof MediaSplatRoute
   PairSlugRoute: typeof PairSlugRoute
+  PfpIdRoute: typeof PfpIdRoute
+  PfpsSlugRoute: typeof PfpsSlugRoute
   WallpaperIdRoute: typeof WallpaperIdRoute
   WallpapersSlugRoute: typeof WallpapersSlugRoute
+  PfpsIndexRoute: typeof PfpsIndexRoute
   WallpapersIndexRoute: typeof WallpapersIndexRoute
   ApiAuthSplatRoute: typeof ApiAuthSplatRoute
   ApiMediaIdRoute: typeof ApiMediaIdRoute
@@ -719,6 +846,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof CreatorsRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/faq': {
+      id: '/faq'
+      path: '/faq'
+      fullPath: '/faq'
+      preLoaderRoute: typeof FaqRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/login': {
       id: '/login'
       path: '/login'
@@ -754,6 +888,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof RobotsDottxtRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/settings': {
+      id: '/settings'
+      path: '/settings'
+      fullPath: '/settings'
+      preLoaderRoute: typeof SettingsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/sitemap.xml': {
       id: '/sitemap.xml'
       path: '/sitemap.xml'
@@ -766,6 +907,20 @@ declare module '@tanstack/react-router' {
       path: '/studio'
       fullPath: '/studio'
       preLoaderRoute: typeof StudioRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/submit': {
+      id: '/submit'
+      path: '/submit'
+      fullPath: '/submit'
+      preLoaderRoute: typeof SubmitRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/wallio': {
+      id: '/wallio'
+      path: '/wallio'
+      fullPath: '/wallio'
+      preLoaderRoute: typeof WallioRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/analytics': {
@@ -817,6 +972,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppExploreRouteImport
       parentRoute: typeof AppRoute
     }
+    '/app/faq': {
+      id: '/app/faq'
+      path: '/faq'
+      fullPath: '/app/faq'
+      preLoaderRoute: typeof AppFaqRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/app/favorites': {
       id: '/app/favorites'
       path: '/favorites'
@@ -850,6 +1012,13 @@ declare module '@tanstack/react-router' {
       path: '/profile'
       fullPath: '/app/profile'
       preLoaderRoute: typeof AppProfileRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/app/settings': {
+      id: '/app/settings'
+      path: '/settings'
+      fullPath: '/app/settings'
+      preLoaderRoute: typeof AppSettingsRouteImport
       parentRoute: typeof AppRoute
     }
     '/app/tablet': {
@@ -922,6 +1091,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof OpsAnalyticsRouteImport
       parentRoute: typeof OpsRoute
     }
+    '/ops/bulk-upload': {
+      id: '/ops/bulk-upload'
+      path: '/bulk-upload'
+      fullPath: '/ops/bulk-upload'
+      preLoaderRoute: typeof OpsBulkUploadRouteImport
+      parentRoute: typeof OpsRoute
+    }
     '/ops/creators': {
       id: '/ops/creators'
       path: '/creators'
@@ -976,6 +1152,27 @@ declare module '@tanstack/react-router' {
       path: '/pair/$slug'
       fullPath: '/pair/$slug'
       preLoaderRoute: typeof PairSlugRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/pfp/$id': {
+      id: '/pfp/$id'
+      path: '/pfp/$id'
+      fullPath: '/pfp/$id'
+      preLoaderRoute: typeof PfpIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/pfps/': {
+      id: '/pfps/'
+      path: '/pfps'
+      fullPath: '/pfps/'
+      preLoaderRoute: typeof PfpsIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/pfps/$slug': {
+      id: '/pfps/$slug'
+      path: '/pfps/$slug'
+      fullPath: '/pfps/$slug'
+      preLoaderRoute: typeof PfpsSlugRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/studio/': {
@@ -1048,11 +1245,13 @@ interface AppRouteChildren {
   AppCreatorsRoute: typeof AppCreatorsRoute
   AppDownloadsRoute: typeof AppDownloadsRoute
   AppExploreRoute: typeof AppExploreRoute
+  AppFaqRoute: typeof AppFaqRoute
   AppFavoritesRoute: typeof AppFavoritesRoute
   AppFreshRoute: typeof AppFreshRoute
   AppNotificationsRoute: typeof AppNotificationsRoute
   AppPremiumRoute: typeof AppPremiumRoute
   AppProfileRoute: typeof AppProfileRoute
+  AppSettingsRoute: typeof AppSettingsRoute
   AppTabletRoute: typeof AppTabletRoute
   AppTasteRoute: typeof AppTasteRoute
   AppTrendingRoute: typeof AppTrendingRoute
@@ -1063,11 +1262,13 @@ const AppRouteChildren: AppRouteChildren = {
   AppCreatorsRoute: AppCreatorsRoute,
   AppDownloadsRoute: AppDownloadsRoute,
   AppExploreRoute: AppExploreRoute,
+  AppFaqRoute: AppFaqRoute,
   AppFavoritesRoute: AppFavoritesRoute,
   AppFreshRoute: AppFreshRoute,
   AppNotificationsRoute: AppNotificationsRoute,
   AppPremiumRoute: AppPremiumRoute,
   AppProfileRoute: AppProfileRoute,
+  AppSettingsRoute: AppSettingsRoute,
   AppTabletRoute: AppTabletRoute,
   AppTasteRoute: AppTasteRoute,
   AppTrendingRoute: AppTrendingRoute,
@@ -1078,6 +1279,7 @@ const AppRouteWithChildren = AppRoute._addFileChildren(AppRouteChildren)
 
 interface OpsRouteChildren {
   OpsAnalyticsRoute: typeof OpsAnalyticsRoute
+  OpsBulkUploadRoute: typeof OpsBulkUploadRoute
   OpsCreatorsRoute: typeof OpsCreatorsRoute
   OpsImportR2Route: typeof OpsImportR2Route
   OpsReportsRoute: typeof OpsReportsRoute
@@ -1091,6 +1293,7 @@ interface OpsRouteChildren {
 
 const OpsRouteChildren: OpsRouteChildren = {
   OpsAnalyticsRoute: OpsAnalyticsRoute,
+  OpsBulkUploadRoute: OpsBulkUploadRoute,
   OpsCreatorsRoute: OpsCreatorsRoute,
   OpsImportR2Route: OpsImportR2Route,
   OpsReportsRoute: OpsReportsRoute,
@@ -1126,13 +1329,17 @@ const rootRouteChildren: RootRouteChildren = {
   AppRoute: AppRouteWithChildren,
   ContactRoute: ContactRoute,
   CreatorsRoute: CreatorsRoute,
+  FaqRoute: FaqRoute,
   LoginRoute: LoginRoute,
   OnboardingRoute: OnboardingRoute,
   OpsRoute: OpsRouteWithChildren,
   ResetPasswordRoute: ResetPasswordRoute,
   RobotsDottxtRoute: RobotsDottxtRoute,
+  SettingsRoute: SettingsRoute,
   SitemapDotxmlRoute: SitemapDotxmlRoute,
   StudioRoute: StudioRouteWithChildren,
+  SubmitRoute: SubmitRoute,
+  WallioRoute: WallioRoute,
   ApiAnalyticsRoute: ApiAnalyticsRoute,
   ApiOpsOriginalRoute: ApiOpsOriginalRoute,
   ApiStudioOriginalRoute: ApiStudioOriginalRoute,
@@ -1142,8 +1349,11 @@ const rootRouteChildren: RootRouteChildren = {
   LegalSlugRoute: LegalSlugRoute,
   MediaSplatRoute: MediaSplatRoute,
   PairSlugRoute: PairSlugRoute,
+  PfpIdRoute: PfpIdRoute,
+  PfpsSlugRoute: PfpsSlugRoute,
   WallpaperIdRoute: WallpaperIdRoute,
   WallpapersSlugRoute: WallpapersSlugRoute,
+  PfpsIndexRoute: PfpsIndexRoute,
   WallpapersIndexRoute: WallpapersIndexRoute,
   ApiAuthSplatRoute: ApiAuthSplatRoute,
   ApiMediaIdRoute: ApiMediaIdRoute,

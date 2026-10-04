@@ -221,7 +221,7 @@ function ProfilePage() {
           <ul className="divide-y divide-border border-t border-border">
             {legalRows.map((row) => (
               <li key={row.to}>
-                <Link to={row.to} className="flex min-h-12 items-center px-4 text-sm text-fg">
+                <Link to="/legal/$slug" params={{ slug: row.to.split("/").pop()! }} className="flex min-h-12 items-center px-4 text-sm text-fg">
                   {row.label}
                 </Link>
               </li>
@@ -232,7 +232,7 @@ function ProfilePage() {
         <ul className="mt-3 hidden divide-y divide-border rounded-[16px] bg-elevated lg:block">
           {legalRows.map((row) => (
             <li key={row.to}>
-              <Link to={row.to} className="flex min-h-12 items-center px-4 text-sm text-fg">
+              <Link to="/legal/$slug" params={{ slug: row.to.split("/").pop()! }} className="flex min-h-12 items-center px-4 text-sm text-fg">
                 {row.label}
               </Link>
             </li>

@@ -1,5 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { loadMediaFile } from "@/lib/server/storage";
+import { mediaBytesResponse, mediaCacheHeaders } from "@/lib/server/media-response";
 
 export const Route = createFileRoute("/api/media/$id")({
   server: {
@@ -14,8 +15,8 @@ export const Route = createFileRoute("/api/media/$id")({
           if (!row) return new Response("Not found", { status: 404 });
           const download = new URL(request.url).searchParams.get("dl");
           const headers: Record<string, string> = {
+            ...mediaCacheHeaders(/-(?:orig|prev|thumb)-[a-f0-9]{8,}$/i.test(id)),
             "Content-Type": row.mime || "application/octet-stream",
-            "Cache-Control": "public, max-age=31536000, immutable",
             "X-Robots-Tag": "noindex, nofollow",
           };
           if (download) {
@@ -30,7 +31,7 @@ export const Route = createFileRoute("/api/media/$id")({
             headers["Content-Disposition"] = `attachment; filename="${id}.${ext}"`;
             headers["Content-Type"] = "application/octet-stream";
           }
-          return new Response(new Uint8Array(row.bytes), { headers });
+          return mediaBytesResponse(request, row.bytes, headers);
         } catch {
           return new Response("Not found", { status: 404 });
         }

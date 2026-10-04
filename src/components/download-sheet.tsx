@@ -43,7 +43,9 @@ async function fetchBytes(url: string, attempts = 2): Promise<Uint8Array> {
 
   for (let attempt = 0; attempt < attempts; attempt += 1) {
     try {
-      const res = await fetch(url, { cache: "no-store" });
+      // Authorization and tracking happen before this fetch. Versioned image
+      // bytes can safely reuse the browser/CDN cache, including on retries.
+      const res = await fetch(url);
       if (!res.ok) throw new Error(`fetch:${res.status}`);
       return new Uint8Array(await res.arrayBuffer());
     } catch (error) {

@@ -92,7 +92,7 @@ function OpsSettingsPage() {
 
   async function save(patch: Parameters<typeof updateOpsSettings>[0]["data"]) {
     const res = await updateOpsSettings({ data: patch });
-    setMsg(res.ok ? t.ops.saved : res.message ?? t.ops.failed);
+    setMsg(res.ok ? t.ops.saved : t.ops.failed);
     if (res.ok) {
       const next = await getOpsSettings();
       setSettings(next);

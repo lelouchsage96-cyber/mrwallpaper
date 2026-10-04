@@ -161,7 +161,7 @@ export const searchWallpapersV2 = createServerFn({ method: "GET" })
       device: z.enum(["all", "phone", "tablet"]).optional(),
     }),
   )
-  .handler(async ({ context, data }): Promise<{ items: WallpaperCard[]; offset: number; hasMore: boolean }> => {
+  .handler(async ({ context, data }): Promise<{ items: WallpaperCard[]; offset: number; hasMore: boolean; relaxed: boolean }> => {
     try {
       const sql = await getSql();
       const params: unknown[] = [];
@@ -174,7 +174,7 @@ export const searchWallpapersV2 = createServerFn({ method: "GET" })
       if (data.categorySlug) {
         const categories = await fetchCategories();
         const category = categories.find((item) => item.slug === data.categorySlug);
-        if (!category) return { items: [], offset: data.offset ?? 0, hasMore: false };
+        if (!category) return { items: [], offset: data.offset ?? 0, hasMore: false, relaxed: false };
         params.push(category.id);
         where.push(`w.category_id = $${params.length}`);
       }

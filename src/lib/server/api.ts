@@ -251,7 +251,7 @@ export const getHomeFeed = createServerFn({ method: "GET" })
     let tasteIds = data?.tasteIds ?? [];
     const none: WallpaperCard[] = [];
     const marketOn = await marketplaceEnabled();
-    const creators = [];
+    const creators: HomePayload["creators"] = [];
     const [categories, collections, trendingRaw, freshRaw, tabletRaw, editorIds] =
       await Promise.all([
         settle("categories", fetchCategories(), []),
@@ -987,7 +987,7 @@ export const listDownloads = createServerFn({ method: "GET" })
       fetchCardsByIds(ids, context.userId),
       fetchPfpCardsByIds(ids, context.userId),
     ]);
-    const byId = new Map([
+    const byId = new Map<string, { card: WallpaperCard; contentType: "wallpaper" | "pfp" }>([
       ...wallpapers.map((card) => [card.id, { card, contentType: "wallpaper" as const }] as const),
       ...pfps.map((card) => [card.id, { card, contentType: "pfp" as const }] as const),
     ]);

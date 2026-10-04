@@ -10,7 +10,7 @@ export function AppErrorComponent({ error, reset }: ErrorComponentProps) {
       </span>
       <h1 className="font-display text-2xl">{t.errors.generic}</h1>
       <p className="max-w-md text-sm break-words text-muted">
-        {error.message || t.errors.empty}
+        {(error instanceof Error ? error.message : String(error ?? "")) || t.errors.empty}
       </p>
       <div className="mt-4 flex flex-wrap items-center justify-center gap-2">
         <button
