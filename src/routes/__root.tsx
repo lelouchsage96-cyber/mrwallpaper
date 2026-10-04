@@ -43,6 +43,8 @@ export const Route = createRootRoute({
       scripts.push({ async: "true", src: `https://www.googletagmanager.com/gtag/js?id=${encodeURIComponent(seo.gaId)}` });
       scripts.push({ children: `window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}window.gtag=gtag;gtag('js',new Date());gtag('config','${seo.gaId}',{anonymize_ip:true,send_page_view:false});` });
     }
+    scripts.push({ children: "window.va=window.va||function(){(window.vaq=window.vaq||[]).push(arguments);};" });
+    scripts.push({ defer: "true", src: "/_vercel/insights/script.js" });
     return {
       meta,
       scripts,
