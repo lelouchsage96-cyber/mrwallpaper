@@ -1213,19 +1213,14 @@ export async function loadPublicPlate(filename: string): Promise<{
       redirect: kind === "thumbnail" ? `/wallpapers/thumbs/${row.id}.webp` : `/wallpapers/${row.id}.jpg`,
     };
   }
-  let mediaId: string | null = null;
-  if (path.startsWith("https://")) {
-    try {
-      const pathname = new URL(path).pathname;
-      const folder = kind === "thumbnail" ? "thumbs" : "previews";
-      const match = pathname.match(new RegExp(`^/${folder}/(.+)-([a-f0-9]{8,})\\.(?:jpe?g|png|webp)$`, "i"));
-      if (match) mediaId = `${match[1]}-${kind === "thumbnail" ? "thumb" : "prev"}-${match[2]}`;
-    } catch {
-      // Non-standard external URLs can still use the original redirect behavior below.
-    }
-    if (!mediaId) return { redirect: path };
-  }
-  const id = mediaId ?? (path.startsWith("/api/media/") ? path.slice("/api/media/".length) : path);
+  // Approved public CDN images must be served by the image CDN itself.
+  // Fetching their bytes into Vercel here consumes Fast Origin Transfer on
+  // every CDN miss, even though R2 already exposes the same image publicly.
+  // Retain the pretty URL as a cacheable redirect for SEO and stable links.
+  if (path.startsWith("https://")) return { redirect: path };
+
+  // Older database-backed media has no public R2 URL; keep its existing path.
+  const id = path.startsWith("/api/media/") ? path.slice("/api/media/".length) : path;
   const { loadMediaFile } = await import("./storage");
   const file = await loadMediaFile(id);
   if (!file) return null;
