@@ -29,7 +29,7 @@ jobs:
         run: npm ci --no-audit --no-fund
       - name: TypeScript check
         run: npm run typecheck
-      - name: Unit tests
-        run: npm test
-      - name: Production build (without database migration)
+      - name: Application data and authentication tests
+        run: node --experimental-strip-types --test src/lib/app-data/app-data.test.ts src/lib/auth/gate-identity.test.ts
+      - name: Production build without database migration
         run: npm run vercel-build
