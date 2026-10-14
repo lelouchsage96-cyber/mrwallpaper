@@ -362,7 +362,7 @@ export async function fetchSimilarCards(
      -- Aggregate tag text once, rather than joining tags for every
      -- candidate wallpaper and each individual similarity term.
      tag_text as materialized (
-       select wt.wallpaper_id, string_agg(lower(t.name), ' ') as text
+       select wt.wallpaper_id, array_agg(lower(t.name)) as names
        from wallpaper_tags wt
        join tags t on t.id = wt.tag_id
        group by wt.wallpaper_id
@@ -380,7 +380,10 @@ export async function fetchSimilarCards(
                   coalesce(w.description, '') || ' ' ||
                   coalesce(w.primary_keyword, '')
                 ) like p.pattern
-                   or coalesce(tx.text, '') like p.pattern
+                   or exists (
+                     select 1 from unnest(coalesce(tx.names, array[]::text[])) as tn(name)
+                     where tn.name like p.pattern
+                   )
               ) as text_hits,
               case
                 when $5 <> '' and lower(coalesce(w.primary_keyword, '')) = $5 then 1
