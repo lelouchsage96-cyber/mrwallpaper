@@ -483,7 +483,7 @@ export function MobileSearchOverlay({
       aria-modal="true"
       aria-label="Search wallpapers"
       onKeyDown={(event) => { if (event.key === "Escape") onOpenChange(false); }}
-      className="fixed inset-0 z-[100] overflow-y-auto overscroll-contain bg-bg px-4 pb-[max(1.5rem,env(safe-area-inset-bottom))] pt-[max(0.75rem,env(safe-area-inset-top))] lg:hidden"
+      className="fixed inset-0 z-[100] overflow-y-auto overscroll-contain bg-bg px-4 pb-[max(1.5rem,env(safe-area-inset-bottom))] pt-[calc(env(safe-area-inset-top,0px)+1rem)] lg:hidden"
     >
       <div className="mx-auto max-w-xl">
         <div className="flex items-center gap-2">
@@ -491,9 +491,9 @@ export function MobileSearchOverlay({
             type="button"
             aria-label="Close search"
             onClick={() => onOpenChange(false)}
-            className="grid size-11 shrink-0 place-items-center rounded-full text-fg"
+            className="grid size-11 shrink-0 place-items-center rounded-full text-fg transition-colors hover:bg-surface"
           >
-            <ArrowLeft className="size-5" />
+            <ArrowLeft className="size-[22px]" strokeWidth={2.1} />
           </button>
           <form
             role="search"
@@ -503,7 +503,7 @@ export function MobileSearchOverlay({
               runSearch(query);
             }}
           >
-            <Search className="ml-3 size-5 shrink-0 text-muted" strokeWidth={1.7} />
+            <Search className="ml-3 size-5 shrink-0 text-fg/80" strokeWidth={2} />
             <input
               ref={inputRef}
               type="search"
@@ -511,7 +511,7 @@ export function MobileSearchOverlay({
               onChange={(event) => setQuery(event.target.value)}
               placeholder="Search wallpapers..."
               aria-label="Search wallpapers"
-              className="min-w-0 flex-1 bg-transparent px-3 text-base text-fg outline-none placeholder:text-muted"
+              className="min-w-0 flex-1 bg-transparent px-3 text-base font-medium text-fg outline-none placeholder:text-fg/70"
             />
             {query ? (
               <button
