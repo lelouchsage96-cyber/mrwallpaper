@@ -226,12 +226,12 @@ export const searchWallpapersV2 = createServerFn({ method: "GET" })
             or lower(coalesce(w.description, '')) like any($${at}::text[])
             or lower(coalesce(w.primary_keyword, '')) like any($${at}::text[])
             or lower(coalesce(w.device_type, 'phone')) like any($${at}::text[])
-            or coalesce(tx.tag_text, '') like any(${at}::text[]))`;
+            or coalesce(tx.tag_text, '') like any($${at}::text[]))`;
           groupMatches.push(match);
           groupScores.push(`(
             case when lower(w.title) like any($${at}::text[]) then 18 else 0 end +
             case when lower(c.name) like any($${at}::text[]) or replace(lower(c.slug), '-', ' ') like any($${at}::text[]) then 12 else 0 end +
-            case when coalesce(tx.tag_text, '') like any(${at}::text[]) then 10 else 0 end +
+            case when coalesce(tx.tag_text, '') like any($${at}::text[]) then 10 else 0 end +
             case when lower(coalesce(w.primary_keyword, '')) like any($${at}::text[]) then 14 else 0 end +
             case when lower(coalesce(w.alt_text, '')) like any($${at}::text[]) then 6 else 0 end +
             case when lower(coalesce(w.description, '')) like any($${at}::text[]) then 4 else 0 end +
@@ -248,7 +248,7 @@ export const searchWallpapersV2 = createServerFn({ method: "GET" })
           case when lower(w.title) = $${exactAt} then 150 else 0 end +
           case when lower(w.title) like $${prefixAt} then 100 else 0 end +
           case when lower(c.name) = $${exactAt} or replace(lower(c.slug), '-', ' ') = $${exactAt} then 90 else 0 end +
-          case when ${exactAt} = any(coalesce(tx.tag_names, array[]::text[])) then 85 else 0 end +
+          case when $${exactAt} = any(coalesce(tx.tag_names, array[]::text[])) then 85 else 0 end +
           case when lower(coalesce(w.primary_keyword, '')) = $${exactAt} then 95 else 0 end +
           case when lower(w.title) like $${containsAt} then 60 else 0 end +
           case when lower(coalesce(w.primary_keyword, '')) like $${containsAt} then 55 else 0 end +
