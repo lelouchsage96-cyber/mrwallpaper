@@ -1,6 +1,7 @@
 import { useNavigate, useRouterState } from "@tanstack/react-router";
 import { ArrowLeft, ArrowRight, Clock3, LoaderCircle, Search, TrendingUp, X } from "lucide-react";
 import { type KeyboardEvent, useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { getPfpIndex } from "@/lib/server/api";
 import { getSearchMetaV2, searchWallpapersV2 } from "@/lib/server/search-v2";
 import type { Category, WallpaperCard } from "@/lib/types";
@@ -177,7 +178,7 @@ function Discovery({
       {recent.length > 0 ? (
         <section>
           <div className="mb-2 flex items-center justify-between gap-4">
-            <p className="text-xs font-medium tracking-[0.14em] text-subtle uppercase">Recent</p>
+            <p className="text-xs font-medium tracking-[0.14em] text-muted uppercase">Recent</p>
             <button type="button" onClick={onClearRecent} className="min-h-10 px-2 text-xs text-muted hover:text-fg">
               Clear
             </button>
@@ -188,7 +189,7 @@ function Discovery({
                 <button
                   type="button"
                   onClick={() => onSearch(term)}
-                  className="flex min-w-0 flex-1 items-center gap-3 px-2 py-2 text-left text-sm text-muted hover:text-fg"
+                  className="flex min-w-0 flex-1 items-center gap-3 px-2 py-2 text-left text-sm text-fg/80 hover:text-fg"
                 >
                   <Clock3 className="size-4 shrink-0 text-subtle" strokeWidth={1.7} />
                   <span className="truncate">{term}</span>
@@ -211,7 +212,7 @@ function Discovery({
         <section>
           <div className="mb-2 flex items-center gap-2">
             <TrendingUp className="size-4 text-subtle" strokeWidth={1.7} />
-            <p className="text-xs font-medium tracking-[0.14em] text-subtle uppercase">Popular</p>
+            <p className="text-xs font-medium tracking-[0.14em] text-muted uppercase">Popular</p>
           </div>
           <div className="flex flex-wrap gap-2">
             {popular.slice(0, 8).map((term) => (
@@ -219,7 +220,7 @@ function Discovery({
                 key={term}
                 type="button"
                 onClick={() => onSearch(term)}
-                className="min-h-10 rounded-full bg-surface px-3.5 text-sm text-muted hover:text-fg"
+                className="min-h-10 rounded-full bg-surface px-3.5 text-sm text-fg/80 hover:text-fg"
               >
                 {term}
               </button>
@@ -230,14 +231,14 @@ function Discovery({
 
       {categories.length > 0 ? (
         <section>
-          <p className="mb-2 text-xs font-medium tracking-[0.14em] text-subtle uppercase">Categories</p>
+          <p className="mb-2 text-xs font-medium tracking-[0.14em] text-muted uppercase">Categories</p>
           <div className="flex flex-wrap gap-2">
             {categories.slice(0, 8).map((category) => (
               <button
                 key={category.id}
                 type="button"
                 onClick={() => onCategory(category)}
-                className="min-h-10 rounded-full bg-surface px-3.5 text-sm text-muted hover:text-fg"
+                className="min-h-10 rounded-full bg-surface px-3.5 text-sm text-fg/80 hover:text-fg"
               >
                 {category.name}
               </button>
@@ -474,8 +475,16 @@ export function MobileSearchOverlay({
     void navigate({ to: "/wallpaper/$id", params: { id: wallpaper.slug || wallpaper.id } });
   }
 
-  return (
-    <div className="fixed inset-0 z-[70] overflow-y-auto bg-bg px-4 pb-[max(1.5rem,env(safe-area-inset-bottom))] pt-[max(0.75rem,env(safe-area-inset-top))] lg:hidden">
+  // Portal outside the animated Home page so iOS does not rasterize or stack
+  // the modal beneath the fixed bottom navigation.
+  return createPortal(
+    <div
+      role="dialog"
+      aria-modal="true"
+      aria-label="Search wallpapers"
+      onKeyDown={(event) => { if (event.key === "Escape") onOpenChange(false); }}
+      className="fixed inset-0 z-[100] overflow-y-auto overscroll-contain bg-bg px-4 pb-[max(1.5rem,env(safe-area-inset-bottom))] pt-[max(0.75rem,env(safe-area-inset-top))] lg:hidden"
+    >
       <div className="mx-auto max-w-xl">
         <div className="flex items-center gap-2">
           <button
@@ -488,13 +497,13 @@ export function MobileSearchOverlay({
           </button>
           <form
             role="search"
-            className="flex h-12 min-w-0 flex-1 items-center rounded-xl bg-elevated"
+            className="mw-search-field flex h-12 min-w-0 flex-1 items-center rounded-2xl"
             onSubmit={(event) => {
               event.preventDefault();
               runSearch(query);
             }}
           >
-            <Search className="ml-3 size-5 shrink-0 text-subtle" strokeWidth={1.7} />
+            <Search className="ml-3 size-5 shrink-0 text-muted" strokeWidth={1.7} />
             <input
               ref={inputRef}
               type="search"
@@ -502,7 +511,7 @@ export function MobileSearchOverlay({
               onChange={(event) => setQuery(event.target.value)}
               placeholder="Search wallpapers..."
               aria-label="Search wallpapers"
-              className="min-w-0 flex-1 bg-transparent px-3 text-base text-fg outline-none placeholder:text-subtle"
+              className="min-w-0 flex-1 bg-transparent px-3 text-base text-fg outline-none placeholder:text-muted"
             />
             {query ? (
               <button
@@ -572,5 +581,5 @@ export function MobileSearchOverlay({
         </div>
       </div>
     </div>
-  );
+  , document.body);
 }
