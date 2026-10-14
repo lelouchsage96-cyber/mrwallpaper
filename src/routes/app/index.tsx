@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { Bell, Search } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { ErrorState } from "@/components/empty-state";
 import { MobileSearchOverlay } from "@/components/smart-search";
 import { SectionHeader } from "@/components/section-header";
@@ -47,6 +47,7 @@ function HomePage() {
   const [recentlyViewed, setRecentlyViewed] = useState<Card[]>([]);
   const [compactHeaderVisible, setCompactHeaderVisible] = useState(false);
   const userId = user?.id ?? null;
+  const clientFeedInitialized = useRef(false);
 
   useEffect(() => {
     setRecentlyViewed(readRecentlyViewed());
@@ -62,6 +63,11 @@ function HomePage() {
   useEffect(() => {
     if (isPending) return;
     const tasteIds = readLocalTaste();
+    // The server route loader already delivered the generic guest feed.
+    // Avoid immediately requesting it again during hydration.
+    const firstClientFeed = !clientFeedInitialized.current;
+    clientFeedInitialized.current = true;
+    if (firstClientFeed && !userId && tasteIds.length === 0 && initial && refreshKey === 0) return;
     let cancelled = false;
     void loadHomeFeed(tasteIds)
       .then((next) => {
