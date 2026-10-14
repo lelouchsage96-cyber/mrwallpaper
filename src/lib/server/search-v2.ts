@@ -193,7 +193,6 @@ export const searchWallpapersV2 = createServerFn({ method: "GET" })
       const tagIndexSql = phrase && groups.length > 0
         ? `with tag_index as materialized (
              select wt.wallpaper_id,
-                    string_agg(lower(t.name), ' ') as tag_text,
                     array_agg(lower(t.name)) as tag_names
              from wallpaper_tags wt
              join tags t on t.id = wt.tag_id
@@ -226,12 +225,18 @@ export const searchWallpapersV2 = createServerFn({ method: "GET" })
             or lower(coalesce(w.description, '')) like any($${at}::text[])
             or lower(coalesce(w.primary_keyword, '')) like any($${at}::text[])
             or lower(coalesce(w.device_type, 'phone')) like any($${at}::text[])
-            or coalesce(tx.tag_text, '') like any($${at}::text[]))`;
+            or exists (
+              select 1 from unnest(coalesce(tx.tag_names, array[]::text[])) as tn(name)
+              where tn.name like any($${at}::text[])
+            ))`;
           groupMatches.push(match);
           groupScores.push(`(
             case when lower(w.title) like any($${at}::text[]) then 18 else 0 end +
             case when lower(c.name) like any($${at}::text[]) or replace(lower(c.slug), '-', ' ') like any($${at}::text[]) then 12 else 0 end +
-            case when coalesce(tx.tag_text, '') like any($${at}::text[]) then 10 else 0 end +
+            case when exists (
+              select 1 from unnest(coalesce(tx.tag_names, array[]::text[])) as tn(name)
+              where tn.name like any($${at}::text[])
+            ) then 10 else 0 end +
             case when lower(coalesce(w.primary_keyword, '')) like any($${at}::text[]) then 14 else 0 end +
             case when lower(coalesce(w.alt_text, '')) like any($${at}::text[]) then 6 else 0 end +
             case when lower(coalesce(w.description, '')) like any($${at}::text[]) then 4 else 0 end +
