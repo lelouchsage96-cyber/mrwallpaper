@@ -1,0 +1,35 @@
+name: Verify MrWallpaper optimizations
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - "src/lib/server/queries.ts"
+      - "src/lib/server/search-v2.ts"
+      - "src/routes/app/index.tsx"
+      - ".github/workflows/verify-optimizations.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+          cache: npm
+      - name: Install dependencies
+        run: npm ci --no-audit --no-fund
+      - name: TypeScript check
+        run: npm run typecheck
+      - name: Application data and authentication tests
+        run: node --experimental-strip-types --test src/lib/app-data/app-data.test.ts src/lib/auth/gate-identity.test.ts
+      - name: Production build without database migration
+        run: npm run vercel-build

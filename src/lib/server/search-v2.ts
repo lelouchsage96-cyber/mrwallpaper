@@ -189,6 +189,19 @@ export const searchWallpapersV2 = createServerFn({ method: "GET" })
       const { phrase, groups } = searchGroups(data.q ?? "");
       let relevance = "0";
       let matchedGroupsSql = "0";
+      // Materialize tags once, avoiding repeated tag-ID probes per synonym.
+      const tagIndexSql = phrase && groups.length > 0
+        ? `with tag_index as materialized (
+             select wt.wallpaper_id,
+                    array_agg(lower(t.name)) as tag_names
+             from wallpaper_tags wt
+             join tags t on t.id = wt.tag_id
+             group by wt.wallpaper_id
+           )`
+        : "";
+      const tagJoinSql = tagIndexSql
+        ? "left join tag_index tx on tx.wallpaper_id = w.id"
+        : "";
 
       if (phrase && groups.length > 0) {
         params.push(phrase);
@@ -213,18 +226,16 @@ export const searchWallpapersV2 = createServerFn({ method: "GET" })
             or lower(coalesce(w.primary_keyword, '')) like any($${at}::text[])
             or lower(coalesce(w.device_type, 'phone')) like any($${at}::text[])
             or exists (
-              select 1 from wallpaper_tags wt
-              join tags t on t.id = wt.tag_id
-              where wt.wallpaper_id = w.id and lower(t.name) like any($${at}::text[])
+              select 1 from unnest(coalesce(tx.tag_names, array[]::text[])) as tn(name)
+              where tn.name like any($${at}::text[])
             ))`;
           groupMatches.push(match);
           groupScores.push(`(
             case when lower(w.title) like any($${at}::text[]) then 18 else 0 end +
             case when lower(c.name) like any($${at}::text[]) or replace(lower(c.slug), '-', ' ') like any($${at}::text[]) then 12 else 0 end +
             case when exists (
-              select 1 from wallpaper_tags wt
-              join tags t on t.id = wt.tag_id
-              where wt.wallpaper_id = w.id and lower(t.name) like any($${at}::text[])
+              select 1 from unnest(coalesce(tx.tag_names, array[]::text[])) as tn(name)
+              where tn.name like any($${at}::text[])
             ) then 10 else 0 end +
             case when lower(coalesce(w.primary_keyword, '')) like any($${at}::text[]) then 14 else 0 end +
             case when lower(coalesce(w.alt_text, '')) like any($${at}::text[]) then 6 else 0 end +
@@ -242,11 +253,7 @@ export const searchWallpapersV2 = createServerFn({ method: "GET" })
           case when lower(w.title) = $${exactAt} then 150 else 0 end +
           case when lower(w.title) like $${prefixAt} then 100 else 0 end +
           case when lower(c.name) = $${exactAt} or replace(lower(c.slug), '-', ' ') = $${exactAt} then 90 else 0 end +
-          case when exists (
-            select 1 from wallpaper_tags wt
-            join tags t on t.id = wt.tag_id
-            where wt.wallpaper_id = w.id and lower(t.name) = $${exactAt}
-          ) then 85 else 0 end +
+          case when $${exactAt} = any(coalesce(tx.tag_names, array[]::text[])) then 85 else 0 end +
           case when lower(coalesce(w.primary_keyword, '')) = $${exactAt} then 95 else 0 end +
           case when lower(w.title) like $${containsAt} then 60 else 0 end +
           case when lower(coalesce(w.primary_keyword, '')) like $${containsAt} then 55 else 0 end +
@@ -263,9 +270,11 @@ export const searchWallpapersV2 = createServerFn({ method: "GET" })
       const offsetAt = params.length;
 
       const rows = await sql.query<{ id: string; relevance: number | string; matched_groups: number | string }>(
-        `select w.id, ${relevance} as relevance, ${matchedGroupsSql} as matched_groups
+        `${tagIndexSql}
+         select w.id, ${relevance} as relevance, ${matchedGroupsSql} as matched_groups
          from wallpapers w
          join categories c on c.id = w.category_id
+         ${tagJoinSql}
          where ${where.join(" and ")}
          order by ${phrase ? "relevance desc, " : ""}${baseOrder(sort)}
          limit $${limitAt} offset $${offsetAt}`,
