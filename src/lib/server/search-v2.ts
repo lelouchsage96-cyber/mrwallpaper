@@ -7,6 +7,38 @@ import { optionalAuthMiddleware } from "./optional-auth";
 
 const PAGE_SIZE = 24;
 
+// Cache public Explore reads briefly; signed-in results must never be shared.
+type GuestCacheEntry = { expiresAt: number; value: Promise<unknown> };
+const cacheGlobal = globalThis as typeof globalThis & {
+  __mrwallpaperExploreCache__?: Map<string, GuestCacheEntry>;
+};
+const guestCache = cacheGlobal.__mrwallpaperExploreCache__ ??=
+  new Map<string, GuestCacheEntry>();
+
+function cachedGuestRead<T>(key: string, ttlMs: number, load: () => Promise<T>): Promise<T> {
+  const now = Date.now();
+  const hit = guestCache.get(key);
+  if (hit && hit.expiresAt > now) return hit.value as Promise<T>;
+  if (hit) guestCache.delete(key);
+  let value: Promise<T>;
+  value = load().catch((err) => {
+    if (guestCache.get(key)?.value === value) guestCache.delete(key);
+    throw err;
+  });
+  guestCache.set(key, { expiresAt: now + ttlMs, value });
+  if (guestCache.size > 128) {
+    for (const [oldestKey, entry] of guestCache) {
+      if (entry.expiresAt <= now) guestCache.delete(oldestKey);
+    }
+    while (guestCache.size > 128) {
+      const oldestKey = guestCache.keys().next().value;
+      if (!oldestKey) break;
+      guestCache.delete(oldestKey);
+    }
+  }
+  return value;
+}
+
 const POPULAR_SEARCHES = [
   "motivational",
   "bible verse",
@@ -137,7 +169,7 @@ function baseOrder(sort: SearchSort): string {
   return "w.download_count desc, w.favorite_count desc, w.published_at desc nulls last";
 }
 
-export const getSearchMetaV2 = createServerFn({ method: "GET" }).handler(async (): Promise<ExploreMeta> => {
+export const getSearchMetaV2 = createServerFn({ method: "GET" }).handler(async (): Promise<ExploreMeta> => cachedGuestRead("explore:meta", 300_000, async () => {
   try {
     return {
       categories: await fetchCategories(),
@@ -147,7 +179,7 @@ export const getSearchMetaV2 = createServerFn({ method: "GET" }).handler(async (
     console.error("[search-v2] meta", error);
     return { categories: [], popular: POPULAR_SEARCHES };
   }
-});
+}));
 
 export const searchWallpapersV2 = createServerFn({ method: "GET" })
   .middleware([optionalAuthMiddleware])
@@ -162,6 +194,7 @@ export const searchWallpapersV2 = createServerFn({ method: "GET" })
     }),
   )
   .handler(async ({ context, data }): Promise<{ items: WallpaperCard[]; offset: number; hasMore: boolean; relaxed: boolean }> => {
+    const load = async () => {
     try {
       const sql = await getSql();
       const params: unknown[] = [];
@@ -295,4 +328,8 @@ export const searchWallpapersV2 = createServerFn({ method: "GET" })
       console.error("[search-v2]", error);
       return { items: [], offset: data.offset ?? 0, hasMore: false, relaxed: false };
     }
+    };
+    return context.userId
+      ? load()
+      : cachedGuestRead(`explore:search:${JSON.stringify(data)}`, 300_000, load);
   });
