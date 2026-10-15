@@ -10,7 +10,13 @@ import { noindexHead } from "@/lib/seo";
 import { ensureProfile, getAppConfig } from "@/lib/server/api";
 import { t } from "@/lib/i18n/en";
 
-export const Route = createFileRoute("/app")({ head: () => noindexHead(`${brand.name} app`, "/app"), component: AppShell });
+export const Route = createFileRoute("/app")({
+  // This is a noindex PWA shell. Do not wake Neon for SSR requests from crawlers.
+  // Real visitors load the same route data in the browser after hydration.
+  ssr: false,
+  head: () => noindexHead(`${brand.name} app`, "/app"),
+  component: AppShell,
+});
 
 function AppShell() {
   const { user, isPending } = useCurrentUserState();
