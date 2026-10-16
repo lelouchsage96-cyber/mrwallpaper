@@ -734,7 +734,7 @@ export const getSitemapData = createServerFn({ method: "GET" }).handler(async ()
 
 export const getSeoRedirect = createServerFn({ method: "GET" })
   .validator(z.object({ path: z.string() }))
-  .handler(async ({ data }) => fetchSeoRedirect(data.path));
+  .handler(async ({ data }) => cachedPublicRead(`seo-redirect:${data.path}`, 600_000, () => fetchSeoRedirect(data.path)));
 
 export const toggleFavorite = createServerFn({ method: "POST" })
   .middleware([authMiddleware])

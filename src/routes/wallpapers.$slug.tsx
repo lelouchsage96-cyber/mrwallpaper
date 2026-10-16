@@ -1,4 +1,6 @@
-import { createFileRoute, notFound, redirect } from "@tanstack/react-router";
+import { createFileRoute, notFound, redirect, useRouter } from "@tanstack/react-router";
+import { useEffect } from "react";
+import { useCurrentUserState } from "@/lib/auth/use-current-user";
 import { Breadcrumbs } from "@/components/breadcrumbs";
 import { WallpaperGrid } from "@/components/wallpaper-grid";
 import { CATEGORY_EDITORIAL } from "@/lib/category-content";
@@ -39,6 +41,11 @@ export const Route = createFileRoute("/wallpapers/$slug")({
     if (!data.category && !data.hub) throw notFound();
     return data;
   },
+  // Public SEO documents are rendered as guests and can be shared at the edge.
+  // Signed-in personalization is fetched separately after hydration.
+  headers: () => ({
+    "Cache-Control": "public, max-age=0, s-maxage=300, stale-while-revalidate=1200",
+  }),
   staleTime: 30_000,
   head: ({ loaderData, params, match }) => {
     const page = (match.search as Search).page ?? 1;
@@ -94,6 +101,11 @@ export const Route = createFileRoute("/wallpapers/$slug")({
 });
 
 function HubPage() {
+  const router = useRouter();
+  const { user, isPending } = useCurrentUserState();
+  useEffect(() => {
+    if (!isPending && user?.id) void router.invalidate();
+  }, [router, isPending, user?.id]);
   const { slug } = Route.useParams();
   const search = Route.useSearch();
   const data = Route.useLoaderData();

@@ -57,6 +57,11 @@ export const Route = createFileRoute("/wallpaper/$id")({
     }
     return data;
   },
+  // Public SEO documents are rendered as guests and can be shared at the edge.
+  // Signed-in personalization is fetched separately after hydration.
+  headers: () => ({
+    "Cache-Control": "public, max-age=0, s-maxage=300, stale-while-revalidate=1200",
+  }),
   staleTime: 30_000,
   head: ({ loaderData }) => {
     const w = loaderData?.wallpaper;
@@ -125,6 +130,20 @@ function DetailsPage() {
     );
     void getPremiumStatus().then((s) => setIsPremium(s.isPremium));
   }, [id, initial]);
+
+  useEffect(() => {
+    // The cached document contains no user-specific favorites. Restore them
+    // after hydration, without making shared HTML depend on session cookies.
+    if (!user?.id) return;
+    let cancelled = false;
+    void getWallpaper({ data: { id } }).then((next) => {
+      if (cancelled || !next.wallpaper) return;
+      setWallpaper(next.wallpaper);
+      setRelated(next.related);
+      setPair(next.pair);
+    }).catch(() => undefined);
+    return () => { cancelled = true; };
+  }, [id, user?.id]);
 
   useEffect(() => {
     if (!initial.wallpaper) return;
