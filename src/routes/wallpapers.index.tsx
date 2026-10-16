@@ -1,4 +1,6 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, useRouter } from "@tanstack/react-router";
+import { useEffect } from "react";
+import { useCurrentUserState } from "@/lib/auth/use-current-user";
 import { Breadcrumbs } from "@/components/breadcrumbs";
 import { WallpaperGrid } from "@/components/wallpaper-grid";
 import { brand } from "@/lib/brand";
@@ -32,6 +34,11 @@ export const Route = createFileRoute("/wallpapers/")({
     ]);
     return { meta, items: catalog.items, q: deps.q, page, hasMore: catalog.hasMore };
   },
+  // Public SEO documents are rendered as guests and can be shared at the edge.
+  // Signed-in personalization is fetched separately after hydration.
+  headers: () => ({
+    "Cache-Control": "public, max-age=0, s-maxage=300, stale-while-revalidate=1200",
+  }),
   staleTime: 15_000,
   head: ({ loaderData }) => {
     const q = loaderData?.q;
@@ -80,6 +87,11 @@ export const Route = createFileRoute("/wallpapers/")({
 });
 
 function WallpapersIndex() {
+  const router = useRouter();
+  const { user, isPending } = useCurrentUserState();
+  useEffect(() => {
+    if (!isPending && user?.id) void router.invalidate();
+  }, [router, isPending, user?.id]);
   const { meta, items, q, page, hasMore } = Route.useLoaderData();
   const prev = page > 1 ? page - 1 : null;
   const next = hasMore ? page + 1 : null;

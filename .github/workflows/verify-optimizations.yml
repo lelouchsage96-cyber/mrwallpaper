@@ -5,6 +5,12 @@ on:
     branches: [main]
     paths:
       - "src/lib/server/queries.ts"
+      - "src/lib/server/api.ts"
+      - "src/lib/server/optional-auth.ts"
+      - "src/routes/index.tsx"
+      - "src/routes/wallpaper.$id.tsx"
+      - "src/routes/wallpapers.$slug.tsx"
+      - "src/routes/wallpapers.index.tsx"
       - "src/lib/server/search-v2.ts"
       - "src/routes/app/index.tsx"
       - ".github/workflows/verify-optimizations.yml"

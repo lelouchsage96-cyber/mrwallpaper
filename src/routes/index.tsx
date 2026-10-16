@@ -1,4 +1,6 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, useRouter } from "@tanstack/react-router";
+import { useEffect } from "react";
+import { useCurrentUserState } from "@/lib/auth/use-current-user";
 import { ArrowRight } from "lucide-react";
 import { SiteFooter } from "@/components/site-footer";
 import { WallpaperGrid } from "@/components/wallpaper-grid";
@@ -45,6 +47,11 @@ function displayImage(url: string | null | undefined, width = 480, quality = 75)
 
 export const Route = createFileRoute("/")({
   loader: () => getHomeFeed(),
+  // Public SEO documents are rendered as guests and can be shared at the edge.
+  // Signed-in personalization is fetched separately after hydration.
+  headers: () => ({
+    "Cache-Control": "public, max-age=0, s-maxage=300, stale-while-revalidate=1200",
+  }),
   staleTime: 30_000,
   head: ({ loaderData }) =>
     pageHead({
@@ -69,6 +76,13 @@ export const Route = createFileRoute("/")({
 
 function HomePage() {
   const data = Route.useLoaderData();
+  const router = useRouter();
+  const { user, isPending } = useCurrentUserState();
+  // The CDN serves a guest HTML shell. Revalidate on login to restore the
+  // account's recent wallpapers, recommendations and notification counts.
+  useEffect(() => {
+    if (!isPending && user?.id) void router.invalidate();
+  }, [router, isPending, user?.id]);
   const trending = (data.trending ?? []).slice(0, 16);
   const fresh = (data.fresh ?? []).slice(0, 8);
   const tablet = (data.tablet ?? []).slice(0, 4);
