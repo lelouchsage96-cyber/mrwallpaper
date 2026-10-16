@@ -31,10 +31,9 @@ export const optionalAuthMiddleware = createMiddleware({ type: "function" })
     return next({ sendContext: { bearerToken: getBearerToken() ?? undefined } });
   })
   .server(async ({ next, context }) => {
-    if (isPublicCatalogDocumentRequest()) {
-      return next({ context: { userId: null } });
-    }
     const { getSessionUser } = await import("@/lib/auth/verify.server");
-    const user = await getSessionUser(context.bearerToken);
+    const user = isPublicCatalogDocumentRequest()
+      ? null
+      : await getSessionUser(context.bearerToken);
     return next({ context: { userId: user?.id ?? null } });
   });
