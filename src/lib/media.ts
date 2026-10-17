@@ -60,10 +60,31 @@ function isR2PublicPlate(url: string): boolean {
   }
 }
 
-/** Route public R2 plates through our stable media endpoint instead of relying on a raw CDN image URL. */
+/**
+ * Public R2 previews should load from Cloudflare directly, without an extra
+ * Vercel function request for the /media/ pretty-name redirect.
+ * Persisted thumbnail/preview pairs share the same versioned stem.
+ */
+export function directR2PreviewUrl(stored?: string | null): string | null {
+  if (!stored || !isR2PublicPlate(stored)) return null;
+  try {
+    const url = new URL(stored);
+    if (/^\/previews\/.+-[a-f0-9]{8,}\.(?:jpe?g|png|webp)$/i.test(url.pathname)) {
+      return stored;
+    }
+    const thumb = /^\/thumbs\/(.+)-([a-f0-9]{8,})\.(?:jpe?g|png|webp)$/i.exec(url.pathname);
+    if (!thumb) return null;
+    url.pathname = `/previews/${thumb[1]}-${thumb[2]}.jpg`;
+    return url.toString();
+  } catch {
+    return null;
+  }
+}
+
+/** Keep the pretty media URL for legacy/non-CDN previews. */
 export function stablePreviewUrl(id: string, stored?: string | null, slug?: string | null): string | null {
   if (!stored || !isR2PublicPlate(stored)) return null;
-  return `/media/${prettyName(id, slug)}-preview.jpg`;
+  return directR2PreviewUrl(stored) ?? `/media/${prettyName(id, slug)}-preview.jpg`;
 }
 
 export function resolveThumb(id: string, stored?: string | null, slug?: string | null) {

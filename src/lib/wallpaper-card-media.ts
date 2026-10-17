@@ -1,4 +1,5 @@
 import type { WallpaperCard as Card } from "@/lib/types";
+import { directR2PreviewUrl } from "@/lib/media";
 
 function isLegacyOriginal(url: string): boolean {
   try {
@@ -38,7 +39,11 @@ export function highQualityPreview(wallpaper: Card, source: string, width: numbe
   }
 
   const r2Thumb = path.match(/\/thumbs\/(.+?)-[a-f0-9]{8,}\.(?:jpe?g|png|webp)$/i);
-  if (r2Thumb) return `/media/${wallpaper.slug || wallpaper.id}-preview.jpg`;
+  if (r2Thumb) {
+    // The higher-resolution partner of an R2 thumb lives in /previews.
+    // Avoid routing every srcSet image through a Vercel function redirect.
+    return directR2PreviewUrl(source) ?? `/media/${wallpaper.slug || wallpaper.id}-preview.jpg`;
+  }
 
   const bundledThumb = path.match(/\/wallpapers\/thumbs\/([^/.]+)\.(?:jpe?g|png|webp)$/i);
   if (bundledThumb) return `/wallpapers/${bundledThumb[1]}.jpg`;
