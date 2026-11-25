@@ -190,15 +190,6 @@ async function setting<T>(key: string, fallback: T): Promise<T> {
   return parseJson<T>(raw, fallback);
 }
 
-async function recordView(userId: string | null, wallpaperId: string) {
-  if (!userId) return;
-  const sql = await getSql();
-  await sql.query(
-    `insert into wallpaper_views (id, user_id, wallpaper_id) values ($1, $2, $3)`,
-    [crypto.randomUUID(), userId, wallpaperId],
-  );
-}
-
 async function ensureNotifications(userId: string) {
   const sql = await getSql();
   const flags = await readFlags();
@@ -331,23 +322,8 @@ export const getHomeFeed = createServerFn({ method: "GET" })
       }
     }
 
-    let recent: WallpaperCard[] = [];
-    if (userId) {
-      try {
-        const sql = await getSql();
-        const views = await sql.query<{ wallpaper_id: string }>(
-          `select wallpaper_id from wallpaper_views
-           where user_id = $1 order by viewed_at desc limit 12`,
-          [userId],
-        );
-        recent = await fetchCardsByIds(
-          [...new Set(views.map((v) => v.wallpaper_id))],
-          userId,
-        );
-      } catch (err) {
-        console.error("[home] recent", err);
-      }
-    }
+    // Recent views are kept client-side; avoid a Postgres write/read on every detail visit.
+    const recent: WallpaperCard[] = [];
 
     return {
       wotd: wotdCard,
@@ -373,13 +349,13 @@ export const getHomeFeed = createServerFn({ method: "GET" })
       return emptyHome();
     }
     };
-    return context.userId ? run() : cachedPublicRead(`home:${JSON.stringify(data ?? {})}`, 120_000, run);
+    return context.userId ? run() : cachedPublicRead(`home:${JSON.stringify(data ?? {})}`, 3_3_600_000, run);
 
   });
 
 export const getAppConfig = createServerFn({ method: "GET" }).handler(
   async (): Promise<AppConfig> =>
-    cachedPublicRead("app-config", 300_000, async () => {
+    cachedPublicRead("app-config", 3_600_000, async () => {
       // Premium is disabled, so this payload is fully public. Read all config in
       // one round-trip instead of waking Postgres for each individual setting.
       const sql = await getSql();
@@ -462,6 +438,8 @@ export const searchWallpapers = createServerFn({ method: "GET" })
   .handler(async ({ context, data }) => {
     const run = async () => {
     try {
+    const query = data.q?.trim();
+    if (query && query.length < 3) return { items: [] as WallpaperCard[], offset: data.offset ?? 0, hasMore: false };
     const cats = await fetchCategories();
     const categoryId = data.categorySlug ? cats.find((c) => c.slug === data.categorySlug)?.id : undefined;
     const order =
@@ -590,7 +568,6 @@ export const getWallpaper = createServerFn({ method: "GET" })
     const canonical = ref.slug || ref.id;
     const detail = await fetchDetail(ref.id, context.userId);
     if (!detail) return { wallpaper: null, related: [] as WallpaperCard[], pair: null, status: "missing" as const };
-    void recordView(context.userId, ref.id).catch(() => undefined);
     const related = await fetchSimilarCards(context.userId, detail, 8);
     const pair = await fetchPairForWallpaper(ref.id, context.userId, detail, related);
     return {
@@ -632,6 +609,8 @@ export const getPfpIndex = createServerFn({ method: "GET" })
     const sort: PfpSort = data?.sort ?? "trending";
     const offset = (page - 1) * PAGE_SIZE;
     const run = async () => {
+      const query = data?.q?.trim();
+      if (query && query.length < 3) return { categories: [], items: [] as WallpaperCard[], page, q: data?.q, sort, hasMore: false };
       const categories = await fetchPfpCategories();
       const [items, extra] = await Promise.all([
         fetchPfpCardList(context.userId, {
@@ -909,7 +888,8 @@ export const requestDownload = createServerFn({ method: "POST" })
       );
     }
 
-    await sql.query(`update wallpapers set download_count = download_count + 1 where id = $1`, [data.wallpaperId]);
+    // Keep download history for account limits/history, but do not increment a
+    // hot aggregate counter on every image download. Trending counters are intentionally static.
     return {
       status: "ok",
       url: `${url}${url.includes("?") ? "&" : "?"}dl=1`,
