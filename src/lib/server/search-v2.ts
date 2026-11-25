@@ -194,6 +194,10 @@ export const searchWallpapersV2 = createServerFn({ method: "GET" })
     }),
   )
   .handler(async ({ context, data }): Promise<{ items: WallpaperCard[]; offset: number; hasMore: boolean; relaxed: boolean }> => {
+    const query = data.q?.trim();
+    if (query && query.length < 3) {
+      return { items: [], offset: data.offset ?? 0, hasMore: false, relaxed: false };
+    }
     const load = async () => {
     try {
       const sql = await getSql();
