@@ -48,7 +48,6 @@ const ATTRIBUTION_KEY = "mrwallpapers.analytics.attribution.v1";
 
 const FIRST_PARTY_DB_EVENTS = new Set<ClientAnalyticsEvent>([
   "campaign_visit",
-  "download",
   "favorite_add",
   "favorite_remove",
   "share",
