@@ -349,7 +349,7 @@ export const getHomeFeed = createServerFn({ method: "GET" })
       return emptyHome();
     }
     };
-    return context.userId ? run() : cachedPublicRead(`home:${JSON.stringify(data ?? {})}`, 3_3_600_000, run);
+    return context.userId ? run() : cachedPublicRead(`home:${JSON.stringify(data ?? {})}`, 3_600_000, run);
 
   });
 
@@ -408,7 +408,7 @@ export const getAppConfig = createServerFn({ method: "GET" }).handler(
     }),
 );
 
-export const getExploreMeta = createServerFn({ method: "GET" }).handler(async (): Promise<ExploreMeta> => cachedPublicRead("explore-meta", 300_000, async () => {
+export const getExploreMeta = createServerFn({ method: "GET" }).handler(async (): Promise<ExploreMeta> => cachedPublicRead("explore-meta", 3_600_000, async () => {
   try {
     const categories = await fetchCategories();
     const popularRows = await settle(
@@ -465,7 +465,7 @@ export const searchWallpapers = createServerFn({ method: "GET" })
       return { items: [] as WallpaperCard[], offset: data.offset ?? 0, hasMore: false };
     }
     };
-    return context.userId ? run() : cachedPublicRead(`search:${JSON.stringify(data)}`, 120_000, run);
+    return context.userId ? run() : cachedPublicRead(`search:${JSON.stringify(data)}`, 3_600_000, run);
 
   });
 
@@ -521,7 +521,7 @@ export const getCategoryPage = createServerFn({ method: "GET" })
       return { category: null, hub: null, items: [] as WallpaperCard[], hasMore: false, page: 1, pages: 0 };
     }
     };
-    return context.userId ? run() : cachedPublicRead(`category:${JSON.stringify(data)}`, 120_000, run);
+    return context.userId ? run() : cachedPublicRead(`category:${JSON.stringify(data)}`, 3_600_000, run);
 
   });
 
@@ -550,7 +550,7 @@ export const getCollectionPage = createServerFn({ method: "GET" })
       return { collection: null, items: [] as WallpaperCard[] };
     }
     };
-    return context.userId ? run() : cachedPublicRead(`collection:${data.slug}`, 300_000, run);
+    return context.userId ? run() : cachedPublicRead(`collection:${data.slug}`, 3_600_000, run);
 
   });
 
@@ -582,7 +582,7 @@ export const getWallpaper = createServerFn({ method: "GET" })
       return { wallpaper: null, related: [] as WallpaperCard[], pair: null, status: "missing" as const };
     }
     };
-    return context.userId ? run() : cachedPublicRead(`wallpaper:${data.id}`, 300_000, run);
+    return context.userId ? run() : cachedPublicRead(`wallpaper:${data.id}`, 3_600_000, run);
 
   });
 
@@ -630,7 +630,7 @@ export const getPfpIndex = createServerFn({ method: "GET" })
     };
     return context.userId
       ? run()
-      : cachedPublicRead(`pfps:index:${JSON.stringify(data ?? {})}`, 120_000, run);
+      : cachedPublicRead(`pfps:index:${JSON.stringify(data ?? {})}`, 3_600_000, run);
   });
 
 export const getPfpCategoryPage = createServerFn({ method: "GET" })
@@ -668,7 +668,7 @@ export const getPfpCategoryPage = createServerFn({ method: "GET" })
     };
     return context.userId
       ? run()
-      : cachedPublicRead(`pfps:category:${data.slug}:${page}:${sort}`, 120_000, run);
+      : cachedPublicRead(`pfps:category:${data.slug}:${page}:${sort}`, 3_600_000, run);
   });
 
 export const getPfp = createServerFn({ method: "GET" })
@@ -693,16 +693,16 @@ export const getPfp = createServerFn({ method: "GET" })
     };
     return context.userId
       ? run()
-      : cachedPublicRead(`pfp:${data.id}`, 300_000, run);
+      : cachedPublicRead(`pfp:${data.id}`, 3_600_000, run);
   });
 
 export const getPfpSitemapData = createServerFn({ method: "GET" }).handler(async () =>
-  cachedPublicRead("pfp-sitemap", 600_000, fetchPfpSitemapEntries),
+  cachedPublicRead("pfp-sitemap", 3_600_000, fetchPfpSitemapEntries),
 );
 
-export const getPublicSeo = createServerFn({ method: "GET" }).handler(async () => cachedPublicRead("public-seo", 600_000, readSeoSettings));
+export const getPublicSeo = createServerFn({ method: "GET" }).handler(async () => cachedPublicRead("public-seo", 3_600_000, readSeoSettings));
 
-export const getSitemapData = createServerFn({ method: "GET" }).handler(async () => cachedPublicRead("sitemap", 600_000, async () => {
+export const getSitemapData = createServerFn({ method: "GET" }).handler(async () => cachedPublicRead("sitemap", 3_600_000, async () => {
   try {
     return await fetchSitemapEntries();
   } catch (err) {
@@ -713,7 +713,7 @@ export const getSitemapData = createServerFn({ method: "GET" }).handler(async ()
 
 export const getSeoRedirect = createServerFn({ method: "GET" })
   .validator(z.object({ path: z.string() }))
-  .handler(async ({ data }) => cachedPublicRead(`seo-redirect:${data.path}`, 600_000, () => fetchSeoRedirect(data.path)));
+  .handler(async ({ data }) => cachedPublicRead(`seo-redirect:${data.path}`, 3_600_000, () => fetchSeoRedirect(data.path)));
 
 export const toggleFavorite = createServerFn({ method: "POST" })
   .middleware([authMiddleware])
@@ -1138,6 +1138,6 @@ export const getPairPage = createServerFn({ method: "GET" })
       return { pair: null };
     }
     };
-    return context.userId ? run() : cachedPublicRead(`pair:${data.slug}`, 300_000, run);
+    return context.userId ? run() : cachedPublicRead(`pair:${data.slug}`, 3_600_000, run);
 
   });
