@@ -169,7 +169,7 @@ function baseOrder(sort: SearchSort): string {
   return "w.download_count desc, w.favorite_count desc, w.published_at desc nulls last";
 }
 
-export const getSearchMetaV2 = createServerFn({ method: "GET" }).handler(async (): Promise<ExploreMeta> => cachedGuestRead("explore:meta", 300_000, async () => {
+export const getSearchMetaV2 = createServerFn({ method: "GET" }).handler(async (): Promise<ExploreMeta> => cachedGuestRead("explore:meta", 3_600_000, async () => {
   try {
     return {
       categories: await fetchCategories(),
@@ -194,6 +194,10 @@ export const searchWallpapersV2 = createServerFn({ method: "GET" })
     }),
   )
   .handler(async ({ context, data }): Promise<{ items: WallpaperCard[]; offset: number; hasMore: boolean; relaxed: boolean }> => {
+    const query = data.q?.trim();
+    if (query && query.length < 3) {
+      return { items: [], offset: data.offset ?? 0, hasMore: false, relaxed: false };
+    }
     const load = async () => {
     try {
       const sql = await getSql();
@@ -331,5 +335,5 @@ export const searchWallpapersV2 = createServerFn({ method: "GET" })
     };
     return context.userId
       ? load()
-      : cachedGuestRead(`explore:search:${JSON.stringify(data)}`, 300_000, load);
+      : cachedGuestRead(`explore:search:${JSON.stringify(data)}`, 3_600_000, load);
   });

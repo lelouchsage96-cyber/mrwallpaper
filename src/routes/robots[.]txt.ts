@@ -19,6 +19,16 @@ Disallow: /favorites
 Disallow: /downloads
 Disallow: /notifications
 Disallow: /submit
+Disallow: /*?q=*
+Disallow: /*&q=*
+Disallow: /*?sort=*
+Disallow: /*&sort=*
+Disallow: /*?category=*
+Disallow: /*&category=*
+Disallow: /*?device=*
+Disallow: /*&device=*
+Disallow: /*?access=*
+Disallow: /*&access=*
 
 Sitemap: ${SITE_URL}/sitemap.xml
 `;

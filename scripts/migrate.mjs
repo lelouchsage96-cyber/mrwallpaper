@@ -18,13 +18,13 @@ import { dirname, join } from "node:path";
 import pg from "pg";
 import { pendingMigrations } from "./migration-plan.mjs";
 
-const databaseUrl = process.env.DATABASE_URL?.trim()?.replace(
+const databaseUrl = (process.env.DIRECT_URL?.trim() || process.env.DATABASE_URL?.trim())?.replace(
   /([?&]sslmode=)(prefer|require|verify-ca)(?=(&|$))/i,
   "$1verify-full",
 );
 if (!databaseUrl) {
   console.log(
-    "[migrate] DATABASE_URL not set — skipping (the PGLite fallback migrates itself).",
+    "[migrate] DIRECT_URL/DATABASE_URL not set — skipping (the PGLite fallback migrates itself).",
   );
   process.exit(0);
 }

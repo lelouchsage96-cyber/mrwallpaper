@@ -17,7 +17,28 @@ export function normalizeDatabaseUrl(value: string | undefined): string | undefi
   );
 }
 
-const databaseUrl = normalizeDatabaseUrl(rawDatabaseUrl);
+/** Convert Neon direct endpoints to their transaction-pooler endpoint at runtime. */
+export function normalizeRuntimeDatabaseUrl(value: string | undefined): string | undefined {
+  const normalized = normalizeDatabaseUrl(value);
+  if (!normalized) return undefined;
+  try {
+    const url = new URL(normalized);
+    const labels = url.hostname.split(".");
+    if (
+      url.hostname.endsWith(".neon.tech") &&
+      labels[0]?.startsWith("ep-") &&
+      !labels[0].endsWith("-pooler")
+    ) {
+      labels[0] = `${labels[0]}-pooler`;
+      url.hostname = labels.join(".");
+    }
+    return url.toString();
+  } catch {
+    return normalized;
+  }
+}
+
+const databaseUrl = normalizeRuntimeDatabaseUrl(rawDatabaseUrl);
 
 /**
  * Active backend: real **Neon** when `DATABASE_URL` is set (deployed / configured
