@@ -116,6 +116,7 @@ export async function fetchCardList(
     device?: DeviceFilter;
   },
 ): Promise<WallpaperCard[]> {
+  if (opts.search?.trim() && opts.search.trim().length < 3) return [];
   const sql = await getSql();
   const params: unknown[] = [];
   let fav = "false as is_favorite";
@@ -401,7 +402,10 @@ export async function fetchSimilarCards(
          and ${deviceSql}
      ),
      candidates as (
-       select similarity_base.*,
+       select id, slug, title, category_id, alt_text, category_name, category_slug,
+              access_type, download_count, favorite_count, format, device_type,
+              width, height, thumbnail_url, is_favorite, same_category,
+              shared_tags, shared_collections, text_hits, keyword_match,
               (
                 case when same_category then 35 else 0 end
                 + least(shared_tags, 3) * 28
@@ -416,7 +420,10 @@ export async function fetchSimilarCards(
           or text_hits > 0
           or keyword_match > 0
      )
-     select *
+     select id, slug, title, category_id, alt_text, category_name, category_slug,
+            access_type, download_count, favorite_count, format, device_type,
+            width, height, thumbnail_url, is_favorite, same_category,
+            shared_tags, shared_collections, text_hits, keyword_match, similarity_score
      from candidates
      order by similarity_score desc,
               shared_tags desc,
@@ -465,6 +472,7 @@ export async function fetchPfpCardList(
     search?: string;
   },
 ): Promise<WallpaperCard[]> {
+  if (opts.search?.trim() && opts.search.trim().length < 3) return [];
   const sql = await getSql();
   const params: unknown[] = [];
   let fav = "false as is_favorite";
