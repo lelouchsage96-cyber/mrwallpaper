@@ -44,7 +44,7 @@ export const Route = createFileRoute("/wallpapers/$slug")({
   // Public SEO documents are rendered as guests and can be shared at the edge.
   // Signed-in personalization is fetched separately after hydration.
   headers: () => ({
-    "Cache-Control": "public, max-age=0, s-maxage=300, stale-while-revalidate=1200",
+    "Cache-Control": "public, max-age=0, s-maxage=3600, stale-while-revalidate=86400",
   }),
   staleTime: 30_000,
   head: ({ loaderData, params, match }) => {
